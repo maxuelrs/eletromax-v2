@@ -1,1 +1,6 @@
-
+const API='http://localhost:3000/api';
+let offers=JSON.parse(localStorage.getItem('eletromax_offers')||'[]');
+function render(){document.getElementById('total').textContent=offers.length;document.getElementById('ml').textContent=offers.filter(x=>x.source==='Mercado Livre').length;document.getElementById('shopee').textContent=offers.filter(x=>x.source==='Shopee').length;document.getElementById('published').textContent=offers.filter(x=>x.published).length;document.getElementById('offers').innerHTML=offers.map((x,i)=>`<div class="offer"><div><b>${x.title}</b><br><small>${x.source} • R$ ${Number(x.price||0).toFixed(2)}</small><br><a href="${x.url}" target="_blank">${x.url}</a></div><button onclick="publish(${i})">${x.published?'Publicado':'Marcar como publicado'}</button></div>`).join('')||'<p>Nenhuma oferta cadastrada.</p>'}
+document.getElementById('offerForm').addEventListener('submit',e=>{e.preventDefault();offers.unshift({title:title.value,url:url.value,price:price.value,source:source.value,published:false});localStorage.setItem('eletromax_offers',JSON.stringify(offers));e.target.reset();render()});
+function publish(i){offers[i].published=true;localStorage.setItem('eletromax_offers',JSON.stringify(offers));render()}
+render();
