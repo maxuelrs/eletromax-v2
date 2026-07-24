@@ -1,1 +1,37 @@
-const express=require('express');const cors=require('cors');const app=express();app.use(cors());app.use(express.json());let offers=[];app.get('/api/health',(req,res)=>res.json({ok:true,project:'Eletromax V2 MVP'}));app.get('/api/offers',(req,res)=>res.json(offers));app.post('/api/offers',(req,res)=>{const offer={id:Date.now(),...req.body,createdAt:new Date().toISOString()};offers.push(offer);res.status(201).json(offer)});app.listen(3000,()=>console.log('Eletromax API: http://localhost:3000'));
+  const express = require('express');
+const cors = require('cors');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.use(cors());
+app.use(express.json());
+
+let offers = [];
+
+app.get('/api/health', (req, res) => {
+  res.json({
+    ok: true,
+    project: 'Eletromax V2 MVP'
+  });
+});
+
+app.get('/api/offers', (req, res) => {
+  res.json(offers);
+});
+
+app.post('/api/offers', (req, res) => {
+  const offer = {
+    id: Date.now(),
+    ...req.body,
+    createdAt: new Date().toISOString()
+  };
+
+  offers.push(offer);
+
+  res.status(201).json(offer);
+});
+
+app.listen(PORT, () => {
+  console.log(`Eletromax API rodando na porta ${PORT}`);
+});
