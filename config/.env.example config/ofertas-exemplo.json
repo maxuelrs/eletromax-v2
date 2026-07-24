@@ -1,1 +1,16 @@
-
+[
+  {
+    "title": "Produto exemplo",
+    "url": "https://exemplo.com/produto",
+    "price": 99.90,
+    "source": "Mercado Livre",
+    "published": false
+  },
+  {
+    "title": "Produto exemplo Shopee",
+    "url": "https://exemplo.com/produto",
+    "price": 59.90,
+    "source": "Shopee",
+    "published": false
+  }
+]
