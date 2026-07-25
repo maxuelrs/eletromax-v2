@@ -30,22 +30,18 @@ const pool = new Pool({
 
 async function inicializarBanco() {
   try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS produtos (
-        id SERIAL PRIMARY KEY,
-        nome TEXT NOT NULL,
-        preco TEXT,
-        link TEXT NOT NULL,
-        plataforma TEXT NOT NULL,
-        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
+    await pool.query(
+      'CREATE TABLE IF NOT EXISTS produtos (id SERIAL PRIMARY KEY, nome TEXT NOT NULL, preco TEXT, link TEXT NOT NULL, plataforma TEXT NOT NULL, criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP)'
+    );
 
     console.log('BANCO DE DADOS CONECTADO');
     console.log('TABELA PRODUTOS PRONTA');
 
+    return true;
+
   } catch (erro) {
     console.error('ERRO AO INICIALIZAR BANCO:', erro.message);
+    return false;
   }
 }
 
@@ -53,7 +49,8 @@ async function inicializarBanco() {
 // PAINEL PRINCIPAL
 // =========================
 
-app.get('/', async (req, res) => {
+app.get('/', (req, res) => {
+
   res.send(`
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -279,40 +276,33 @@ select {
 
 <div class="menu">
 
-<button class="active"
-onclick="abrirPagina('dashboard', this)">
+<button class="active" onclick="abrirPagina('dashboard', this)">
 🏠 Dashboard
 </button>
 
-<button
-onclick="abrirPagina('produtos', this)">
+<button onclick="abrirPagina('produtos', this)">
 📦 Produtos
 </button>
 
-<button
-onclick="abrirPagina('mercadolivre', this)">
+<button onclick="abrirPagina('mercadolivre', this)">
 🛒 Mercado Livre
 </button>
 
-<button
-onclick="abrirPagina('shopee', this)">
+<button onclick="abrirPagina('shopee', this)">
 🛍️ Shopee
 </button>
 
-<button
-onclick="abrirPagina('posts', this)">
+<button onclick="abrirPagina('posts', this)">
 📱 Posts
 </button>
 
-<button
-onclick="abrirPagina('configuracoes', this)">
+<button onclick="abrirPagina('configuracoes', this)">
 ⚙️ Configurações
 </button>
 
 </div>
 
 </div>
-
 
 <div class="main">
 
@@ -328,7 +318,6 @@ Dashboard
 
 </div>
 
-
 <!-- DASHBOARD -->
 
 <div id="dashboard" class="page active">
@@ -336,55 +325,26 @@ Dashboard
 <div class="cards">
 
 <div class="card">
-
-<h3>
-Produtos
-</h3>
-
-<strong id="totalProdutos">
-0
-</strong>
-
+<h3>Produtos</h3>
+<strong id="totalProdutos">0</strong>
 </div>
 
 <div class="card">
-
-<h3>
-Posts Criados
-</h3>
-
-<strong>
-0
-</strong>
-
+<h3>Posts Criados</h3>
+<strong>0</strong>
 </div>
 
 <div class="card">
-
-<h3>
-Mercado Livre
-</h3>
-
-<strong id="totalMercadoLivre">
-0
-</strong>
-
+<h3>Mercado Livre</h3>
+<strong id="totalMercadoLivre">0</strong>
 </div>
 
 <div class="card">
-
-<h3>
-Shopee
-</h3>
-
-<strong id="totalShopee">
-0
-</strong>
-
+<h3>Shopee</h3>
+<strong id="totalShopee">0</strong>
 </div>
 
 </div>
-
 
 <div class="panel">
 
@@ -393,8 +353,7 @@ Shopee
 </h2>
 
 <p>
-Gerencie seus produtos, links e divulgações
-em um único painel.
+Gerencie seus produtos, links e divulgações em um único painel.
 </p>
 
 <p>
@@ -405,7 +364,6 @@ Banco de dados:
 </div>
 
 </div>
-
 
 <!-- PRODUTOS -->
 
@@ -474,7 +432,6 @@ class="mensagem"
 
 </div>
 
-
 <div class="panel">
 
 <h2>
@@ -482,15 +439,12 @@ class="mensagem"
 </h2>
 
 <div id="listaProdutos">
-
 Carregando produtos...
-
 </div>
 
 </div>
 
 </div>
-
 
 <!-- MERCADO LIVRE -->
 
@@ -507,15 +461,12 @@ Produtos cadastrados no Mercado Livre.
 </p>
 
 <div id="listaMercadoLivre">
-
 Carregando...
-
 </div>
 
 </div>
 
 </div>
-
 
 <!-- SHOPEE -->
 
@@ -532,15 +483,12 @@ Produtos cadastrados na Shopee.
 </p>
 
 <div id="listaShopee">
-
 Carregando...
-
 </div>
 
 </div>
 
 </div>
-
 
 <!-- POSTS -->
 
@@ -598,7 +546,6 @@ placeholder="Seu post aparecerá aqui..."
 
 </div>
 
-
 <!-- CONFIGURAÇÕES -->
 
 <div id="configuracoes" class="page">
@@ -633,9 +580,7 @@ Salvar Configurações
 
 </div>
 
-
 <script>
-
 
 // =========================
 // NAVEGAÇÃO
@@ -646,76 +591,49 @@ function abrirPagina(pagina, botao) {
   document
     .querySelectorAll('.page')
     .forEach(function(p) {
-
       p.classList.remove('active');
-
     });
 
   document
     .getElementById(pagina)
     .classList.add('active');
 
-
   document
     .querySelectorAll('.menu button')
     .forEach(function(b) {
-
       b.classList.remove('active');
-
     });
 
-
   if (botao) {
-
     botao.classList.add('active');
-
   }
 
-
   const titulos = {
-
     dashboard: 'Dashboard',
-
     produtos: 'Produtos',
-
     mercadolivre: 'Mercado Livre',
-
     shopee: 'Shopee',
-
     posts: 'Posts',
-
     configuracoes: 'Configurações'
-
   };
-
 
   document
     .getElementById('titulo')
     .innerText = titulos[pagina];
 
-
   if (pagina === 'produtos') {
-
     carregarProdutos();
-
   }
-
 
   if (pagina === 'mercadolivre') {
-
     carregarProdutosPlataforma('Mercado Livre');
-
   }
 
-
   if (pagina === 'shopee') {
-
     carregarProdutosPlataforma('Shopee');
-
   }
 
 }
-
 
 // =========================
 // CADASTRAR PRODUTO
@@ -724,36 +642,19 @@ function abrirPagina(pagina, botao) {
 async function cadastrarProduto() {
 
   const nome =
-    document
-      .getElementById('produtoNome')
-      .value
-      .trim();
-
+    document.getElementById('produtoNome').value.trim();
 
   const preco =
-    document
-      .getElementById('produtoPreco')
-      .value
-      .trim();
-
+    document.getElementById('produtoPreco').value.trim();
 
   const link =
-    document
-      .getElementById('produtoLink')
-      .value
-      .trim();
-
+    document.getElementById('produtoLink').value.trim();
 
   const plataforma =
-    document
-      .getElementById('produtoPlataforma')
-      .value;
-
+    document.getElementById('produtoPlataforma').value;
 
   const resultado =
-    document
-      .getElementById('resultadoProduto');
-
+    document.getElementById('resultadoProduto');
 
   if (!nome || !link) {
 
@@ -761,13 +662,10 @@ async function cadastrarProduto() {
       '❌ Preencha o nome e o link do produto.';
 
     return;
-
   }
-
 
   resultado.innerText =
     '⏳ Salvando produto...';
-
 
   try {
 
@@ -777,32 +675,22 @@ async function cadastrarProduto() {
         method: 'POST',
 
         headers: {
-
-          'Content-Type':
-            'application/json'
-
+          'Content-Type': 'application/json'
         },
 
         body: JSON.stringify({
-
           nome: nome,
-
           preco: preco,
-
           link: link,
-
           plataforma: plataforma
-
         })
 
       });
 
-
     const dados =
       await resposta.json();
 
-
-    if (!resposta.ok) {
+    if (!resposta.ok || !dados.success) {
 
       throw new Error(
         dados.message ||
@@ -811,35 +699,19 @@ async function cadastrarProduto() {
 
     }
 
-
     resultado.innerText =
       '✅ Produto salvo com sucesso!';
 
+    document.getElementById('produtoNome').value = '';
+    document.getElementById('produtoPreco').value = '';
+    document.getElementById('produtoLink').value = '';
 
-    document
-      .getElementById('produtoNome')
-      .value = '';
-
-
-    document
-      .getElementById('produtoPreco')
-      .value = '';
-
-
-    document
-      .getElementById('produtoLink')
-      .value = '';
-
-
-    carregarProdutos();
-
-    atualizarDashboard();
-
+    await carregarProdutos();
+    await atualizarDashboard();
 
   } catch (erro) {
 
     console.error(erro);
-
 
     resultado.innerText =
       '❌ Erro ao salvar: ' +
@@ -849,7 +721,6 @@ async function cadastrarProduto() {
 
 }
 
-
 // =========================
 // LISTAR PRODUTOS
 // =========================
@@ -857,25 +728,24 @@ async function cadastrarProduto() {
 async function carregarProdutos() {
 
   const lista =
-    document
-      .getElementById('listaProdutos');
+    document.getElementById('listaProdutos');
 
+  if (!lista) {
+    return;
+  }
 
   lista.innerHTML =
     '⏳ Carregando...';
-
 
   try {
 
     const resposta =
       await fetch('/api/produtos');
 
-
     const dados =
       await resposta.json();
 
-
-    if (!dados.success) {
+    if (!resposta.ok || !dados.success) {
 
       throw new Error(
         dados.message ||
@@ -884,16 +754,13 @@ async function carregarProdutos() {
 
     }
 
-
-    if (!dados.produtos.length) {
+    if (!dados.produtos || !dados.produtos.length) {
 
       lista.innerHTML =
         '📦 Nenhum produto cadastrado ainda.';
 
       return;
-
     }
-
 
     lista.innerHTML =
       dados.produtos
@@ -930,11 +797,9 @@ rel="noopener noreferrer"
         })
         .join('');
 
-
   } catch (erro) {
 
     console.error(erro);
-
 
     lista.innerHTML =
       '❌ Erro ao carregar produtos: ' +
@@ -944,42 +809,47 @@ rel="noopener noreferrer"
 
 }
 
-
 // =========================
 // PRODUTOS POR PLATAFORMA
 // =========================
 
-async function carregarProdutosPlataforma(
-  plataforma
-) {
+async function carregarProdutosPlataforma(plataforma) {
 
   const elemento =
     plataforma === 'Mercado Livre'
       ? document.getElementById('listaMercadoLivre')
       : document.getElementById('listaShopee');
 
+  if (!elemento) {
+    return;
+  }
 
   elemento.innerHTML =
     '⏳ Carregando...';
-
 
   try {
 
     const resposta =
       await fetch('/api/produtos');
 
-
     const dados =
       await resposta.json();
 
+    if (!resposta.ok || !dados.success) {
+
+      throw new Error(
+        dados.message ||
+        'Erro ao buscar produtos'
+      );
+
+    }
 
     const produtos =
-      dados.produtos.filter(function(produto) {
+      (dados.produtos || []).filter(function(produto) {
 
         return produto.plataforma === plataforma;
 
       });
-
 
     if (!produtos.length) {
 
@@ -987,9 +857,7 @@ async function carregarProdutosPlataforma(
         '📦 Nenhum produto cadastrado nesta plataforma.';
 
       return;
-
     }
-
 
     elemento.innerHTML =
       produtos
@@ -1022,16 +890,17 @@ rel="noopener noreferrer"
         })
         .join('');
 
-
   } catch (erro) {
 
+    console.error(erro);
+
     elemento.innerHTML =
-      '❌ Erro ao carregar produtos.';
+      '❌ Erro ao carregar produtos: ' +
+      escaparHTML(erro.message);
 
   }
 
 }
-
 
 // =========================
 // DASHBOARD
@@ -1044,40 +913,34 @@ async function atualizarDashboard() {
     const resposta =
       await fetch('/api/produtos');
 
-
     const dados =
       await resposta.json();
 
+    if (!resposta.ok || !dados.success) {
+      return;
+    }
 
     const produtos =
       dados.produtos || [];
-
 
     document
       .getElementById('totalProdutos')
       .innerText =
         produtos.length;
 
-
     document
       .getElementById('totalMercadoLivre')
       .innerText =
         produtos.filter(function(p) {
-
           return p.plataforma === 'Mercado Livre';
-
         }).length;
-
 
     document
       .getElementById('totalShopee')
       .innerText =
         produtos.filter(function(p) {
-
           return p.plataforma === 'Shopee';
-
         }).length;
-
 
   } catch (erro) {
 
@@ -1090,7 +953,6 @@ async function atualizarDashboard() {
 
 }
 
-
 // =========================
 // GERADOR DE POSTS
 // =========================
@@ -1098,25 +960,13 @@ async function atualizarDashboard() {
 function gerarPost() {
 
   const nome =
-    document
-      .getElementById('postNome')
-      .value
-      .trim();
-
+    document.getElementById('postNome').value.trim();
 
   const preco =
-    document
-      .getElementById('postPreco')
-      .value
-      .trim();
-
+    document.getElementById('postPreco').value.trim();
 
   const link =
-    document
-      .getElementById('postLink')
-      .value
-      .trim();
-
+    document.getElementById('postLink').value.trim();
 
   if (!nome || !link) {
 
@@ -1125,33 +975,25 @@ function gerarPost() {
     );
 
     return;
-
   }
 
-
   const texto =
-
     '🔥 OFERTA IMPERDÍVEL!\\n\\n' +
-
     '📦 ' + nome + '\\n' +
-
     '💰 Por apenas ' +
     (preco || 'consulte o preço') +
     '\\n\\n' +
-
     '🛒 COMPRE AQUI:\\n' +
-
-    link + '\\n\\n' +
-
+    link +
+    '\\n\\n' +
     '⚡ Eletromax — Ofertas e produtos selecionados!';
-
 
   document
     .getElementById('postResultado')
-    .value = texto;
+    .value =
+      texto;
 
 }
-
 
 // =========================
 // SEGURANÇA HTML
@@ -1168,13 +1010,11 @@ function escaparHTML(texto) {
 
 }
 
-
 function escaparAtributo(texto) {
 
   return escaparHTML(texto);
 
 }
-
 
 // =========================
 // CARREGAR AO ABRIR
@@ -1195,8 +1035,8 @@ window.addEventListener(
 
 </html>
   `);
-});
 
+});
 
 // =========================
 // API STATUS
@@ -1225,6 +1065,11 @@ app.get('/api/status', async (req, res) => {
 
   } catch (erro) {
 
+    console.error(
+      'ERRO STATUS:',
+      erro.message
+    );
+
     res.status(500).json({
 
       success: false,
@@ -1241,7 +1086,6 @@ app.get('/api/status', async (req, res) => {
 
 });
 
-
 // =========================
 // SALVAR PRODUTO
 // =========================
@@ -1256,7 +1100,6 @@ app.post('/api/produtos', async (req, res) => {
       link,
       plataforma
     } = req.body;
-
 
     if (
       !nome ||
@@ -1275,19 +1118,10 @@ app.post('/api/produtos', async (req, res) => {
 
     }
 
-
     const resultado =
       await pool.query(
 
-        `
-        INSERT INTO produtos
-        (nome, preco, link, plataforma)
-
-        VALUES
-        ($1, $2, $3, $4)
-
-        RETURNING *
-        `,
+        'INSERT INTO produtos (nome, preco, link, plataforma) VALUES ($1, $2, $3, $4) RETURNING *',
 
         [
           nome,
@@ -1297,7 +1131,6 @@ app.post('/api/produtos', async (req, res) => {
         ]
 
       );
-
 
     res.status(201).json({
 
@@ -1311,14 +1144,12 @@ app.post('/api/produtos', async (req, res) => {
 
     });
 
-
   } catch (erro) {
 
     console.error(
       'ERRO AO SALVAR PRODUTO:',
       erro.message
     );
-
 
     res.status(500).json({
 
@@ -1336,7 +1167,6 @@ app.post('/api/produtos', async (req, res) => {
 
 });
 
-
 // =========================
 // LISTAR PRODUTOS
 // =========================
@@ -1347,15 +1177,8 @@ app.get('/api/produtos', async (req, res) => {
 
     const resultado =
       await pool.query(
-
-        `
-        SELECT *
-        FROM produtos
-        ORDER BY id DESC
-        `
-
+        'SELECT * FROM produtos ORDER BY id DESC'
       );
-
 
     res.json({
 
@@ -1366,14 +1189,12 @@ app.get('/api/produtos', async (req, res) => {
 
     });
 
-
   } catch (erro) {
 
     console.error(
       'ERRO AO BUSCAR PRODUTOS:',
       erro.message
     );
-
 
     res.status(500).json({
 
@@ -1391,15 +1212,22 @@ app.get('/api/produtos', async (req, res) => {
 
 });
 
-
 // =========================
 // INICIAR SERVIDOR
 // =========================
 
 async function iniciarServidor() {
 
-  await inicializarBanco();
+  const bancoOK =
+    await inicializarBanco();
 
+  if (!bancoOK) {
+
+    console.error(
+      'ATENÇÃO: O servidor será iniciado, mas o banco apresentou erro.'
+    );
+
+  }
 
   app.listen(
     PORT,
@@ -1431,7 +1259,6 @@ async function iniciarServidor() {
   );
 
 }
-
 
 iniciarServidor();
 ```
