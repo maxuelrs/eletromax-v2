@@ -1,3 +1,4 @@
+```js
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
@@ -5,12 +6,16 @@ const { Pool } = require('pg');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// =========================
+// CONFIGURAÇÕES
+// =========================
+
 app.use(cors());
 app.use(express.json());
 
-/* =========================
-   POSTGRESQL
-========================= */
+// =========================
+// POSTGRESQL
+// =========================
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -19,9 +24,9 @@ const pool = new Pool({
   }
 });
 
-/* =========================
-   BANCO DE DADOS
-========================= */
+// =========================
+// BANCO DE DADOS
+// =========================
 
 async function inicializarBanco() {
   try {
@@ -40,404 +45,223 @@ async function inicializarBanco() {
     console.log('TABELA PRODUTOS PRONTA');
 
   } catch (erro) {
-    console.error(
-      'ERRO AO INICIALIZAR BANCO:',
-      erro.message
-    );
+    console.error('ERRO AO INICIALIZAR BANCO:', erro.message);
   }
 }
 
-/* =========================
-   API STATUS
-========================= */
+// =========================
+// PAINEL PRINCIPAL
+// =========================
 
-app.get('/api/status', async (req, res) => {
-
-  try {
-
-    await pool.query('SELECT NOW()');
-
-    res.json({
-      success: true,
-      message: 'API Eletromax funcionando!',
-      status: 'online',
-      database: 'connected'
-    });
-
-  } catch (erro) {
-
-    res.status(500).json({
-      success: false,
-      message: 'Erro na conexão com banco',
-      error: erro.message
-    });
-
-  }
-
-});
-
-/* =========================
-   SALVAR PRODUTO
-========================= */
-
-app.post('/api/produtos', async (req, res) => {
-
-  try {
-
-    const {
-      nome,
-      preco,
-      link,
-      plataforma
-    } = req.body;
-
-    if (!nome || !link || !plataforma) {
-
-      return res.status(400).json({
-        success: false,
-        message: 'Nome, link e plataforma são obrigatórios.'
-      });
-
-    }
-
-    const resultado = await pool.query(
-      `
-      INSERT INTO produtos
-      (nome, preco, link, plataforma)
-      VALUES ($1, $2, $3, $4)
-      RETURNING *
-      `,
-      [
-        nome,
-        preco || '',
-        link,
-        plataforma
-      ]
-    );
-
-    res.status(201).json({
-      success: true,
-      message: 'Produto salvo com sucesso!',
-      produto: resultado.rows[0]
-    });
-
-  } catch (erro) {
-
-    console.error(
-      'ERRO AO SALVAR PRODUTO:',
-      erro.message
-    );
-
-    res.status(500).json({
-      success: false,
-      message: 'Erro ao salvar produto.',
-      error: erro.message
-    });
-
-  }
-
-});
-
-/* =========================
-   LISTAR PRODUTOS
-========================= */
-
-app.get('/api/produtos', async (req, res) => {
-
-  try {
-
-    const resultado = await pool.query(
-      `
-      SELECT *
-      FROM produtos
-      ORDER BY id DESC
-      `
-    );
-
-    res.json({
-      success: true,
-      produtos: resultado.rows
-    });
-
-  } catch (erro) {
-
-    console.error(
-      'ERRO AO BUSCAR PRODUTOS:',
-      erro.message
-    );
-
-    res.status(500).json({
-      success: false,
-      message: 'Erro ao buscar produtos.',
-      error: erro.message
-    });
-
-  }
-
-});
-
-/* =========================
-   EXCLUIR PRODUTO
-========================= */
-
-app.delete('/api/produtos/:id', async (req, res) => {
-
-  try {
-
-    const { id } = req.params;
-
-    await pool.query(
-      'DELETE FROM produtos WHERE id = $1',
-      [id]
-    );
-
-    res.json({
-      success: true,
-      message: 'Produto excluído com sucesso!'
-    });
-
-  } catch (erro) {
-
-    res.status(500).json({
-      success: false,
-      message: 'Erro ao excluir produto.',
-      error: erro.message
-    });
-
-  }
-
-});
-
-/* =========================
-   PAINEL ELETROMAX
-========================= */
-
-app.get('/', (req, res) => {
-
-res.send(`
-
+app.get('/', async (req, res) => {
+  res.send(`
 <!DOCTYPE html>
-
 <html lang="pt-BR">
 
 <head>
 
 <meta charset="UTF-8">
 
-<meta
-name="viewport"
-content="width=device-width, initial-scale=1.0"
->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Eletromax V2</title>
 
 <style>
 
 * {
-box-sizing: border-box;
+  box-sizing: border-box;
 }
 
 body {
-margin: 0;
-font-family: Arial, sans-serif;
-background: #f4f6f8;
-color: #111827;
+  margin: 0;
+  font-family: Arial, sans-serif;
+  background: #f4f6f8;
+  color: #111827;
 }
 
 .sidebar {
-position: fixed;
-left: 0;
-top: 0;
-width: 240px;
-height: 100vh;
-background: #111827;
-color: white;
-padding: 25px 15px;
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 240px;
+  height: 100vh;
+  background: #111827;
+  color: white;
+  padding: 25px 15px;
 }
 
 .logo {
-font-size: 24px;
-font-weight: bold;
-margin-bottom: 35px;
-padding-left: 10px;
+  font-size: 24px;
+  font-weight: bold;
+  margin-bottom: 35px;
+  padding-left: 10px;
 }
 
 .menu button {
-width: 100%;
-border: none;
-background: transparent;
-color: #d1d5db;
-padding: 14px 12px;
-margin-bottom: 5px;
-text-align: left;
-border-radius: 8px;
-cursor: pointer;
-font-size: 15px;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #d1d5db;
+  padding: 14px 12px;
+  margin-bottom: 5px;
+  text-align: left;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
 }
 
 .menu button:hover,
 .menu button.active {
-background: #2563eb;
-color: white;
+  background: #2563eb;
+  color: white;
 }
 
 .main {
-margin-left: 240px;
-padding: 30px;
+  margin-left: 240px;
+  padding: 30px;
 }
 
 .header {
-display: flex;
-justify-content: space-between;
-align-items: center;
-margin-bottom: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
 }
 
 .header h1 {
-margin: 0;
+  margin: 0;
 }
 
 .status {
-background: #dcfce7;
-color: #166534;
-padding: 9px 15px;
-border-radius: 20px;
-font-size: 14px;
+  background: #dcfce7;
+  color: #166534;
+  padding: 9px 15px;
+  border-radius: 20px;
+  font-size: 14px;
 }
 
 .cards {
-display: grid;
-grid-template-columns:
-repeat(4, 1fr);
-gap: 20px;
-margin-bottom: 30px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
 }
 
 .card {
-background: white;
-padding: 22px;
-border-radius: 15px;
-box-shadow:
-0 4px 15px rgba(0,0,0,.06);
+  background: white;
+  padding: 22px;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0,0,0,.06);
 }
 
 .card h3 {
-margin-top: 0;
-color: #6b7280;
-font-size: 14px;
+  margin-top: 0;
+  color: #6b7280;
+  font-size: 14px;
 }
 
 .card strong {
-font-size: 28px;
+  font-size: 28px;
 }
 
 .panel {
-background: white;
-padding: 25px;
-border-radius: 15px;
-box-shadow:
-0 4px 15px rgba(0,0,0,.06);
-margin-bottom: 25px;
+  background: white;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0,0,0,.06);
+  margin-bottom: 20px;
 }
 
 .panel h2 {
-margin-top: 0;
+  margin-top: 0;
 }
 
 input,
 select {
-width: 100%;
-padding: 12px;
-margin: 8px 0 15px;
-border: 1px solid #d1d5db;
-border-radius: 7px;
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0 15px;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
 }
 
 .primary {
-background: #2563eb;
-color: white;
-border: none;
-padding: 12px 20px;
-border-radius: 7px;
-cursor: pointer;
+  background: #2563eb;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 15px;
 }
 
 .primary:hover {
-background: #1d4ed8;
+  background: #1d4ed8;
 }
 
 .page {
-display: none;
+  display: none;
 }
 
 .page.active {
-display: block;
+  display: block;
 }
 
 .produto {
-border: 1px solid #e5e7eb;
-padding: 18px;
-border-radius: 10px;
-margin-bottom: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 15px;
+  margin-top: 12px;
+  border-radius: 10px;
+  background: #fafafa;
 }
 
 .produto h3 {
-margin-top: 0;
+  margin-top: 0;
 }
 
 .produto a {
-color: #2563eb;
-word-break: break-all;
-}
-
-.excluir {
-background: #dc2626;
-color: white;
-border: none;
-padding: 8px 12px;
-border-radius: 6px;
-cursor: pointer;
-margin-top: 10px;
+  color: #2563eb;
+  word-break: break-all;
 }
 
 .mensagem {
-margin-top: 15px;
-font-weight: bold;
+  margin-top: 15px;
+  font-weight: bold;
 }
 
 @media(max-width: 800px) {
 
-.sidebar {
-width: 70px;
-padding: 15px 8px;
-}
+  .sidebar {
+    width: 70px;
+    padding: 15px 8px;
+  }
 
-.logo {
-font-size: 0;
-text-align: center;
-}
+  .logo {
+    font-size: 0;
+    text-align: center;
+  }
 
-.logo:first-letter {
-font-size: 25px;
-}
+  .logo:first-letter {
+    font-size: 25px;
+  }
 
-.menu button {
-font-size: 0;
-text-align: center;
-}
+  .menu button {
+    font-size: 0;
+    text-align: center;
+  }
 
-.menu button:first-letter {
-font-size: 20px;
-}
+  .menu button:first-letter {
+    font-size: 20px;
+  }
 
-.main {
-margin-left: 70px;
-padding: 15px;
-}
+  .main {
+    margin-left: 70px;
+    padding: 15px;
+  }
 
-.cards {
-grid-template-columns: 1fr 1fr;
-}
+  .cards {
+    grid-template-columns: 1fr 1fr;
+  }
 
 }
 
@@ -455,35 +279,34 @@ grid-template-columns: 1fr 1fr;
 
 <div class="menu">
 
-<button
-class="active"
-onclick="abrirPagina('dashboard', this)"
->
+<button class="active"
+onclick="abrirPagina('dashboard', this)">
 🏠 Dashboard
 </button>
 
 <button
-onclick="abrirPagina('produtos', this)"
->
+onclick="abrirPagina('produtos', this)">
 📦 Produtos
 </button>
 
 <button
-onclick="abrirPagina('mercadolivre', this)"
->
+onclick="abrirPagina('mercadolivre', this)">
 🛒 Mercado Livre
 </button>
 
 <button
-onclick="abrirPagina('shopee', this)"
->
+onclick="abrirPagina('shopee', this)">
 🛍️ Shopee
 </button>
 
 <button
-onclick="abrirPagina('posts', this)"
->
+onclick="abrirPagina('posts', this)">
 📱 Posts
+</button>
+
+<button
+onclick="abrirPagina('configuracoes', this)">
+⚙️ Configurações
 </button>
 
 </div>
@@ -508,40 +331,60 @@ Dashboard
 
 <!-- DASHBOARD -->
 
-<div
-id="dashboard"
-class="page active"
->
+<div id="dashboard" class="page active">
 
 <div class="cards">
 
 <div class="card">
-<h3>Produtos</h3>
+
+<h3>
+Produtos
+</h3>
+
 <strong id="totalProdutos">
 0
 </strong>
+
 </div>
 
 <div class="card">
-<h3>Posts Criados</h3>
-<strong>0</strong>
-</div>
 
-<div class="card">
-<h3>Mercado Livre</h3>
-<strong id="totalMercado">
+<h3>
+Posts Criados
+</h3>
+
+<strong>
 0
 </strong>
+
 </div>
 
 <div class="card">
-<h3>Shopee</h3>
+
+<h3>
+Mercado Livre
+</h3>
+
+<strong id="totalMercadoLivre">
+0
+</strong>
+
+</div>
+
+<div class="card">
+
+<h3>
+Shopee
+</h3>
+
 <strong id="totalShopee">
 0
 </strong>
+
 </div>
 
 </div>
+
 
 <div class="panel">
 
@@ -550,12 +393,13 @@ class="page active"
 </h2>
 
 <p>
-Seu painel de produtos e ofertas.
+Gerencie seus produtos, links e divulgações
+em um único painel.
 </p>
 
 <p>
-Os produtos cadastrados ficam salvos
-no banco de dados PostgreSQL.
+Banco de dados:
+<strong>PostgreSQL conectado</strong>
 </p>
 
 </div>
@@ -565,10 +409,7 @@ no banco de dados PostgreSQL.
 
 <!-- PRODUTOS -->
 
-<div
-id="produtos"
-class="page"
->
+<div id="produtos" class="page">
 
 <div class="panel">
 
@@ -609,11 +450,11 @@ Plataforma
 
 <select id="produtoPlataforma">
 
-<option>
+<option value="Mercado Livre">
 Mercado Livre
 </option>
 
-<option>
+<option value="Shopee">
 Shopee
 </option>
 
@@ -623,7 +464,7 @@ Shopee
 class="primary"
 onclick="cadastrarProduto()"
 >
-💾 Cadastrar Produto
+Cadastrar Produto
 </button>
 
 <div
@@ -653,10 +494,7 @@ Carregando produtos...
 
 <!-- MERCADO LIVRE -->
 
-<div
-id="mercadolivre"
-class="page"
->
+<div id="mercadolivre" class="page">
 
 <div class="panel">
 
@@ -668,7 +506,7 @@ class="page"
 Produtos cadastrados no Mercado Livre.
 </p>
 
-<div id="listaMercado">
+<div id="listaMercadoLivre">
 
 Carregando...
 
@@ -681,10 +519,7 @@ Carregando...
 
 <!-- SHOPEE -->
 
-<div
-id="shopee"
-class="page"
->
+<div id="shopee" class="page">
 
 <div class="panel">
 
@@ -709,10 +544,7 @@ Carregando...
 
 <!-- POSTS -->
 
-<div
-id="posts"
-class="page"
->
+<div id="posts" class="page">
 
 <div class="panel">
 
@@ -758,13 +590,7 @@ onclick="gerarPost()"
 
 <textarea
 id="postResultado"
-style="
-width:100%;
-height:180px;
-padding:15px;
-border:1px solid #ddd;
-border-radius:8px;
-"
+style="width:100%;height:180px;padding:15px;border:1px solid #ddd;border-radius:8px;"
 placeholder="Seu post aparecerá aqui..."
 ></textarea>
 
@@ -773,525 +599,839 @@ placeholder="Seu post aparecerá aqui..."
 </div>
 
 
+<!-- CONFIGURAÇÕES -->
+
+<div id="configuracoes" class="page">
+
+<div class="panel">
+
+<h2>
+⚙️ Configurações
+</h2>
+
+<p>
+Configurações do sistema Eletromax V2.
+</p>
+
+<label>
+Nome da loja
+</label>
+
+<input
+value="Eletromax"
+>
+
+<button
+class="primary"
+>
+Salvar Configurações
+</button>
+
+</div>
+
+</div>
+
 </div>
 
 
 <script>
 
-const API = '';
 
-/* =========================
-   NAVEGAÇÃO
-========================= */
+// =========================
+// NAVEGAÇÃO
+// =========================
 
 function abrirPagina(pagina, botao) {
 
-document
-.querySelectorAll('.page')
-.forEach(function(p) {
+  document
+    .querySelectorAll('.page')
+    .forEach(function(p) {
 
-p.classList.remove('active');
+      p.classList.remove('active');
 
-});
+    });
 
-document
-.getElementById(pagina)
-.classList.add('active');
+  document
+    .getElementById(pagina)
+    .classList.add('active');
 
-document
-.querySelectorAll('.menu button')
-.forEach(function(b) {
 
-b.classList.remove('active');
+  document
+    .querySelectorAll('.menu button')
+    .forEach(function(b) {
 
-});
+      b.classList.remove('active');
 
-if(botao) {
+    });
 
-botao.classList.add('active');
+
+  if (botao) {
+
+    botao.classList.add('active');
+
+  }
+
+
+  const titulos = {
+
+    dashboard: 'Dashboard',
+
+    produtos: 'Produtos',
+
+    mercadolivre: 'Mercado Livre',
+
+    shopee: 'Shopee',
+
+    posts: 'Posts',
+
+    configuracoes: 'Configurações'
+
+  };
+
+
+  document
+    .getElementById('titulo')
+    .innerText = titulos[pagina];
+
+
+  if (pagina === 'produtos') {
+
+    carregarProdutos();
+
+  }
+
+
+  if (pagina === 'mercadolivre') {
+
+    carregarProdutosPlataforma('Mercado Livre');
+
+  }
+
+
+  if (pagina === 'shopee') {
+
+    carregarProdutosPlataforma('Shopee');
+
+  }
 
 }
 
-let titulos = {
 
-dashboard:
-'Dashboard',
-
-produtos:
-'Produtos',
-
-mercadolivre:
-'Mercado Livre',
-
-shopee:
-'Shopee',
-
-posts:
-'Posts'
-
-};
-
-document
-.getElementById('titulo')
-.innerText =
-titulos[pagina];
-
-if(
-pagina === 'produtos' ||
-pagina === 'mercadolivre' ||
-pagina === 'shopee' ||
-pagina === 'dashboard'
-) {
-
-carregarProdutos();
-
-}
-
-}
-
-
-/* =========================
-   CADASTRAR PRODUTO
-========================= */
+// =========================
+// CADASTRAR PRODUTO
+// =========================
 
 async function cadastrarProduto() {
 
-const nome =
-document
-.getElementById('produtoNome')
-.value
-.trim();
-
-const preco =
-document
-.getElementById('produtoPreco')
-.value
-.trim();
-
-const link =
-document
-.getElementById('produtoLink')
-.value
-.trim();
-
-const plataforma =
-document
-.getElementById('produtoPlataforma')
-.value;
-
-const resultado =
-document
-.getElementById('resultadoProduto');
+  const nome =
+    document
+      .getElementById('produtoNome')
+      .value
+      .trim();
 
 
-if(!nome || !link) {
+  const preco =
+    document
+      .getElementById('produtoPreco')
+      .value
+      .trim();
 
-resultado.innerHTML =
-'❌ Preencha o nome e o link.';
 
-return;
+  const link =
+    document
+      .getElementById('produtoLink')
+      .value
+      .trim();
+
+
+  const plataforma =
+    document
+      .getElementById('produtoPlataforma')
+      .value;
+
+
+  const resultado =
+    document
+      .getElementById('resultadoProduto');
+
+
+  if (!nome || !link) {
+
+    resultado.innerText =
+      '❌ Preencha o nome e o link do produto.';
+
+    return;
+
+  }
+
+
+  resultado.innerText =
+    '⏳ Salvando produto...';
+
+
+  try {
+
+    const resposta =
+      await fetch('/api/produtos', {
+
+        method: 'POST',
+
+        headers: {
+
+          'Content-Type':
+            'application/json'
+
+        },
+
+        body: JSON.stringify({
+
+          nome: nome,
+
+          preco: preco,
+
+          link: link,
+
+          plataforma: plataforma
+
+        })
+
+      });
+
+
+    const dados =
+      await resposta.json();
+
+
+    if (!resposta.ok) {
+
+      throw new Error(
+        dados.message ||
+        'Erro ao salvar produto'
+      );
+
+    }
+
+
+    resultado.innerText =
+      '✅ Produto salvo com sucesso!';
+
+
+    document
+      .getElementById('produtoNome')
+      .value = '';
+
+
+    document
+      .getElementById('produtoPreco')
+      .value = '';
+
+
+    document
+      .getElementById('produtoLink')
+      .value = '';
+
+
+    carregarProdutos();
+
+    atualizarDashboard();
+
+
+  } catch (erro) {
+
+    console.error(erro);
+
+
+    resultado.innerText =
+      '❌ Erro ao salvar: ' +
+      erro.message;
+
+  }
 
 }
 
-resultado.innerHTML =
-'⏳ Salvando produto...';
 
-
-try {
-
-const resposta =
-await fetch(
-API + '/api/produtos',
-{
-
-method: 'POST',
-
-headers: {
-
-'Content-Type':
-'application/json'
-
-},
-
-body:
-JSON.stringify({
-
-nome,
-preco,
-link,
-plataforma
-
-})
-
-});
-
-const dados =
-await resposta.json();
-
-
-if(!resposta.ok) {
-
-throw new Error(
-dados.message ||
-'Erro ao salvar'
-);
-
-}
-
-resultado.innerHTML =
-'✅ Produto salvo com sucesso!';
-
-
-document
-.getElementById('produtoNome')
-.value = '';
-
-document
-.getElementById('produtoPreco')
-.value = '';
-
-document
-.getElementById('produtoLink')
-.value = '';
-
-
-carregarProdutos();
-
-
-} catch(erro) {
-
-resultado.innerHTML =
-'❌ ' + erro.message;
-
-}
-
-}
-
-
-/* =========================
-   CARREGAR PRODUTOS
-========================= */
+// =========================
+// LISTAR PRODUTOS
+// =========================
 
 async function carregarProdutos() {
 
-try {
-
-const resposta =
-await fetch(
-API + '/api/produtos'
-);
-
-const dados =
-await resposta.json();
-
-const produtos =
-dados.produtos || [];
+  const lista =
+    document
+      .getElementById('listaProdutos');
 
 
-document
-.getElementById('totalProdutos')
-.innerText =
-produtos.length;
+  lista.innerHTML =
+    '⏳ Carregando...';
 
 
-document
-.getElementById('totalMercado')
-.innerText =
-produtos.filter(
-p =>
-p.plataforma ===
-'Mercado Livre'
-).length;
+  try {
+
+    const resposta =
+      await fetch('/api/produtos');
 
 
-document
-.getElementById('totalShopee')
-.innerText =
-produtos.filter(
-p =>
-p.plataforma ===
-'Shopee'
-).length;
+    const dados =
+      await resposta.json();
 
 
-let html = '';
+    if (!dados.success) {
 
-if(produtos.length === 0) {
+      throw new Error(
+        dados.message ||
+        'Erro ao buscar produtos'
+      );
 
-html =
-'<p>Nenhum produto cadastrado ainda.</p>';
+    }
 
-} else {
 
-produtos.forEach(function(produto) {
+    if (!dados.produtos.length) {
 
-html += `
+      lista.innerHTML =
+        '📦 Nenhum produto cadastrado ainda.';
 
+      return;
+
+    }
+
+
+    lista.innerHTML =
+      dados.produtos
+        .map(function(produto) {
+
+          return `
 <div class="produto">
 
 <h3>
-${produto.nome}
+📦 ${escaparHTML(produto.nome)}
 </h3>
 
 <p>
-💰 ${produto.preco || 'Preço não informado'}
+💰 ${escaparHTML(produto.preco || 'Preço não informado')}
 </p>
 
 <p>
-🏷️ ${produto.plataforma}
+🏷️ ${escaparHTML(produto.plataforma)}
 </p>
 
 <p>
-🔗
 <a
-href="${produto.link}"
+href="${escaparAtributo(produto.link)}"
 target="_blank"
+rel="noopener noreferrer"
 >
-${produto.link}
+🔗 Abrir produto
 </a>
 </p>
 
-<button
-class="excluir"
-onclick="excluirProduto(${produto.id})"
->
-🗑️ Excluir
-</button>
-
 </div>
-
 `;
 
-});
+        })
+        .join('');
+
+
+  } catch (erro) {
+
+    console.error(erro);
+
+
+    lista.innerHTML =
+      '❌ Erro ao carregar produtos: ' +
+      escaparHTML(erro.message);
+
+  }
 
 }
 
 
-document
-.getElementById('listaProdutos')
-.innerHTML =
-html;
+// =========================
+// PRODUTOS POR PLATAFORMA
+// =========================
 
-
-document
-.getElementById('listaMercado')
-.innerHTML =
-produtos
-.filter(
-p =>
-p.plataforma ===
-'Mercado Livre'
-)
-.map(
-p =>
-`
-<div class="produto">
-
-<h3>${p.nome}</h3>
-
-<p>${p.preco || ''}</p>
-
-<a
-href="${p.link}"
-target="_blank"
->
-Abrir produto
-</a>
-
-</div>
-`
-)
-.join('')
-||
-'<p>Nenhum produto do Mercado Livre.</p>';
-
-
-document
-.getElementById('listaShopee')
-.innerHTML =
-produtos
-.filter(
-p =>
-p.plataforma ===
-'Shopee'
-)
-.map(
-p =>
-`
-<div class="produto">
-
-<h3>${p.nome}</h3>
-
-<p>${p.preco || ''}</p>
-
-<a
-href="${p.link}"
-target="_blank"
->
-Abrir produto
-</a>
-
-</div>
-`
-)
-.join('')
-||
-'<p>Nenhum produto da Shopee.</p>';
-
-
-} catch(erro) {
-
-console.error(
-'Erro ao carregar produtos:',
-erro
-);
-
-}
-
-}
-
-
-/* =========================
-   EXCLUIR
-========================= */
-
-async function excluirProduto(id) {
-
-if(
-!confirm(
-'Deseja excluir este produto?'
-)
+async function carregarProdutosPlataforma(
+  plataforma
 ) {
 
-return;
+  const elemento =
+    plataforma === 'Mercado Livre'
+      ? document.getElementById('listaMercadoLivre')
+      : document.getElementById('listaShopee');
+
+
+  elemento.innerHTML =
+    '⏳ Carregando...';
+
+
+  try {
+
+    const resposta =
+      await fetch('/api/produtos');
+
+
+    const dados =
+      await resposta.json();
+
+
+    const produtos =
+      dados.produtos.filter(function(produto) {
+
+        return produto.plataforma === plataforma;
+
+      });
+
+
+    if (!produtos.length) {
+
+      elemento.innerHTML =
+        '📦 Nenhum produto cadastrado nesta plataforma.';
+
+      return;
+
+    }
+
+
+    elemento.innerHTML =
+      produtos
+        .map(function(produto) {
+
+          return `
+<div class="produto">
+
+<h3>
+${escaparHTML(produto.nome)}
+</h3>
+
+<p>
+💰 ${escaparHTML(produto.preco || 'Preço não informado')}
+</p>
+
+<p>
+<a
+href="${escaparAtributo(produto.link)}"
+target="_blank"
+rel="noopener noreferrer"
+>
+🔗 Abrir produto
+</a>
+</p>
+
+</div>
+`;
+
+        })
+        .join('');
+
+
+  } catch (erro) {
+
+    elemento.innerHTML =
+      '❌ Erro ao carregar produtos.';
+
+  }
 
 }
 
-try {
 
-await fetch(
-API + '/api/produtos/' + id,
-{
+// =========================
+// DASHBOARD
+// =========================
 
-method: 'DELETE'
+async function atualizarDashboard() {
 
-});
+  try {
 
-carregarProdutos();
+    const resposta =
+      await fetch('/api/produtos');
 
-} catch(erro) {
 
-alert(
-'Erro ao excluir produto.'
-);
+    const dados =
+      await resposta.json();
+
+
+    const produtos =
+      dados.produtos || [];
+
+
+    document
+      .getElementById('totalProdutos')
+      .innerText =
+        produtos.length;
+
+
+    document
+      .getElementById('totalMercadoLivre')
+      .innerText =
+        produtos.filter(function(p) {
+
+          return p.plataforma === 'Mercado Livre';
+
+        }).length;
+
+
+    document
+      .getElementById('totalShopee')
+      .innerText =
+        produtos.filter(function(p) {
+
+          return p.plataforma === 'Shopee';
+
+        }).length;
+
+
+  } catch (erro) {
+
+    console.error(
+      'Erro ao atualizar dashboard:',
+      erro
+    );
+
+  }
 
 }
 
-}
 
-
-/* =========================
-   GERAR POST
-========================= */
+// =========================
+// GERADOR DE POSTS
+// =========================
 
 function gerarPost() {
 
-const nome =
-document
-.getElementById('postNome')
-.value;
-
-const preco =
-document
-.getElementById('postPreco')
-.value;
-
-const link =
-document
-.getElementById('postLink')
-.value;
+  const nome =
+    document
+      .getElementById('postNome')
+      .value
+      .trim();
 
 
-if(!nome || !link) {
+  const preco =
+    document
+      .getElementById('postPreco')
+      .value
+      .trim();
 
-alert(
-'Preencha o nome e o link.'
+
+  const link =
+    document
+      .getElementById('postLink')
+      .value
+      .trim();
+
+
+  if (!nome || !link) {
+
+    alert(
+      'Preencha o nome e o link.'
+    );
+
+    return;
+
+  }
+
+
+  const texto =
+
+    '🔥 OFERTA IMPERDÍVEL!\\n\\n' +
+
+    '📦 ' + nome + '\\n' +
+
+    '💰 Por apenas ' +
+    (preco || 'consulte o preço') +
+    '\\n\\n' +
+
+    '🛒 COMPRE AQUI:\\n' +
+
+    link + '\\n\\n' +
+
+    '⚡ Eletromax — Ofertas e produtos selecionados!';
+
+
+  document
+    .getElementById('postResultado')
+    .value = texto;
+
+}
+
+
+// =========================
+// SEGURANÇA HTML
+// =========================
+
+function escaparHTML(texto) {
+
+  return String(texto)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+
+}
+
+
+function escaparAtributo(texto) {
+
+  return escaparHTML(texto);
+
+}
+
+
+// =========================
+// CARREGAR AO ABRIR
+// =========================
+
+window.addEventListener(
+  'DOMContentLoaded',
+  function() {
+
+    atualizarDashboard();
+
+  }
 );
-
-return;
-
-}
-
-
-const texto =
-
-'🔥 OFERTA IMPERDÍVEL!\\n\\n' +
-
-'📦 ' +
-nome +
-'\\n' +
-
-'💰 Por apenas ' +
-preco +
-'\\n\\n' +
-
-'🛒 COMPRE AQUI:\\n' +
-
-link +
-'\\n\\n' +
-
-'⚡ Eletromax — Ofertas e produtos selecionados!';
-
-
-document
-.getElementById('postResultado')
-.value =
-texto;
-
-}
-
-
-/* =========================
-   INICIAR
-========================= */
-
-carregarProdutos();
 
 </script>
 
 </body>
 
 </html>
+  `);
+});
 
-`);
+
+// =========================
+// API STATUS
+// =========================
+
+app.get('/api/status', async (req, res) => {
+
+  try {
+
+    await pool.query('SELECT NOW()');
+
+    res.json({
+
+      success: true,
+
+      message:
+        'Eletromax API funcionando!',
+
+      status:
+        'online',
+
+      database:
+        'connected'
+
+    });
+
+  } catch (erro) {
+
+    res.status(500).json({
+
+      success: false,
+
+      message:
+        'Erro na conexão com banco',
+
+      error:
+        erro.message
+
+    });
+
+  }
 
 });
 
 
-/* =========================
-   INICIAR SERVIDOR
-========================= */
+// =========================
+// SALVAR PRODUTO
+// =========================
+
+app.post('/api/produtos', async (req, res) => {
+
+  try {
+
+    const {
+      nome,
+      preco,
+      link,
+      plataforma
+    } = req.body;
+
+
+    if (
+      !nome ||
+      !link ||
+      !plataforma
+    ) {
+
+      return res.status(400).json({
+
+        success: false,
+
+        message:
+          'Nome, link e plataforma são obrigatórios.'
+
+      });
+
+    }
+
+
+    const resultado =
+      await pool.query(
+
+        `
+        INSERT INTO produtos
+        (nome, preco, link, plataforma)
+
+        VALUES
+        ($1, $2, $3, $4)
+
+        RETURNING *
+        `,
+
+        [
+          nome,
+          preco || '',
+          link,
+          plataforma
+        ]
+
+      );
+
+
+    res.status(201).json({
+
+      success: true,
+
+      message:
+        'Produto salvo com sucesso!',
+
+      produto:
+        resultado.rows[0]
+
+    });
+
+
+  } catch (erro) {
+
+    console.error(
+      'ERRO AO SALVAR PRODUTO:',
+      erro.message
+    );
+
+
+    res.status(500).json({
+
+      success: false,
+
+      message:
+        'Erro ao salvar produto.',
+
+      error:
+        erro.message
+
+    });
+
+  }
+
+});
+
+
+// =========================
+// LISTAR PRODUTOS
+// =========================
+
+app.get('/api/produtos', async (req, res) => {
+
+  try {
+
+    const resultado =
+      await pool.query(
+
+        `
+        SELECT *
+        FROM produtos
+        ORDER BY id DESC
+        `
+
+      );
+
+
+    res.json({
+
+      success: true,
+
+      produtos:
+        resultado.rows
+
+    });
+
+
+  } catch (erro) {
+
+    console.error(
+      'ERRO AO BUSCAR PRODUTOS:',
+      erro.message
+    );
+
+
+    res.status(500).json({
+
+      success: false,
+
+      message:
+        'Erro ao buscar produtos.',
+
+      error:
+        erro.message
+
+    });
+
+  }
+
+});
+
+
+// =========================
+// INICIAR SERVIDOR
+// =========================
 
 async function iniciarServidor() {
 
-await inicializarBanco();
+  await inicializarBanco();
 
-app.listen(
-PORT,
-'0.0.0.0',
-() => {
 
-console.log(
-'ELETROMAX V2 NOVO CODIGO'
-);
+  app.listen(
+    PORT,
+    '0.0.0.0',
+    function() {
 
-console.log(
-`Eletromax API rodando na porta ${PORT}`
-);
+      console.log(
+        '================================='
+      );
+
+      console.log(
+        'ELETROMAX V2 INICIADO'
+      );
+
+      console.log(
+        'BANCO POSTGRESQL ATIVO'
+      );
+
+      console.log(
+        'PORTA:',
+        PORT
+      );
+
+      console.log(
+        '================================='
+      );
+
+    }
+  );
 
 }
-);
 
-}
 
 iniciarServidor();
+```
