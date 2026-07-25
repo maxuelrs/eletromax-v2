@@ -1,4 +1,3 @@
-```js
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -15,21 +14,31 @@ app.use(cors());
 app.use(express.json());
 
 // =========================
-// ARQUIVOS DO FRONTEND
+// FRONTEND
 // =========================
 
-app.use(express.static(path.join(__dirname, '../public')));
+// Seu index.html está em:
+// frontend/index.html
+
+app.use(
+  express.static(
+    path.join(__dirname, '../frontend')
+  )
+);
 
 // =========================
 // POSTGRESQL
 // =========================
 
 if (!process.env.DATABASE_URL) {
-  console.error('ERRO: DATABASE_URL não foi configurada.');
+  console.error(
+    'ERRO: DATABASE_URL não foi configurada.'
+  );
 }
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+
   ssl: {
     rejectUnauthorized: false
   }
@@ -40,7 +49,9 @@ const pool = new Pool({
 // =========================
 
 async function inicializarBanco() {
+
   try {
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS produtos (
         id SERIAL PRIMARY KEY,
@@ -52,19 +63,27 @@ async function inicializarBanco() {
       )
     `);
 
-    console.log('BANCO DE DADOS CONECTADO');
-    console.log('TABELA PRODUTOS PRONTA');
+    console.log(
+      'BANCO DE DADOS CONECTADO'
+    );
+
+    console.log(
+      'TABELA PRODUTOS PRONTA'
+    );
 
     return true;
 
   } catch (erro) {
+
     console.error(
       'ERRO AO INICIALIZAR BANCO:',
       erro.message
     );
 
     return false;
+
   }
+
 }
 
 // =========================
@@ -72,9 +91,14 @@ async function inicializarBanco() {
 // =========================
 
 app.get('/', (req, res) => {
+
   res.sendFile(
-    path.join(__dirname, '../public/index.html')
+    path.join(
+      __dirname,
+      '../frontend/index.html'
+    )
   );
+
 });
 
 // =========================
@@ -82,28 +106,49 @@ app.get('/', (req, res) => {
 // =========================
 
 app.get('/api/status', async (req, res) => {
+
   try {
-    await pool.query('SELECT NOW()');
+
+    await pool.query(
+      'SELECT NOW()'
+    );
 
     res.json({
+
       success: true,
-      message: 'Eletromax API funcionando!',
-      status: 'online',
-      database: 'connected'
+
+      message:
+        'Eletromax API funcionando!',
+
+      status:
+        'online',
+
+      database:
+        'connected'
+
     });
 
   } catch (erro) {
+
     console.error(
       'ERRO STATUS:',
       erro.message
     );
 
     res.status(500).json({
+
       success: false,
-      message: 'Erro na conexão com banco',
-      error: erro.message
+
+      message:
+        'Erro na conexão com banco',
+
+      error:
+        erro.message
+
     });
+
   }
+
 });
 
 // =========================
@@ -111,7 +156,9 @@ app.get('/api/status', async (req, res) => {
 // =========================
 
 app.post('/api/produtos', async (req, res) => {
+
   try {
+
     const {
       nome,
       preco,
@@ -119,47 +166,94 @@ app.post('/api/produtos', async (req, res) => {
       plataforma
     } = req.body;
 
-    if (!nome || !link || !plataforma) {
+    // Validação
+
+    if (
+      !nome ||
+      !link ||
+      !plataforma
+    ) {
+
       return res.status(400).json({
+
         success: false,
+
         message:
           'Nome, link e plataforma são obrigatórios.'
+
       });
+
     }
 
+    // Salvar no banco
+
     const resultado = await pool.query(
+
       `
       INSERT INTO produtos
-      (nome, preco, link, plataforma)
-      VALUES ($1, $2, $3, $4)
+      (
+        nome,
+        preco,
+        link,
+        plataforma
+      )
+      VALUES
+      (
+        $1,
+        $2,
+        $3,
+        $4
+      )
       RETURNING *
       `,
+
       [
         nome.trim(),
-        preco ? preco.trim() : '',
+
+        preco
+          ? preco.trim()
+          : '',
+
         link.trim(),
+
         plataforma.trim()
       ]
+
     );
 
     res.status(201).json({
+
       success: true,
-      message: 'Produto salvo com sucesso!',
-      produto: resultado.rows[0]
+
+      message:
+        'Produto salvo com sucesso!',
+
+      produto:
+        resultado.rows[0]
+
     });
 
   } catch (erro) {
+
     console.error(
       'ERRO AO SALVAR PRODUTO:',
       erro.message
     );
 
     res.status(500).json({
+
       success: false,
-      message: 'Erro ao salvar produto.',
-      error: erro.message
+
+      message:
+        'Erro ao salvar produto.',
+
+      error:
+        erro.message
+
     });
+
   }
+
 });
 
 // =========================
@@ -167,95 +261,176 @@ app.post('/api/produtos', async (req, res) => {
 // =========================
 
 app.get('/api/produtos', async (req, res) => {
+
   try {
+
     const resultado = await pool.query(
+
       `
       SELECT *
       FROM produtos
       ORDER BY id DESC
       `
+
     );
 
     res.json({
+
       success: true,
-      produtos: resultado.rows
+
+      produtos:
+        resultado.rows
+
     });
 
   } catch (erro) {
+
     console.error(
       'ERRO AO BUSCAR PRODUTOS:',
       erro.message
     );
 
     res.status(500).json({
+
       success: false,
-      message: 'Erro ao buscar produtos.',
-      error: erro.message
+
+      message:
+        'Erro ao buscar produtos.',
+
+      error:
+        erro.message
+
     });
+
   }
+
 });
 
 // =========================
 // DELETAR PRODUTO
 // =========================
 
-app.delete('/api/produtos/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
+app.delete(
+  '/api/produtos/:id',
+  async (req, res) => {
 
-    const resultado = await pool.query(
-      `
-      DELETE FROM produtos
-      WHERE id = $1
-      RETURNING *
-      `,
-      [id]
-    );
+    try {
 
-    if (resultado.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        message: 'Produto não encontrado.'
+      const {
+        id
+      } = req.params;
+
+      const resultado =
+        await pool.query(
+
+          `
+          DELETE FROM produtos
+          WHERE id = $1
+          RETURNING *
+          `,
+
+          [
+            id
+          ]
+
+        );
+
+      if (
+        resultado.rows.length === 0
+      ) {
+
+        return res.status(404).json({
+
+          success: false,
+
+          message:
+            'Produto não encontrado.'
+
+        });
+
+      }
+
+      res.json({
+
+        success: true,
+
+        message:
+          'Produto excluído com sucesso!',
+
+        produto:
+          resultado.rows[0]
+
       });
+
+    } catch (erro) {
+
+      console.error(
+        'ERRO AO DELETAR PRODUTO:',
+        erro.message
+      );
+
+      res.status(500).json({
+
+        success: false,
+
+        message:
+          'Erro ao excluir produto.',
+
+        error:
+          erro.message
+
+      });
+
     }
 
-    res.json({
-      success: true,
-      message: 'Produto excluído com sucesso!',
-      produto: resultado.rows[0]
-    });
-
-  } catch (erro) {
-    console.error(
-      'ERRO AO DELETAR PRODUTO:',
-      erro.message
-    );
-
-    res.status(500).json({
-      success: false,
-      message: 'Erro ao excluir produto.',
-      error: erro.message
-    });
   }
-});
+);
+
+// =========================
+// ROTA 404 DA API
+// =========================
+
+app.use(
+  '/api',
+  (req, res) => {
+
+    res.status(404).json({
+
+      success: false,
+
+      message:
+        'Rota da API não encontrada.'
+
+    });
+
+  }
+);
 
 // =========================
 // INICIAR SERVIDOR
 // =========================
 
 async function iniciarServidor() {
-  const bancoOK = await inicializarBanco();
+
+  const bancoOK =
+    await inicializarBanco();
 
   if (!bancoOK) {
+
     console.error(
       'ATENÇÃO: O banco apresentou erro.'
     );
+
   }
 
   app.listen(
+
     PORT,
+
     '0.0.0.0',
+
     () => {
+
       console.log(
         '================================='
       );
@@ -276,9 +451,11 @@ async function iniciarServidor() {
       console.log(
         '================================='
       );
+
     }
+
   );
+
 }
 
 iniciarServidor();
-```
