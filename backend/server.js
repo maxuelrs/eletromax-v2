@@ -48,13 +48,11 @@ async function inicializarBanco() {
 inicializarBanco();
 
 /* =========================
-   API - STATUS
+   API STATUS
 ========================= */
 
 app.get('/api/status', async (req, res) => {
-
   try {
-
     await pool.query('SELECT NOW()');
 
     res.json({
@@ -65,26 +63,21 @@ app.get('/api/status', async (req, res) => {
     });
 
   } catch (erro) {
-
     res.status(500).json({
       success: false,
       status: 'online',
       database: 'error',
       message: erro.message
     });
-
   }
-
 });
 
 /* =========================
-   API - LISTAR PRODUTOS
+   LISTAR PRODUTOS
 ========================= */
 
 app.get('/api/produtos', async (req, res) => {
-
   try {
-
     const resultado = await pool.query(
       'SELECT * FROM produtos ORDER BY id DESC'
     );
@@ -92,25 +85,20 @@ app.get('/api/produtos', async (req, res) => {
     res.json(resultado.rows);
 
   } catch (erro) {
-
-    console.error(erro);
+    console.error('Erro ao buscar produtos:', erro);
 
     res.status(500).json({
       error: 'Erro ao buscar produtos'
     });
-
   }
-
 });
 
 /* =========================
-   API - CADASTRAR PRODUTO
+   CADASTRAR PRODUTO
 ========================= */
 
 app.post('/api/produtos', async (req, res) => {
-
   try {
-
     const {
       nome,
       preco,
@@ -119,11 +107,9 @@ app.post('/api/produtos', async (req, res) => {
     } = req.body;
 
     if (!nome || !link || !plataforma) {
-
       return res.status(400).json({
         error: 'Nome, link e plataforma são obrigatórios.'
       });
-
     }
 
     const resultado = await pool.query(
@@ -144,25 +130,21 @@ app.post('/api/produtos', async (req, res) => {
     res.status(201).json(resultado.rows[0]);
 
   } catch (erro) {
-
-    console.error(erro);
+    console.error('Erro ao cadastrar produto:', erro);
 
     res.status(500).json({
-      error: 'Erro ao cadastrar produto'
+      error: 'Erro ao cadastrar produto',
+      details: erro.message
     });
-
   }
-
 });
 
 /* =========================
-   API - EXCLUIR PRODUTO
+   EXCLUIR PRODUTO
 ========================= */
 
 app.delete('/api/produtos/:id', async (req, res) => {
-
   try {
-
     const { id } = req.params;
 
     const resultado = await pool.query(
@@ -171,11 +153,9 @@ app.delete('/api/produtos/:id', async (req, res) => {
     );
 
     if (resultado.rows.length === 0) {
-
       return res.status(404).json({
         error: 'Produto não encontrado'
       });
-
     }
 
     res.json({
@@ -184,25 +164,20 @@ app.delete('/api/produtos/:id', async (req, res) => {
     });
 
   } catch (erro) {
-
-    console.error(erro);
+    console.error('Erro ao excluir produto:', erro);
 
     res.status(500).json({
       error: 'Erro ao excluir produto'
     });
-
   }
-
 });
 
 /* =========================
-   API - ESTATÍSTICAS
+   ESTATÍSTICAS
 ========================= */
 
 app.get('/api/estatisticas', async (req, res) => {
-
   try {
-
     const total = await pool.query(
       'SELECT COUNT(*) FROM produtos'
     );
@@ -225,15 +200,12 @@ app.get('/api/estatisticas', async (req, res) => {
     });
 
   } catch (erro) {
-
-    console.error(erro);
+    console.error('Erro nas estatísticas:', erro);
 
     res.status(500).json({
       error: 'Erro ao buscar estatísticas'
     });
-
   }
-
 });
 
 /* =========================
@@ -241,19 +213,18 @@ app.get('/api/estatisticas', async (req, res) => {
 ========================= */
 
 app.get('/', (req, res) => {
-
-res.send(`
-
+  res.send(`
 <!DOCTYPE html>
-
 <html lang="pt-BR">
 
 <head>
 
 <meta charset="UTF-8">
 
-<meta name="viewport"
-content="width=device-width, initial-scale=1.0">
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0"
+>
 
 <title>Eletromax V2</title>
 
@@ -503,35 +474,46 @@ textarea {
 
 <div class="menu">
 
-<button class="active"
-onclick="abrirPagina('dashboard', this)">
+<button
+class="active"
+onclick="abrirPagina('dashboard', this)"
+>
 🏠 Dashboard
 </button>
 
-<button onclick="abrirPagina('produtos', this)">
+<button
+onclick="abrirPagina('produtos', this)"
+>
 📦 Produtos
 </button>
 
-<button onclick="abrirPagina('mercadolivre', this)">
+<button
+onclick="abrirPagina('mercadolivre', this)"
+>
 🛒 Mercado Livre
 </button>
 
-<button onclick="abrirPagina('shopee', this)">
+<button
+onclick="abrirPagina('shopee', this)"
+>
 🛍️ Shopee
 </button>
 
-<button onclick="abrirPagina('posts', this)">
+<button
+onclick="abrirPagina('posts', this)"
+>
 📱 Posts
 </button>
 
-<button onclick="abrirPagina('configuracoes', this)">
+<button
+onclick="abrirPagina('configuracoes', this)"
+>
 ⚙️ Configurações
 </button>
 
 </div>
 
 </div>
-
 
 <div class="main">
 
@@ -550,14 +532,18 @@ Dashboard
 
 <!-- DASHBOARD -->
 
-<div id="dashboard"
-class="page active">
+<div
+id="dashboard"
+class="page active"
+>
 
 <div class="cards">
 
 <div class="card">
 
-<h3>Produtos</h3>
+<h3>
+Produtos
+</h3>
 
 <strong id="totalProdutos">
 0
@@ -567,7 +553,9 @@ class="page active">
 
 <div class="card">
 
-<h3>Posts Criados</h3>
+<h3>
+Posts Criados
+</h3>
 
 <strong>
 0
@@ -577,7 +565,9 @@ class="page active">
 
 <div class="card">
 
-<h3>Mercado Livre</h3>
+<h3>
+Mercado Livre
+</h3>
 
 <strong id="totalMercadoLivre">
 0
@@ -587,7 +577,9 @@ class="page active">
 
 <div class="card">
 
-<h3>Shopee</h3>
+<h3>
+Shopee
+</h3>
 
 <strong id="totalShopee">
 0
@@ -596,7 +588,6 @@ class="page active">
 </div>
 
 </div>
-
 
 <div class="panel">
 
@@ -616,8 +607,10 @@ em um único painel.
 
 <!-- PRODUTOS -->
 
-<div id="produtos"
-class="page">
+<div
+id="produtos"
+class="page"
+>
 
 <div class="panel">
 
@@ -631,7 +624,8 @@ Nome do produto
 
 <input
 id="produtoNome"
-placeholder="Ex: Câmera Dome Hikvision">
+placeholder="Ex: Câmera Dome Hikvision"
+>
 
 <label>
 Preço
@@ -639,7 +633,8 @@ Preço
 
 <input
 id="produtoPreco"
-placeholder="Ex: R$ 85,49">
+placeholder="Ex: R$ 85,49"
+>
 
 <label>
 Link do produto
@@ -647,7 +642,8 @@ Link do produto
 
 <input
 id="produtoLink"
-placeholder="Cole o link do produto">
+placeholder="Cole o link do produto"
+>
 
 <label>
 Plataforma
@@ -667,7 +663,8 @@ Shopee
 
 <button
 class="primary"
-onclick="cadastrarProduto()">
+onclick="cadastrarProduto()"
+>
 
 Cadastrar Produto
 
@@ -678,7 +675,6 @@ Cadastrar Produto
 
 </div>
 
-
 <div class="panel">
 
 <h2>
@@ -686,9 +682,7 @@ Cadastrar Produto
 </h2>
 
 <div id="listaProdutos">
-
 Carregando produtos...
-
 </div>
 
 </div>
@@ -698,8 +692,10 @@ Carregando produtos...
 
 <!-- MERCADO LIVRE -->
 
-<div id="mercadolivre"
-class="page">
+<div
+id="mercadolivre"
+class="page"
+>
 
 <div class="panel">
 
@@ -722,8 +718,10 @@ Carregando...
 
 <!-- SHOPEE -->
 
-<div id="shopee"
-class="page">
+<div
+id="shopee"
+class="page"
+>
 
 <div class="panel">
 
@@ -746,8 +744,10 @@ Carregando...
 
 <!-- POSTS -->
 
-<div id="posts"
-class="page">
+<div
+id="posts"
+class="page"
+>
 
 <div class="panel">
 
@@ -761,7 +761,8 @@ Nome do produto
 
 <input
 id="postNome"
-placeholder="Nome do produto">
+placeholder="Nome do produto"
+>
 
 <label>
 Preço
@@ -769,7 +770,8 @@ Preço
 
 <input
 id="postPreco"
-placeholder="R$ 99,90">
+placeholder="R$ 99,90"
+>
 
 <label>
 Link
@@ -777,11 +779,13 @@ Link
 
 <input
 id="postLink"
-placeholder="Link do produto">
+placeholder="Link do produto"
+>
 
 <button
 class="primary"
-onclick="gerarPost()">
+onclick="gerarPost()"
+>
 
 🤖 Gerar Post
 
@@ -791,8 +795,8 @@ onclick="gerarPost()">
 
 <textarea
 id="postResultado"
-placeholder="Seu post aparecerá aqui...">
-</textarea>
+placeholder="Seu post aparecerá aqui..."
+></textarea>
 
 </div>
 
@@ -801,8 +805,10 @@ placeholder="Seu post aparecerá aqui...">
 
 <!-- CONFIGURAÇÕES -->
 
-<div id="configuracoes"
-class="page">
+<div
+id="configuracoes"
+class="page"
+>
 
 <div class="panel">
 
@@ -948,7 +954,9 @@ return;
 try {
 
 const resposta =
-await fetch('/api/produtos', {
+await fetch(
+'/api/produtos',
+{
 
 method: 'POST',
 
@@ -1009,15 +1017,15 @@ document
 .value = '';
 
 
-carregarProdutos();
+await carregarProdutos();
 
-carregarEstatisticas();
+await carregarEstatisticas();
 
 
 } catch(erro) {
 
 alert(
-'Erro: ' +
+'Erro ao cadastrar produto: ' +
 erro.message
 );
 
@@ -1038,6 +1046,16 @@ const resposta =
 await fetch(
 '/api/produtos'
 );
+
+
+if(!resposta.ok) {
+
+throw new Error(
+'Erro HTTP ' + resposta.status
+);
+
+}
+
 
 produtos =
 await resposta.json();
@@ -1090,7 +1108,9 @@ ${produto.plataforma}
 
 <a
 href="${produto.link}"
-target="_blank">
+target="_blank"
+rel="noopener noreferrer"
+>
 
 ${produto.link}
 
@@ -1100,7 +1120,8 @@ ${produto.link}
 
 <button
 class="danger"
-onclick="excluirProduto(${produto.id})">
+onclick="excluirProduto(${produto.id})"
+>
 
 Excluir
 
@@ -1117,6 +1138,8 @@ Excluir
 
 
 } catch(erro) {
+
+console.error(erro);
 
 document
 .getElementById(
@@ -1157,23 +1180,29 @@ method: 'DELETE'
 });
 
 
+const dados =
+await resposta.json();
+
+
 if(!resposta.ok) {
 
 throw new Error(
+dados.error ||
 'Erro ao excluir produto'
 );
 
 }
 
 
-carregarProdutos();
+await carregarProdutos();
 
-carregarEstatisticas();
+await carregarEstatisticas();
 
 
 } catch(erro) {
 
 alert(
+'Erro ao excluir produto: ' +
 erro.message
 );
 
@@ -1196,6 +1225,7 @@ const resposta =
 await fetch(
 '/api/produtos'
 );
+
 
 const dados =
 await resposta.json();
@@ -1242,13 +1272,21 @@ ${produto.nome}
 
 <br><br>
 
+<span class="badge">
+${produto.plataforma}
+</span>
+
+<br><br>
+
 💰 ${produto.preco || 'Preço não informado'}
 
 <br><br>
 
 <a
 href="${produto.link}"
-target="_blank">
+target="_blank"
+rel="noopener noreferrer"
+>
 
 Abrir produto
 
@@ -1283,6 +1321,7 @@ const resposta =
 await fetch(
 '/api/estatisticas'
 );
+
 
 const dados =
 await resposta.json();
@@ -1405,14 +1444,12 @@ carregarProdutos();
 </body>
 
 </html>
-
-`);
-
+  `);
 });
 
 
 /* =========================
-   SERVIDOR
+   INICIAR SERVIDOR
 ========================= */
 
 app.listen(
