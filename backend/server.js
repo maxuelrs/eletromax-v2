@@ -12,18 +12,6 @@ app.use(express.json());
 /* =========================
    CONEXÃO POSTGRESQL
 ========================= */
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
-});
-
-/* =========================
-   CRIAR TABELA
-========================= */
-
 async function inicializarBanco() {
   try {
     await pool.query(`
@@ -47,6 +35,18 @@ async function inicializarBanco() {
     );
   }
 }
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
+
+/* =========================
+   CRIAR TABELA
+========================= */
+
+
 
 /* =========================
    STATUS
