@@ -1,320 +1,19 @@
-```js
 const express = require('express');
 const cors = require('cors');
-const { Pool } = require('pg');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-/* =========================
-   MIDDLEWARES
-========================= */
-
 app.use(cors());
 app.use(express.json());
 
-/* =========================
-   POSTGRESQL
-========================= */
-
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL
-    ? { rejectUnauthorized: false }
-    : false
-});
-
-/* =========================
-   BANCO DE DADOS
-========================= */
-
-async function inicializarBanco() {
-  try {
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS produtos (
-        id SERIAL PRIMARY KEY,
-        nome TEXT NOT NULL,
-        preco TEXT,
-        link TEXT NOT NULL,
-        plataforma TEXT NOT NULL,
-        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    console.log('Banco de dados conectado.');
-    console.log('Tabela produtos pronta.');
-
-  } catch (erro) {
-    console.error(
-      'Erro ao inicializar banco:',
-      erro.message
-    );
-  }
-}
-
-/* =========================
-   STATUS DA API
-========================= */
-
-app.get('/api/status', async (req, res) => {
-  try {
-    await pool.query('SELECT NOW()');
-
-    res.json({
-      success: true,
-      message: 'Eletromax API funcionando!',
-      status: 'online',
-      database: 'connected'
-    });
-
-  } catch (erro) {
-
-    console.error(
-      'Erro no banco:',
-      erro.message
-    );
-
-    res.status(500).json({
-      success: false,
-      message: 'API online, mas banco não conectado.',
-      status: 'online',
-      database: 'error',
-      error: erro.message
-    });
-  }
-});
-
-/* =========================
-   LISTAR PRODUTOS
-========================= */
-
-app.get('/api/produtos', async (req, res) => {
-
-  try {
-
-    const resultado = await pool.query(`
-      SELECT *
-      FROM produtos
-      ORDER BY id DESC
-    `);
-
-    res.json(resultado.rows);
-
-  } catch (erro) {
-
-    console.error(
-      'Erro ao buscar produtos:',
-      erro.message
-    );
-
-    res.status(500).json({
-      error: 'Erro ao buscar produtos.',
-      details: erro.message
-    });
-
-  }
-
-});
-
-/* =========================
-   CADASTRAR PRODUTO
-========================= */
-
-app.post('/api/produtos', async (req, res) => {
-
-  try {
-
-    const {
-      nome,
-      preco,
-      link,
-      plataforma
-    } = req.body;
-
-    if (!nome || !link || !plataforma) {
-
-      return res.status(400).json({
-        error:
-          'Nome, link e plataforma são obrigatórios.'
-      });
-
-    }
-
-    const resultado = await pool.query(
-      `
-      INSERT INTO produtos
-      (
-        nome,
-        preco,
-        link,
-        plataforma
-      )
-      VALUES ($1, $2, $3, $4)
-      RETURNING *
-      `,
-      [
-        nome,
-        preco || '',
-        link,
-        plataforma
-      ]
-    );
-
-    console.log(
-      'Produto cadastrado:',
-      resultado.rows[0]
-    );
-
-    res.status(201).json({
-      success: true,
-      message: 'Produto cadastrado com sucesso!',
-      produto: resultado.rows[0]
-    });
-
-  } catch (erro) {
-
-    console.error(
-      'Erro ao cadastrar produto:',
-      erro.message
-    );
-
-    res.status(500).json({
-      success: false,
-      error: 'Erro ao cadastrar produto.',
-      details: erro.message
-    });
-
-  }
-
-});
-
-/* =========================
-   EXCLUIR PRODUTO
-========================= */
-
-app.delete('/api/produtos/:id', async (req, res) => {
-
-  try {
-
-    const { id } = req.params;
-
-    const resultado = await pool.query(
-      `
-      DELETE FROM produtos
-      WHERE id = $1
-      RETURNING *
-      `,
-      [id]
-    );
-
-    if (resultado.rows.length === 0) {
-
-      return res.status(404).json({
-        error: 'Produto não encontrado.'
-      });
-
-    }
-
-    res.json({
-      success: true,
-      message: 'Produto excluído com sucesso!',
-      produto: resultado.rows[0]
-    });
-
-  } catch (erro) {
-
-    console.error(
-      'Erro ao excluir produto:',
-      erro.message
-    );
-
-    res.status(500).json({
-      error: 'Erro ao excluir produto.',
-      details: erro.message
-    });
-
-  }
-
-});
-
-/* =========================
-   ESTATÍSTICAS
-========================= */
-
-app.get('/api/estatisticas', async (req, res) => {
-
-  try {
-
-    const total =
-      await pool.query(
-        'SELECT COUNT(*) FROM produtos'
-      );
-
-    const mercadoLivre =
-      await pool.query(`
-        SELECT COUNT(*)
-        FROM produtos
-        WHERE plataforma = 'Mercado Livre'
-      `);
-
-    const shopee =
-      await pool.query(`
-        SELECT COUNT(*)
-        FROM produtos
-        WHERE plataforma = 'Shopee'
-      `);
-
-    res.json({
-
-      produtos:
-        Number(total.rows[0].count),
-
-      mercadoLivre:
-        Number(mercadoLivre.rows[0].count),
-
-      shopee:
-        Number(shopee.rows[0].count),
-
-      posts: 0
-
-    });
-
-  } catch (erro) {
-
-    console.error(
-      'Erro nas estatísticas:',
-      erro.message
-    );
-
-    res.status(500).json({
-      error: 'Erro ao buscar estatísticas.',
-      details: erro.message
-    });
-
-  }
-
-});
-
-/* =========================
-   PAINEL ELETROMAX
-========================= */
-
 app.get('/', (req, res) => {
-
   res.send(`
-
 <!DOCTYPE html>
-
 <html lang="pt-BR">
-
 <head>
-
 <meta charset="UTF-8">
-
-<meta
-name="viewport"
-content="width=device-width, initial-scale=1.0"
->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Eletromax V2</title>
 
@@ -380,31 +79,34 @@ body {
   margin-bottom: 30px;
 }
 
+.header h1 {
+  margin: 0;
+}
+
 .status {
   background: #dcfce7;
   color: #166534;
   padding: 9px 15px;
   border-radius: 20px;
+  font-size: 14px;
 }
 
 .cards {
   display: grid;
-  grid-template-columns:
-    repeat(4, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 20px;
   margin-bottom: 30px;
 }
 
-.card,
-.panel {
+.card {
   background: white;
-  padding: 25px;
+  padding: 22px;
   border-radius: 15px;
-  box-shadow:
-    0 4px 15px rgba(0,0,0,.06);
+  box-shadow: 0 4px 15px rgba(0,0,0,.06);
 }
 
 .card h3 {
+  margin-top: 0;
   color: #6b7280;
   font-size: 14px;
 }
@@ -413,33 +115,51 @@ body {
   font-size: 28px;
 }
 
-input,
-select {
-  width: 100%;
-  padding: 12px;
-  margin:
-    8px 0 15px;
-  border:
-    1px solid #d1d5db;
-  border-radius: 7px;
+.panel {
+  background: white;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 4px 15px rgba(0,0,0,.06);
 }
 
-button.primary {
+.panel h2 {
+  margin-top: 0;
+}
+
+.platforms {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.platform {
+  padding: 25px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.platform button {
+  border: none;
   background: #2563eb;
   color: white;
-  border: none;
-  padding:
-    12px 20px;
+  padding: 10px 18px;
   border-radius: 7px;
   cursor: pointer;
 }
 
-button.danger {
-  background: #dc2626;
+input, select {
+  width: 100%;
+  padding: 12px;
+  margin: 8px 0 15px;
+  border: 1px solid #d1d5db;
+  border-radius: 7px;
+}
+
+.primary {
+  background: #2563eb;
   color: white;
   border: none;
-  padding:
-    8px 12px;
+  padding: 12px 20px;
   border-radius: 7px;
   cursor: pointer;
 }
@@ -452,49 +172,11 @@ button.danger {
   display: block;
 }
 
-.produto {
-  border:
-    1px solid #e5e7eb;
-  padding: 15px;
-  border-radius: 10px;
-  margin-top: 10px;
-}
-
-.produto-topo {
-  display: flex;
-  justify-content: space-between;
-  gap: 15px;
-}
-
-.badge {
-  display: inline-block;
-  background: #eff6ff;
-  color: #1d4ed8;
-  padding: 5px 10px;
-  border-radius: 15px;
-  font-size: 12px;
-}
-
-a {
-  color: #2563eb;
-  word-break: break-all;
-}
-
-textarea {
-  width: 100%;
-  height: 180px;
-  padding: 15px;
-  border:
-    1px solid #ddd;
-  border-radius: 8px;
-}
-
 @media(max-width: 800px) {
 
   .sidebar {
     width: 70px;
-    padding:
-      15px 8px;
+    padding: 15px 8px;
   }
 
   .logo {
@@ -521,72 +203,60 @@ textarea {
   }
 
   .cards {
-    grid-template-columns:
-      1fr 1fr;
+    grid-template-columns: 1fr 1fr;
   }
 
-  .produto-topo {
-    flex-direction: column;
+  .platforms {
+    grid-template-columns: 1fr;
   }
 
 }
 
 </style>
-
 </head>
 
 <body>
 
 <div class="sidebar">
 
-<div class="logo">
-⚡ Eletromax
-</div>
+<div class="logo">⚡ Eletromax</div>
 
 <div class="menu">
 
-<button
-class="active"
-onclick="abrirPagina('dashboard', this)"
->
+<button class="active" onclick="abrirPagina('dashboard', this)">
 🏠 Dashboard
 </button>
 
-<button
-onclick="abrirPagina('produtos', this)"
->
+<button onclick="abrirPagina('produtos', this)">
 📦 Produtos
 </button>
 
-<button
-onclick="abrirPagina('mercadolivre', this)"
->
+<button onclick="abrirPagina('mercadolivre', this)">
 🛒 Mercado Livre
 </button>
 
-<button
-onclick="abrirPagina('shopee', this)"
->
+<button onclick="abrirPagina('shopee', this)">
 🛍️ Shopee
 </button>
 
-<button
-onclick="abrirPagina('posts', this)"
->
+<button onclick="abrirPagina('posts', this)">
 📱 Posts
+</button>
+
+<button onclick="abrirPagina('configuracoes', this)">
+⚙️ Configurações
 </button>
 
 </div>
 
 </div>
+
 
 <div class="main">
 
 <div class="header">
 
-<h1 id="titulo">
-Dashboard
-</h1>
+<h1 id="titulo">Dashboard</h1>
 
 <div class="status">
 ● Sistema Online
@@ -594,16 +264,16 @@ Dashboard
 
 </div>
 
-<div
-id="dashboard"
-class="page active"
->
+
+<!-- DASHBOARD -->
+
+<div id="dashboard" class="page active">
 
 <div class="cards">
 
 <div class="card">
 <h3>Produtos</h3>
-<strong id="totalProdutos">0</strong>
+<strong>0</strong>
 </div>
 
 <div class="card">
@@ -613,194 +283,180 @@ class="page active"
 
 <div class="card">
 <h3>Mercado Livre</h3>
-<strong id="totalMercadoLivre">0</strong>
+<strong>0</strong>
 </div>
 
 <div class="card">
 <h3>Shopee</h3>
-<strong id="totalShopee">0</strong>
+<strong>0</strong>
 </div>
 
 </div>
+
 
 <div class="panel">
 
-<h2>
-🚀 Central Eletromax V2
-</h2>
+<h2>🚀 Central Eletromax V2</h2>
 
 <p>
-Gerencie seus produtos, links e
-divulgações em um único painel.
+Gerencie seus produtos, links e divulgações
+em um único painel.
 </p>
 
+<div class="platforms">
+
+<div class="platform">
+
+<h3>🛒 Mercado Livre</h3>
+
+<p>
+Cadastre seus produtos e links de afiliado.
+</p>
+
+<button onclick="abrirPagina('mercadolivre')">
+Acessar
+</button>
+
+</div>
+
+
+<div class="platform">
+
+<h3>🛍️ Shopee</h3>
+
+<p>
+Gerencie produtos e links da Shopee.
+</p>
+
+<button onclick="abrirPagina('shopee')">
+Acessar
+</button>
+
+</div>
+
 </div>
 
 </div>
 
-<div
-id="produtos"
-class="page"
->
+</div>
+
+
+<!-- PRODUTOS -->
+
+<div id="produtos" class="page">
 
 <div class="panel">
 
-<h2>
-📦 Cadastrar Produto
-</h2>
+<h2>📦 Cadastrar Produto</h2>
 
-<label>
-Nome do produto
-</label>
+<label>Nome do produto</label>
 
-<input
-id="produtoNome"
-placeholder="Ex: Câmera Dome Hikvision"
->
+<input id="produtoNome" placeholder="Ex: Câmera Dome Hikvision">
 
-<label>
-Preço
-</label>
+<label>Preço</label>
 
-<input
-id="produtoPreco"
-placeholder="Ex: R$ 85,49"
->
+<input id="produtoPreco" placeholder="Ex: R$ 85,49">
 
-<label>
-Link do produto
-</label>
+<label>Link do produto</label>
 
-<input
-id="produtoLink"
-placeholder="Cole o link do produto"
->
+<input id="produtoLink" placeholder="Cole o link do Mercado Livre ou Shopee">
 
-<label>
-Plataforma
-</label>
+<label>Plataforma</label>
 
-<select
-id="produtoPlataforma"
->
+<select id="produtoPlataforma">
 
-<option>
-Mercado Livre
-</option>
+<option>Mercado Livre</option>
 
-<option>
-Shopee
-</option>
+<option>Shopee</option>
 
 </select>
 
-<button
-class="primary"
-onclick="cadastrarProduto()"
->
-
+<button class="primary" onclick="cadastrarProduto()">
 Cadastrar Produto
-
 </button>
 
-<p
-id="resultadoProduto"
->
+<p id="resultadoProduto"></p>
+
+</div>
+
+</div>
+
+
+<!-- MERCADO LIVRE -->
+
+<div id="mercadolivre" class="page">
+
+<div class="panel">
+
+<h2>🛒 Mercado Livre</h2>
+
+<p>
+Área preparada para integração com Mercado Livre.
 </p>
 
+<input placeholder="Cole aqui o link do produto">
+
+<button class="primary">
+Adicionar Produto
+</button>
+
 </div>
+
+</div>
+
+
+<!-- SHOPEE -->
+
+<div id="shopee" class="page">
 
 <div class="panel">
 
-<h2>
-📋 Produtos cadastrados
-</h2>
+<h2>🛍️ Shopee</h2>
 
-<div id="listaProdutos">
-Carregando...
+<p>
+Área preparada para integração com Shopee.
+</p>
+
+<input placeholder="Cole aqui o link do produto">
+
+<button class="primary">
+Adicionar Produto
+</button>
+
 </div>
 
 </div>
 
-</div>
 
-<div
-id="mercadolivre"
-class="page"
->
+<!-- POSTS -->
+
+<div id="posts" class="page">
 
 <div class="panel">
 
-<h2>
-🛒 Mercado Livre
-</h2>
+<h2>📱 Gerador de Posts</h2>
 
-<div id="listaMercadoLivre">
-Carregando...
-</div>
+<label>Nome do produto</label>
 
-</div>
+<input id="postNome" placeholder="Nome do produto">
 
-</div>
+<label>Preço</label>
 
-<div
-id="shopee"
-class="page"
->
+<input id="postPreco" placeholder="R$ 99,90">
 
-<div class="panel">
+<label>Link</label>
 
-<h2>
-🛍️ Shopee
-</h2>
+<input id="postLink" placeholder="Link do produto">
 
-<div id="listaShopee">
-Carregando...
-</div>
-
-</div>
-
-</div>
-
-<div
-id="posts"
-class="page"
->
-
-<div class="panel">
-
-<h2>
-📱 Gerador de Posts
-</h2>
-
-<input
-id="postNome"
-placeholder="Nome do produto"
->
-
-<input
-id="postPreco"
-placeholder="R$ 99,90"
->
-
-<input
-id="postLink"
-placeholder="Link do produto"
->
-
-<button
-class="primary"
-onclick="gerarPost()"
->
-
+<button class="primary" onclick="gerarPost()">
 🤖 Gerar Post
-
 </button>
 
 <br><br>
 
 <textarea
 id="postResultado"
+style="width:100%;height:180px;padding:15px;border:1px solid #ddd;border-radius:8px;"
 placeholder="Seu post aparecerá aqui..."
 ></textarea>
 
@@ -808,623 +464,139 @@ placeholder="Seu post aparecerá aqui..."
 
 </div>
 
-</div>
 
-<script>
+<!-- CONFIGURAÇÕES -->
 
-/* =========================
-   NAVEGAÇÃO
-========================= */
+<div id="configuracoes" class="page">
 
-function abrirPagina(
-  pagina,
-  botao
-) {
+<div class="panel">
 
-  document
-  .querySelectorAll('.page')
-  .forEach(
-    p =>
-    p.classList.remove('active')
-  );
+<h2>⚙️ Configurações</h2>
 
-  document
-  .getElementById(pagina)
-  .classList.add('active');
+<p>
+Configurações do sistema Eletromax V2.
+</p>
 
-  document
-  .querySelectorAll(
-    '.menu button'
-  )
-  .forEach(
-    b =>
-    b.classList.remove('active')
-  );
+<label>Nome da loja</label>
 
-  if (botao) {
-    botao.classList.add('active');
-  }
+<input value="Eletromax">
 
-  const titulos = {
-
-    dashboard:
-      'Dashboard',
-
-    produtos:
-      'Produtos',
-
-    mercadolivre:
-      'Mercado Livre',
-
-    shopee:
-      'Shopee',
-
-    posts:
-      'Posts'
-
-  };
-
-  document
-  .getElementById('titulo')
-  .innerText =
-    titulos[pagina];
-
-  if (
-    pagina === 'produtos'
-  ) {
-
-    carregarProdutos();
-
-  }
-
-  if (
-    pagina === 'mercadolivre'
-  ) {
-
-    carregarPlataforma(
-      'Mercado Livre'
-    );
-
-  }
-
-  if (
-    pagina === 'shopee'
-  ) {
-
-    carregarPlataforma(
-      'Shopee'
-    );
-
-  }
-
-}
-
-/* =========================
-   CADASTRAR
-========================= */
-
-async function cadastrarProduto() {
-
-  const nome =
-    document
-    .getElementById(
-      'produtoNome'
-    )
-    .value
-    .trim();
-
-  const preco =
-    document
-    .getElementById(
-      'produtoPreco'
-    )
-    .value
-    .trim();
-
-  const link =
-    document
-    .getElementById(
-      'produtoLink'
-    )
-    .value
-    .trim();
-
-  const plataforma =
-    document
-    .getElementById(
-      'produtoPlataforma'
-    )
-    .value;
-
-  if (!nome || !link) {
-
-    alert(
-      'Preencha o nome e o link.'
-    );
-
-    return;
-
-  }
-
-  try {
-
-    const resposta =
-      await fetch(
-        '/api/produtos',
-        {
-
-          method:
-            'POST',
-
-          headers: {
-
-            'Content-Type':
-              'application/json'
-
-          },
-
-          body:
-            JSON.stringify({
-
-              nome,
-              preco,
-              link,
-              plataforma
-
-            })
-
-        }
-      );
-
-    const dados =
-      await resposta.json();
-
-    if (!resposta.ok) {
-
-      throw new Error(
-        dados.error ||
-        'Erro ao cadastrar'
-      );
-
-    }
-
-    document
-    .getElementById(
-      'resultadoProduto'
-    )
-    .innerHTML =
-      '✅ Produto salvo com sucesso!';
-
-    document
-    .getElementById(
-      'produtoNome'
-    )
-    .value = '';
-
-    document
-    .getElementById(
-      'produtoPreco'
-    )
-    .value = '';
-
-    document
-    .getElementById(
-      'produtoLink'
-    )
-    .value = '';
-
-    await carregarProdutos();
-
-    await carregarEstatisticas();
-
-  } catch (erro) {
-
-    alert(
-      'Erro ao salvar produto: ' +
-      erro.message
-    );
-
-  }
-
-}
-
-/* =========================
-   LISTAR
-========================= */
-
-async function carregarProdutos() {
-
-  try {
-
-    const resposta =
-      await fetch(
-        '/api/produtos'
-      );
-
-    const produtos =
-      await resposta.json();
-
-    const lista =
-      document
-      .getElementById(
-        'listaProdutos'
-      );
-
-    if (!produtos.length) {
-
-      lista.innerHTML =
-        '<p>Nenhum produto cadastrado.</p>';
-
-      return;
-
-    }
-
-    lista.innerHTML =
-      produtos
-      .map(
-        produto => `
-
-<div class="produto">
-
-<div class="produto-topo">
-
-<div>
-
-<strong>
-${produto.nome}
-</strong>
-
-<br><br>
-
-<span class="badge">
-${produto.plataforma}
-</span>
-
-<br><br>
-
-💰
-${produto.preco || 'Preço não informado'}
-
-<br><br>
-
-<a
-href="${produto.link}"
-target="_blank"
->
-Abrir produto
-</a>
-
-</div>
-
-<button
-class="danger"
-onclick=
-"excluirProduto(${produto.id})"
->
-Excluir
+<button class="primary">
+Salvar Configurações
 </button>
 
 </div>
 
 </div>
 
-`
-      )
-      .join('');
-
-  } catch (erro) {
-
-    console.error(
-      erro
-    );
-
-  }
-
-}
-
-/* =========================
-   EXCLUIR
-========================= */
-
-async function excluirProduto(
-  id
-) {
-
-  if (
-    !confirm(
-      'Deseja excluir este produto?'
-    )
-  ) {
-
-    return;
-
-  }
-
-  try {
-
-    const resposta =
-      await fetch(
-        '/api/produtos/' + id,
-        {
-
-          method:
-            'DELETE'
-
-        }
-      );
-
-    if (!resposta.ok) {
-
-      throw new Error(
-        'Erro ao excluir'
-      );
-
-    }
-
-    await carregarProdutos();
-
-    await carregarEstatisticas();
-
-  } catch (erro) {
-
-    alert(
-      erro.message
-    );
-
-  }
-
-}
-
-/* =========================
-   PLATAFORMAS
-========================= */
-
-async function carregarPlataforma(
-  plataforma
-) {
-
-  try {
-
-    const resposta =
-      await fetch(
-        '/api/produtos'
-      );
-
-    const produtos =
-      await resposta.json();
-
-    const filtrados =
-      produtos.filter(
-        produto =>
-          produto.plataforma ===
-          plataforma
-      );
-
-    const id =
-      plataforma === 'Shopee'
-      ? 'listaShopee'
-      : 'listaMercadoLivre';
-
-    const lista =
-      document
-      .getElementById(id);
-
-    if (!filtrados.length) {
-
-      lista.innerHTML =
-        '<p>Nenhum produto cadastrado.</p>';
-
-      return;
-
-    }
-
-    lista.innerHTML =
-      filtrados
-      .map(
-        produto => `
-
-<div class="produto">
-
-<strong>
-${produto.nome}
-</strong>
-
-<br><br>
-
-💰
-${produto.preco || 'Preço não informado'}
-
-<br><br>
-
-<a
-href="${produto.link}"
-target="_blank"
->
-Abrir produto
-</a>
-
 </div>
 
-`
-      )
-      .join('');
 
-  } catch (erro) {
+<script>
 
-    console.error(
-      erro
-    );
+function abrirPagina(pagina, botao) {
 
-  }
+document.querySelectorAll('.page').forEach(function(p) {
+p.classList.remove('active');
+});
+
+document.getElementById(pagina).classList.add('active');
+
+document.querySelectorAll('.menu button').forEach(function(b) {
+b.classList.remove('active');
+});
+
+if(botao) {
+botao.classList.add('active');
+}
+
+let titulos = {
+dashboard: 'Dashboard',
+produtos: 'Produtos',
+mercadolivre: 'Mercado Livre',
+shopee: 'Shopee',
+posts: 'Posts',
+configuracoes: 'Configurações'
+};
+
+document.getElementById('titulo').innerText = titulos[pagina];
 
 }
 
-/* =========================
-   ESTATÍSTICAS
-========================= */
 
-async function carregarEstatisticas() {
+function cadastrarProduto() {
 
-  try {
+let nome = document.getElementById('produtoNome').value;
 
-    const resposta =
-      await fetch(
-        '/api/estatisticas'
-      );
+let preco = document.getElementById('produtoPreco').value;
 
-    const dados =
-      await resposta.json();
+let link = document.getElementById('produtoLink').value;
 
-    document
-    .getElementById(
-      'totalProdutos'
-    )
-    .innerText =
-      dados.produtos;
+if(!nome || !link) {
 
-    document
-    .getElementById(
-      'totalMercadoLivre'
-    )
-    .innerText =
-      dados.mercadoLivre;
+alert('Preencha o nome e o link do produto.');
 
-    document
-    .getElementById(
-      'totalShopee'
-    )
-    .innerText =
-      dados.shopee;
-
-  } catch (erro) {
-
-    console.error(
-      erro
-    );
-
-  }
+return;
 
 }
 
-/* =========================
-   GERAR POST
-========================= */
+document.getElementById('resultadoProduto').innerHTML =
+'✅ Produto <b>' + nome + '</b> cadastrado com sucesso!';
+
+}
+
 
 function gerarPost() {
 
-  const nome =
-    document
-    .getElementById(
-      'postNome'
-    )
-    .value
-    .trim();
+let nome = document.getElementById('postNome').value;
 
-  const preco =
-    document
-    .getElementById(
-      'postPreco'
-    )
-    .value
-    .trim();
+let preco = document.getElementById('postPreco').value;
 
-  const link =
-    document
-    .getElementById(
-      'postLink'
-    )
-    .value
-    .trim();
+let link = document.getElementById('postLink').value;
 
-  if (!nome || !link) {
+if(!nome || !link) {
 
-    alert(
-      'Preencha o nome e o link.'
-    );
+alert('Preencha o nome e o link.');
 
-    return;
-
-  }
-
-  const texto =
-
-    '🔥 OFERTA IMPERDÍVEL!\\n\\n' +
-
-    '📦 ' +
-    nome +
-    '\\n' +
-
-    '💰 Por apenas ' +
-    (
-      preco ||
-      'consulte o preço'
-    ) +
-
-    '\\n\\n' +
-
-    '🛒 COMPRE AQUI:\\n' +
-
-    link +
-
-    '\\n\\n' +
-
-    '⚡ Eletromax — Ofertas e produtos selecionados!';
-
-  document
-  .getElementById(
-    'postResultado'
-  )
-  .value =
-    texto;
+return;
 
 }
 
-/* =========================
-   INICIALIZAÇÃO
-========================= */
+let texto =
+'🔥 OFERTA IMPERDÍVEL!\\n\\n' +
+'📦 ' + nome + '\\n' +
+'💰 Por apenas ' + preco + '\\n\\n' +
+'🛒 COMPRE AQUI:\\n' +
+link + '\\n\\n' +
+'⚡ Eletromax — Ofertas e produtos selecionados!';
 
-window.addEventListener(
-  'load',
-  function() {
+document.getElementById('postResultado').value = texto;
 
-    carregarEstatisticas();
-
-    carregarProdutos();
-
-  }
-);
+}
 
 </script>
 
 </body>
-
 </html>
-
   `);
+});
+
+
+app.get('/api/status', (req, res) => {
+
+  res.json({
+    success: true,
+    message: 'Eletromax API funcionando!',
+    status: 'online'
+  });
 
 });
 
-/* =========================
-   INICIAR SERVIDOR
-========================= */
 
-async function iniciarServidor() {
+app.listen(PORT, '0.0.0.0', () => {
 
-  await inicializarBanco();
-
-  app.listen(
-    PORT,
-    '0.0.0.0',
-    () => {
-
-      console.log(
-        `Eletromax API rodando na porta ${PORT}`
-      );
-
-    }
+  console.log(
+    `Eletromax API rodando na porta ${PORT}`
   );
 
-}
-
-iniciarServidor();
-```
+});
