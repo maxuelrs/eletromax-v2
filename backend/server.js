@@ -1,52 +1,95 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 const { Pool } = require('pg');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// =========================
+// ========================================
 // CONFIGURAÇÕES
-// =========================
+// ========================================
 
 app.use(cors());
 app.use(express.json());
 
-// =========================
-// FRONTEND
-// =========================
+// ========================================
+// LOCALIZAR FRONTEND
+// ========================================
 
-// Seu index.html está em:
-// frontend/index.html
+const caminhosFrontend = [
+  path.join(process.cwd(), 'frontend'),
+  path.join(process.cwd(), 'public'),
+  path.join(__dirname, '../frontend'),
+  path.join(__dirname, '../public')
+];
 
-app.use(
-  express.static(
-    path.join(__dirname, '../frontend')
-  )
-);
+let frontendPath = null;
 
-// =========================
+for (const caminho of caminhosFrontend) {
+  const indexPath = path.join(caminho, 'index.html');
+
+  if (fs.existsSync(indexPath)) {
+    frontendPath = caminho;
+    break;
+  }
+}
+
+if (frontendPath) {
+  console.log(
+    'FRONTEND ENCONTRADO EM:',
+    frontendPath
+  );
+
+  app.use(
+    express.static(frontendPath)
+  );
+
+} else {
+
+  console.error(
+    'ERRO: index.html não foi encontrado.'
+  );
+
+  console.error(
+    'Diretório atual:',
+    process.cwd()
+  );
+
+  console.error(
+    'Arquivos disponíveis na raiz:',
+    fs.readdirSync(process.cwd())
+  );
+
+}
+
+// ========================================
 // POSTGRESQL
-// =========================
+// ========================================
 
 if (!process.env.DATABASE_URL) {
+
   console.error(
     'ERRO: DATABASE_URL não foi configurada.'
   );
+
 }
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+
+  connectionString:
+    process.env.DATABASE_URL,
 
   ssl: {
     rejectUnauthorized: false
   }
+
 });
 
-// =========================
+// ========================================
 // BANCO DE DADOS
-// =========================
+// ========================================
 
 async function inicializarBanco() {
 
@@ -86,24 +129,51 @@ async function inicializarBanco() {
 
 }
 
-// =========================
+// ========================================
 // PÁGINA PRINCIPAL
-// =========================
+// ========================================
 
 app.get('/', (req, res) => {
 
-  res.sendFile(
+  if (!frontendPath) {
+
+    return res.status(500).send(`
+      <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>Eletromax V2</title>
+        </head>
+
+        <body>
+          <h1>Eletromax V2</h1>
+
+          <p>
+            Servidor funcionando.
+          </p>
+
+          <p>
+            O arquivo frontend/index.html
+            não foi encontrado.
+          </p>
+        </body>
+      </html>
+    `);
+
+  }
+
+  const indexPath =
     path.join(
-      __dirname,
-      '../frontend/index.html'
-    )
-  );
+      frontendPath,
+      'index.html'
+    );
+
+  res.sendFile(indexPath);
 
 });
 
-// =========================
+// ========================================
 // API STATUS
-// =========================
+// ========================================
 
 app.get('/api/status', async (req, res) => {
 
@@ -151,9 +221,9 @@ app.get('/api/status', async (req, res) => {
 
 });
 
-// =========================
+// ========================================
 // SALVAR PRODUTO
-// =========================
+// ========================================
 
 app.post('/api/produtos', async (req, res) => {
 
@@ -165,8 +235,6 @@ app.post('/api/produtos', async (req, res) => {
       link,
       plataforma
     } = req.body;
-
-    // Validação
 
     if (
       !nome ||
@@ -185,41 +253,40 @@ app.post('/api/produtos', async (req, res) => {
 
     }
 
-    // Salvar no banco
+    const resultado =
+      await pool.query(
 
-    const resultado = await pool.query(
+        `
+        INSERT INTO produtos
+        (
+          nome,
+          preco,
+          link,
+          plataforma
+        )
+        VALUES
+        (
+          $1,
+          $2,
+          $3,
+          $4
+        )
+        RETURNING *
+        `,
 
-      `
-      INSERT INTO produtos
-      (
-        nome,
-        preco,
-        link,
-        plataforma
-      )
-      VALUES
-      (
-        $1,
-        $2,
-        $3,
-        $4
-      )
-      RETURNING *
-      `,
+        [
+          nome.trim(),
 
-      [
-        nome.trim(),
+          preco
+            ? preco.trim()
+            : '',
 
-        preco
-          ? preco.trim()
-          : '',
+          link.trim(),
 
-        link.trim(),
+          plataforma.trim()
+        ]
 
-        plataforma.trim()
-      ]
-
-    );
+      );
 
     res.status(201).json({
 
@@ -256,23 +323,24 @@ app.post('/api/produtos', async (req, res) => {
 
 });
 
-// =========================
+// ========================================
 // LISTAR PRODUTOS
-// =========================
+// ========================================
 
 app.get('/api/produtos', async (req, res) => {
 
   try {
 
-    const resultado = await pool.query(
+    const resultado =
+      await pool.query(
 
-      `
-      SELECT *
-      FROM produtos
-      ORDER BY id DESC
-      `
+        `
+        SELECT *
+        FROM produtos
+        ORDER BY id DESC
+        `
 
-    );
+      );
 
     res.json({
 
@@ -306,9 +374,9 @@ app.get('/api/produtos', async (req, res) => {
 
 });
 
-// =========================
+// ========================================
 // DELETAR PRODUTO
-// =========================
+// ========================================
 
 app.delete(
   '/api/produtos/:id',
@@ -329,9 +397,7 @@ app.delete(
           RETURNING *
           `,
 
-          [
-            id
-          ]
+          [id]
 
         );
 
@@ -386,9 +452,9 @@ app.delete(
   }
 );
 
-// =========================
-// ROTA 404 DA API
-// =========================
+// ========================================
+// ROTA API NÃO ENCONTRADA
+// ========================================
 
 app.use(
   '/api',
@@ -406,9 +472,9 @@ app.use(
   }
 );
 
-// =========================
+// ========================================
 // INICIAR SERVIDOR
-// =========================
+// ========================================
 
 async function iniciarServidor() {
 
