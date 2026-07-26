@@ -1,7 +1,7 @@
 {
-  "name": "eletromax-v2-backend",
+  "name": "eletromax-v2",
   "version": "2.1.0",
-  "description": "Backend do Painel Eletromax V2",
+  "description": "Eletromax V2 - Central de Ofertas",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
