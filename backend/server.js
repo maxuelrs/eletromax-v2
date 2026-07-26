@@ -14,17 +14,13 @@ app.use(cors());
 app.use(express.json());
 
 // ========================================
-// CAMINHO DO FRONTEND
+// FRONTEND
 // ========================================
 
 const frontendPath = path.join(__dirname, '../frontend');
 
-console.log('Caminho do frontend:', frontendPath);
-
-// Servir arquivos estáticos do frontend
 app.use(express.static(frontendPath));
 
-// Página principal
 app.get('/', (req, res) => {
   res.sendFile(
     path.join(frontendPath, 'index.html'),
@@ -44,7 +40,7 @@ app.get('/', (req, res) => {
 });
 
 // ========================================
-// POSTGRESQL
+// CONFIGURAÇÃO POSTGRESQL
 // ========================================
 
 let pool = null;
@@ -65,52 +61,21 @@ if (process.env.DATABASE_URL) {
 } else {
 
   console.error(
-    'ERRO: DATABASE_URL não foi configurada no Render.'
+    'ERRO: DATABASE_URL não configurada.'
   );
 
 }
 
 // ========================================
-// FUNÇÃO PARA VERIFICAR BANCO
-// ========================================
-
-async function verificarBanco() {
-
-  if (!pool) {
-    return false;
-  }
-
-  try {
-
-    await pool.query(
-      'SELECT NOW()'
-    );
-
-    return true;
-
-  } catch (erro) {
-
-    console.error(
-      'ERRO DE CONEXÃO COM POSTGRESQL:',
-      erro.message
-    );
-
-    return false;
-  }
-}
-
-// ========================================
-// CRIAR TABELA
+// BANCO DE DADOS
 // ========================================
 
 async function inicializarBanco() {
 
   if (!pool) {
-
     console.error(
-      'Banco não inicializado porque DATABASE_URL não existe.'
+      'Banco não inicializado.'
     );
-
     return;
   }
 
@@ -128,10 +93,6 @@ async function inicializarBanco() {
     `);
 
     console.log(
-      'BANCO DE DADOS CONECTADO'
-    );
-
-    console.log(
       'TABELA PRODUTOS PRONTA'
     );
 
@@ -143,10 +104,51 @@ async function inicializarBanco() {
     );
 
   }
+
 }
 
 // ========================================
-// API STATUS
+// TABELA DE OFERTAS
+// ========================================
+
+async function inicializarOfertas() {
+
+  if (!pool) return;
+
+  try {
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ofertas (
+        id SERIAL PRIMARY KEY,
+        produto TEXT NOT NULL,
+        preco_antigo TEXT DEFAULT '',
+        preco_oferta TEXT NOT NULL,
+        desconto TEXT DEFAULT '',
+        link TEXT NOT NULL,
+        plataforma TEXT NOT NULL,
+        texto_post TEXT DEFAULT '',
+        status TEXT DEFAULT 'pendente',
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    console.log(
+      'TABELA OFERTAS PRONTA'
+    );
+
+  } catch (erro) {
+
+    console.error(
+      'ERRO AO CRIAR TABELA OFERTAS:',
+      erro.message
+    );
+
+  }
+
+}
+
+// ========================================
+// STATUS
 // ========================================
 
 app.get(
@@ -155,8 +157,19 @@ app.get(
 
     try {
 
-      const bancoOnline =
-        await verificarBanco();
+      if (!pool) {
+
+        return res.status(500).json({
+          success: false,
+          status: 'offline',
+          database: 'not_configured'
+        });
+
+      }
+
+      await pool.query(
+        'SELECT NOW()'
+      );
 
       res.json({
 
@@ -164,22 +177,14 @@ app.get(
 
         status: 'online',
 
-        database:
-          bancoOnline
-            ? 'connected'
-            : 'disconnected',
+        database: 'connected',
 
         message:
-          'Eletromax V2 API funcionando!'
+          'Eletromax V2 funcionando!'
 
       });
 
     } catch (erro) {
-
-      console.error(
-        'ERRO STATUS:',
-        erro.message
-      );
 
       res.status(500).json({
 
@@ -188,9 +193,6 @@ app.get(
         status: 'offline',
 
         database: 'error',
-
-        message:
-          'Erro ao verificar sistema.',
 
         error:
           erro.message
@@ -203,7 +205,7 @@ app.get(
 );
 
 // ========================================
-// LISTAR PRODUTOS
+// PRODUTOS
 // ========================================
 
 app.get(
@@ -215,12 +217,9 @@ app.get(
       if (!pool) {
 
         return res.status(500).json({
-
           success: false,
-
           message:
-            'Banco de dados não configurado.'
-
+            'Banco não configurado.'
         });
 
       }
@@ -242,11 +241,6 @@ app.get(
       });
 
     } catch (erro) {
-
-      console.error(
-        'ERRO AO BUSCAR PRODUTOS:',
-        erro.message
-      );
 
       res.status(500).json({
 
@@ -278,12 +272,9 @@ app.post(
       if (!pool) {
 
         return res.status(500).json({
-
           success: false,
-
           message:
-            'Banco de dados não configurado.'
-
+            'Banco não configurado.'
         });
 
       }
@@ -294,8 +285,6 @@ app.post(
         link,
         plataforma
       } = req.body;
-
-      // Validação
 
       if (
         !nome ||
@@ -314,8 +303,6 @@ app.post(
 
       }
 
-      // Salvar produto
-
       const resultado =
         await pool.query(
 
@@ -328,24 +315,16 @@ app.post(
             plataforma
           )
           VALUES
-          (
-            $1,
-            $2,
-            $3,
-            $4
-          )
+          ($1, $2, $3, $4)
           RETURNING *
           `,
 
           [
             String(nome).trim(),
-
             preco
               ? String(preco).trim()
               : '',
-
             String(link).trim(),
-
             String(plataforma).trim()
           ]
 
@@ -364,11 +343,6 @@ app.post(
       });
 
     } catch (erro) {
-
-      console.error(
-        'ERRO AO SALVAR PRODUTO:',
-        erro.message
-      );
 
       res.status(500).json({
 
@@ -400,12 +374,9 @@ app.delete(
       if (!pool) {
 
         return res.status(500).json({
-
           success: false,
-
           message:
-            'Banco de dados não configurado.'
-
+            'Banco não configurado.'
         });
 
       }
@@ -447,19 +418,11 @@ app.delete(
         success: true,
 
         message:
-          'Produto excluído com sucesso!',
-
-        produto:
-          resultado.rows[0]
+          'Produto excluído com sucesso!'
 
       });
 
     } catch (erro) {
-
-      console.error(
-        'ERRO AO DELETAR PRODUTO:',
-        erro.message
-      );
 
       res.status(500).json({
 
@@ -479,57 +442,275 @@ app.delete(
 );
 
 // ========================================
-// ROTA DE TESTE
+// OFERTAS
 // ========================================
+
+// Listar ofertas
 
 app.get(
-  '/api/teste',
-  (req, res) => {
+  '/api/ofertas',
+  async (req, res) => {
 
-    res.json({
+    try {
 
-      success: true,
+      if (!pool) {
 
-      message:
-        'Eletromax V2 funcionando corretamente!',
+        return res.status(500).json({
+          success: false,
+          message:
+            'Banco não configurado.'
+        });
 
-      frontend:
-        frontendPath,
+      }
 
-      servidor:
-        'online'
+      const resultado =
+        await pool.query(`
+          SELECT *
+          FROM ofertas
+          ORDER BY id DESC
+        `);
 
-    });
+      res.json({
+
+        success: true,
+
+        ofertas:
+          resultado.rows
+
+      });
+
+    } catch (erro) {
+
+      res.status(500).json({
+
+        success: false,
+
+        message:
+          'Erro ao buscar ofertas.',
+
+        error:
+          erro.message
+
+      });
+
+    }
 
   }
 );
 
 // ========================================
-// TRATAMENTO DE ERROS
+// CRIAR OFERTA
 // ========================================
 
-app.use(
-  (err, req, res, next) => {
+app.post(
+  '/api/ofertas',
+  async (req, res) => {
 
-    console.error(
-      'ERRO INTERNO:',
-      err
-    );
+    try {
 
-    res.status(500).json({
+      if (!pool) {
 
-      success: false,
+        return res.status(500).json({
+          success: false,
+          message:
+            'Banco não configurado.'
+        });
 
-      message:
-        'Erro interno do servidor.'
+      }
 
-    });
+      const {
+        produto,
+        precoAntigo,
+        precoOferta,
+        desconto,
+        link,
+        plataforma
+      } = req.body;
+
+      if (
+        !produto ||
+        !precoOferta ||
+        !link ||
+        !plataforma
+      ) {
+
+        return res.status(400).json({
+
+          success: false,
+
+          message:
+            'Preencha produto, preço da oferta, link e plataforma.'
+
+        });
+
+      }
+
+      const textoPost = `
+🔥 OFERTA IMPERDÍVEL!
+
+📦 ${produto}
+
+${precoAntigo
+  ? `💰 De: ${precoAntigo}`
+  : ''
+}
+
+🚨 POR APENAS: ${precoOferta}
+
+${desconto
+  ? `📉 ${desconto} DE DESCONTO`
+  : ''
+}
+
+🛒 COMPRE AQUI:
+${link}
+
+⚡ ELETROMAX
+Ofertas e produtos selecionados!
+
+📲 Entre no nosso grupo:
+https://chat.whatsapp.com/Je7ddU2rbdBKDxEidcBiuU
+      `.trim();
+
+      const resultado =
+        await pool.query(
+
+          `
+          INSERT INTO ofertas
+          (
+            produto,
+            preco_antigo,
+            preco_oferta,
+            desconto,
+            link,
+            plataforma,
+            texto_post
+          )
+          VALUES
+          ($1, $2, $3, $4, $5, $6, $7)
+          RETURNING *
+          `,
+
+          [
+            produto.trim(),
+
+            precoAntigo
+              ? precoAntigo.trim()
+              : '',
+
+            precoOferta.trim(),
+
+            desconto
+              ? desconto.trim()
+              : '',
+
+            link.trim(),
+
+            plataforma.trim(),
+
+            textoPost
+          ]
+
+        );
+
+      res.status(201).json({
+
+        success: true,
+
+        message:
+          'Oferta criada com sucesso!',
+
+        oferta:
+          resultado.rows[0]
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+        'ERRO AO CRIAR OFERTA:',
+        erro.message
+      );
+
+      res.status(500).json({
+
+        success: false,
+
+        message:
+          'Erro ao criar oferta.',
+
+        error:
+          erro.message
+
+      });
+
+    }
 
   }
 );
 
 // ========================================
-// INICIAR SERVIDOR
+// DELETAR OFERTA
+// ========================================
+
+app.delete(
+  '/api/ofertas/:id',
+  async (req, res) => {
+
+    try {
+
+      if (!pool) {
+
+        return res.status(500).json({
+          success: false,
+          message:
+            'Banco não configurado.'
+        });
+
+      }
+
+      const {
+        id
+      } = req.params;
+
+      await pool.query(
+        `
+        DELETE FROM ofertas
+        WHERE id = $1
+        `,
+        [id]
+      );
+
+      res.json({
+
+        success: true,
+
+        message:
+          'Oferta excluída com sucesso!'
+
+      });
+
+    } catch (erro) {
+
+      res.status(500).json({
+
+        success: false,
+
+        message:
+          'Erro ao excluir oferta.',
+
+        error:
+          erro.message
+
+      });
+
+    }
+
+  }
+);
+
+// ========================================
+// INICIALIZAÇÃO
 // ========================================
 
 async function iniciarServidor() {
@@ -546,17 +727,9 @@ async function iniciarServidor() {
     '================================='
   );
 
-  console.log(
-    'PORTA:',
-    PORT
-  );
-
-  console.log(
-    'FRONTEND:',
-    frontendPath
-  );
-
   await inicializarBanco();
+
+  await inicializarOfertas();
 
   app.listen(
     PORT,
@@ -572,12 +745,13 @@ async function iniciarServidor() {
       );
 
       console.log(
-        'SERVIDOR INICIADO COM SUCESSO'
+        'PORTA:',
+        PORT
       );
 
       console.log(
-        'PORTA:',
-        PORT
+        'FRONTEND:',
+        frontendPath
       );
 
       console.log(
@@ -588,9 +762,5 @@ async function iniciarServidor() {
   );
 
 }
-
-// ========================================
-// EXECUTAR
-// ========================================
 
 iniciarServidor();
