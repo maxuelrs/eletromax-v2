@@ -20,18 +20,21 @@ content="width=device-width, initial-scale=1.0"
 
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f3f4f6;
-  color: #111827;
+  font-family:
+    Arial,
+    Helvetica,
+    sans-serif;
+  background: #f1f5f9;
+  color: #0f172a;
 }
 
 .sidebar {
   position: fixed;
   left: 0;
   top: 0;
-  width: 240px;
+  width: 250px;
   height: 100vh;
-  background: #111827;
+  background: #0f172a;
   color: white;
   padding: 25px 15px;
 }
@@ -39,16 +42,17 @@ body {
 .logo {
   font-size: 25px;
   font-weight: bold;
-  margin-bottom: 35px;
+  padding: 10px;
+  margin-bottom: 30px;
 }
 
 .menu button {
   width: 100%;
   border: 0;
   background: transparent;
-  color: #d1d5db;
+  color: #cbd5e1;
   padding: 14px;
-  margin-bottom: 7px;
+  margin-bottom: 6px;
   border-radius: 10px;
   text-align: left;
   cursor: pointer;
@@ -62,7 +66,7 @@ body {
 }
 
 .main {
-  margin-left: 240px;
+  margin-left: 250px;
   padding: 30px;
 }
 
@@ -73,11 +77,16 @@ body {
   margin-bottom: 25px;
 }
 
+.header h1 {
+  margin: 0;
+}
+
 .status {
   background: #dcfce7;
   color: #166534;
   padding: 10px 16px;
-  border-radius: 30px;
+  border-radius: 20px;
+  font-weight: bold;
 }
 
 .page {
@@ -93,20 +102,21 @@ body {
   grid-template-columns:
     repeat(4, 1fr);
   gap: 20px;
+  margin-bottom: 25px;
 }
 
 .card {
   background: white;
   padding: 25px;
-  border-radius: 18px;
+  border-radius: 16px;
   box-shadow:
     0 5px 20px
-    rgba(0,0,0,.06);
+    rgba(15, 23, 42, .07);
 }
 
 .card h3 {
-  color: #6b7280;
-  font-size: 14px;
+  margin: 0 0 12px;
+  color: #64748b;
 }
 
 .card strong {
@@ -116,11 +126,15 @@ body {
 .panel {
   background: white;
   padding: 25px;
-  margin-top: 25px;
-  border-radius: 18px;
+  border-radius: 16px;
+  margin-bottom: 20px;
   box-shadow:
     0 5px 20px
-    rgba(0,0,0,.06);
+    rgba(15, 23, 42, .07);
+}
+
+.panel h2 {
+  margin-top: 0;
 }
 
 input,
@@ -128,51 +142,43 @@ select,
 textarea {
   width: 100%;
   padding: 13px;
-  margin: 8px 0 15px;
-  border: 1px solid #d1d5db;
+  border: 1px solid #cbd5e1;
   border-radius: 9px;
+  margin-top: 7px;
+  margin-bottom: 15px;
+  font-size: 15px;
 }
 
-button.primary {
+textarea {
+  min-height: 180px;
+  resize: vertical;
+}
+
+.primary {
   background: #2563eb;
   color: white;
   border: none;
   padding: 13px 20px;
   border-radius: 9px;
   cursor: pointer;
+  font-weight: bold;
 }
 
-button.primary:hover {
+.primary:hover {
   background: #1d4ed8;
 }
 
-.oferta {
-  border: 1px solid #e5e7eb;
-  padding: 18px;
-  border-radius: 12px;
-  margin-top: 12px;
-}
-
-.oferta h3 {
-  margin-top: 0;
-}
-
-.oferta a {
-  color: #2563eb;
-  word-break: break-all;
-}
-
-.btn-whatsapp {
-  display: inline-block;
-  margin-top: 10px;
+.secondary {
   background: #16a34a;
   color: white;
-  padding: 10px 15px;
-  border-radius: 8px;
-  text-decoration: none;
+  border: none;
+  padding: 13px 20px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-weight: bold;
 }
 
-.btn-delete {
+.danger {
   background: #dc2626;
   color: white;
   border: none;
@@ -181,11 +187,53 @@ button.primary:hover {
   cursor: pointer;
 }
 
-@media(max-width:800px) {
+.produto,
+.oferta {
+  border: 1px solid #e2e8f0;
+  padding: 18px;
+  margin-top: 12px;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.oferta h3,
+.produto h3 {
+  margin-top: 0;
+}
+
+.oferta a,
+.produto a {
+  color: #2563eb;
+  word-break: break-all;
+}
+
+.badge {
+  display: inline-block;
+  background: #dbeafe;
+  color: #1d4ed8;
+  padding: 5px 9px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.mensagem {
+  margin-top: 15px;
+  font-weight: bold;
+}
+
+.botoes {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 15px;
+}
+
+@media(max-width: 900px) {
 
   .sidebar {
     width: 70px;
-    padding: 15px 8px;
+    padding: 15px 7px;
   }
 
   .logo {
@@ -193,7 +241,7 @@ button.primary:hover {
     text-align: center;
   }
 
-  .logo::first-letter {
+  .logo:first-letter {
     font-size: 25px;
   }
 
@@ -202,7 +250,7 @@ button.primary:hover {
     text-align: center;
   }
 
-  .menu button::first-letter {
+  .menu button:first-letter {
     font-size: 20px;
   }
 
@@ -214,6 +262,14 @@ button.primary:hover {
   .cards {
     grid-template-columns:
       repeat(2, 1fr);
+  }
+
+}
+
+@media(max-width: 550px) {
+
+  .cards {
+    grid-template-columns: 1fr;
   }
 
 }
@@ -234,33 +290,45 @@ button.primary:hover {
 
 <button
 class="active"
-onclick="abrir('dashboard', this)"
+onclick="abrirPagina('dashboard', this)"
 >
 🏠 Dashboard
 </button>
 
 <button
-onclick="abrir('ofertas', this)"
+onclick="abrirPagina('ofertas', this)"
 >
 🔥 Ofertas
 </button>
 
 <button
-onclick="abrir('cadastrar', this)"
+onclick="abrirPagina('produtos', this)"
 >
-➕ Cadastrar
+📦 Produtos
 </button>
 
 <button
-onclick="abrir('posts', this)"
+onclick="abrirPagina('mercadolivre', this)"
 >
-🤖 Gerar Post
+🛒 Mercado Livre
 </button>
 
 <button
-onclick="abrir('afiliados', this)"
+onclick="abrirPagina('shopee', this)"
 >
-🔗 Afiliados
+🛍️ Shopee
+</button>
+
+<button
+onclick="abrirPagina('posts', this)"
+>
+📱 Posts
+</button>
+
+<button
+onclick="abrirPagina('configuracoes', this)"
+>
+⚙️ Configurações
 </button>
 
 </div>
@@ -293,10 +361,22 @@ class="page active"
 <div class="card">
 
 <h3>
-📦 Total de Ofertas
+📦 Produtos
 </h3>
 
-<strong id="total">
+<strong id="totalProdutos">
+0
+</strong>
+
+</div>
+
+<div class="card">
+
+<h3>
+🔥 Ofertas
+</h3>
+
+<strong id="totalOfertas">
 0
 </strong>
 
@@ -308,7 +388,7 @@ class="page active"
 🛒 Mercado Livre
 </h3>
 
-<strong id="ml">
+<strong id="totalMercadoLivre">
 0
 </strong>
 
@@ -320,19 +400,7 @@ class="page active"
 🛍️ Shopee
 </h3>
 
-<strong id="shopee">
-0
-</strong>
-
-</div>
-
-<div class="card">
-
-<h3>
-📱 Posts
-</h3>
-
-<strong>
+<strong id="totalShopee">
 0
 </strong>
 
@@ -347,7 +415,13 @@ class="page active"
 </h2>
 
 <p>
-Gerencie suas ofertas e prepare suas divulgações.
+Gerencie seus produtos e ofertas
+em um único painel.
+</p>
+
+<p>
+Sistema preparado para receber
+as próximas automações.
 </p>
 
 </div>
@@ -364,52 +438,65 @@ class="page"
 <div class="panel">
 
 <h2>
-🔥 Ofertas cadastradas
+🔥 Criar Nova Oferta
 </h2>
 
-<div id="lista">
-Carregando...
-</div>
-
-</div>
-
-</div>
-
-<!-- CADASTRAR -->
-
-<div
-id="cadastrar"
-class="page"
->
-
-<div class="panel">
-
-<h2>
-➕ Cadastrar nova oferta
-</h2>
+<label>
+Produto
+</label>
 
 <input
-id="nome"
-placeholder="Nome do produto"
+id="ofertaProduto"
+placeholder="Ex: Câmera Dome Hikvision"
 >
+
+<label>
+Preço antigo
+</label>
 
 <input
-id="preco"
-placeholder="Preço - Ex: R$ 85,49"
+id="ofertaPrecoAntigo"
+placeholder="Ex: R$ 159,00"
 >
+
+<label>
+Preço da oferta
+</label>
 
 <input
-id="link"
-placeholder="Link do produto"
+id="ofertaPreco"
+placeholder="Ex: R$ 85,49"
 >
 
-<select id="plataforma">
+<label>
+Desconto
+</label>
 
-<option>
+<input
+id="ofertaDesconto"
+placeholder="Ex: 46% OFF"
+>
+
+<label>
+Link do produto
+</label>
+
+<input
+id="ofertaLink"
+placeholder="Cole o link do produto"
+>
+
+<label>
+Plataforma
+</label>
+
+<select id="ofertaPlataforma">
+
+<option value="Mercado Livre">
 Mercado Livre
 </option>
 
-<option>
+<option value="Shopee">
 Shopee
 </option>
 
@@ -417,12 +504,167 @@ Shopee
 
 <button
 class="primary"
-onclick="cadastrar()"
+onclick="criarOferta()"
 >
-Salvar Oferta
+🔥 Criar Oferta
 </button>
 
-<p id="mensagem"></p>
+<div
+id="resultadoOferta"
+class="mensagem"
+></div>
+
+</div>
+
+<div class="panel">
+
+<h2>
+📋 Ofertas Criadas
+</h2>
+
+<div id="listaOfertas">
+Carregando...
+</div>
+
+</div>
+
+</div>
+
+<!-- PRODUTOS -->
+
+<div
+id="produtos"
+class="page"
+>
+
+<div class="panel">
+
+<h2>
+📦 Cadastrar Produto
+</h2>
+
+<input
+id="produtoNome"
+placeholder="Nome do produto"
+>
+
+<input
+id="produtoPreco"
+placeholder="Preço"
+>
+
+<input
+id="produtoLink"
+placeholder="Link"
+>
+
+<select id="produtoPlataforma">
+
+<option value="Mercado Livre">
+Mercado Livre
+</option>
+
+<option value="Shopee">
+Shopee
+</option>
+
+</select>
+
+<button
+class="primary"
+onclick="cadastrarProduto()"
+>
+Cadastrar Produto
+</button>
+
+<div
+id="resultadoProduto"
+class="mensagem"
+></div>
+
+</div>
+
+<div class="panel">
+
+<h2>
+📋 Produtos
+</h2>
+
+<div id="listaProdutos">
+Carregando...
+</div>
+
+</div>
+
+</div>
+
+<!-- MERCADO LIVRE -->
+
+<div
+id="mercadolivre"
+class="page"
+>
+
+<div class="panel">
+
+<h2>
+🛒 Mercado Livre
+</h2>
+
+<p>
+Seu link de afiliado:
+</p>
+
+<input
+value="https://meli.la/33A3HdG"
+readonly
+>
+
+<button
+class="secondary"
+onclick="abrirAfiliado('https://meli.la/33A3HdG')"
+>
+🔗 Abrir Mercado Livre
+</button>
+
+<div id="listaMercadoLivre">
+</div>
+
+</div>
+
+</div>
+
+<!-- SHOPEE -->
+
+<div
+id="shopee"
+class="page"
+>
+
+<div class="panel">
+
+<h2>
+🛍️ Shopee
+</h2>
+
+<p>
+Seu link de afiliado:
+</p>
+
+<input
+value="https://s.shopee.com.br/6VMYjYBtKZ"
+readonly
+>
+
+<button
+class="secondary"
+onclick="abrirAfiliado('https://s.shopee.com.br/6VMYjYBtKZ')"
+>
+🔗 Abrir Shopee
+</button>
+
+<div id="listaShopee">
+</div>
 
 </div>
 
@@ -438,7 +680,7 @@ class="page"
 <div class="panel">
 
 <h2>
-🤖 Gerador de Post
+📱 Gerador de Posts
 </h2>
 
 <input
@@ -453,43 +695,64 @@ placeholder="Preço"
 
 <input
 id="postLink"
-placeholder="Link da oferta"
+placeholder="Link"
 >
 
 <button
 class="primary"
 onclick="gerarPost()"
 >
-Gerar Post
+🤖 Gerar Post
 </button>
 
 <br><br>
 
 <textarea
-id="resultado"
-rows="10"
+id="postResultado"
 placeholder="Seu post aparecerá aqui..."
 ></textarea>
 
+<div class="botoes">
+
+<button
+class="secondary"
+onclick="copiarPost()"
+>
+📋 Copiar Post
+</button>
+
+<button
+class="primary"
+onclick="abrirWhatsApp()"
+>
+👥 Abrir Grupo WhatsApp
+</button>
+
+</div>
+
 </div>
 
 </div>
 
-<!-- AFILIADOS -->
+<!-- CONFIGURAÇÕES -->
 
 <div
-id="afiliados"
+id="configuracoes"
 class="page"
 >
 
 <div class="panel">
 
 <h2>
-🔗 Seus links de afiliado
+⚙️ Configurações
 </h2>
 
 <p>
-<b>Mercado Livre</b>
+Links de afiliados configurados no sistema.
+</p>
+
+<p>
+🛒 Mercado Livre
 </p>
 
 <input
@@ -498,7 +761,7 @@ readonly
 >
 
 <p>
-<b>Shopee</b>
+🛍️ Shopee
 </p>
 
 <input
@@ -507,21 +770,13 @@ readonly
 >
 
 <p>
-<b>Grupo WhatsApp</b>
+👥 Grupo WhatsApp
 </p>
 
 <input
-value="https://chat.whatsapp.com/Je7ddU2rbdBKDxEidcBiuU?s=cl&p=a&ilr=1"
+value="https://chat.whatsapp.com/Je7ddU2rbdBKDxEidcBiuU"
 readonly
 >
-
-<a
-class="btn-whatsapp"
-target="_blank"
-href="https://chat.whatsapp.com/Je7ddU2rbdBKDxEidcBiuU?s=cl&p=a&ilr=1"
->
-📱 Abrir Grupo WhatsApp
-</a>
 
 </div>
 
@@ -531,30 +786,63 @@ href="https://chat.whatsapp.com/Je7ddU2rbdBKDxEidcBiuU?s=cl&p=a&ilr=1"
 
 <script>
 
-const grupoWhatsApp =
-'https://chat.whatsapp.com/Je7ddU2rbdBKDxEidcBiuU?s=cl&p=a&ilr=1';
+// ========================================
+// CONFIGURAÇÕES
+// ========================================
 
-function abrir(pagina, botao) {
+const LINK_WHATSAPP =
+'https://chat.whatsapp.com/Je7ddU2rbdBKDxEidcBiuU';
+
+const LINK_MERCADO_LIVRE =
+'https://meli.la/33A3HdG';
+
+const LINK_SHOPEE =
+'https://s.shopee.com.br/6VMYjYBtKZ';
+
+// ========================================
+// NAVEGAÇÃO
+// ========================================
+
+function abrirPagina(
+  pagina,
+  botao
+) {
 
   document
-  .querySelectorAll('.page')
-  .forEach(p =>
-    p.classList.remove('active')
-  );
+    .querySelectorAll('.page')
+    .forEach(
+      function(p) {
+        p.classList.remove(
+          'active'
+        );
+      }
+    );
 
   document
-  .getElementById(pagina)
-  .classList.add('active');
+    .getElementById(pagina)
+    .classList.add(
+      'active'
+    );
 
   document
-  .querySelectorAll('.menu button')
-  .forEach(b =>
-    b.classList.remove('active')
-  );
+    .querySelectorAll(
+      '.menu button'
+    )
+    .forEach(
+      function(b) {
+        b.classList.remove(
+          'active'
+        );
+      }
+    );
 
-  botao.classList.add('active');
+  if (botao) {
+    botao.classList.add(
+      'active'
+    );
+  }
 
-  const nomes = {
+  const titulos = {
 
     dashboard:
       'Dashboard',
@@ -562,63 +850,476 @@ function abrir(pagina, botao) {
     ofertas:
       'Ofertas',
 
-    cadastrar:
-      'Cadastrar Oferta',
+    produtos:
+      'Produtos',
+
+    mercadolivre:
+      'Mercado Livre',
+
+    shopee:
+      'Shopee',
 
     posts:
-      'Gerar Post',
+      'Posts',
 
-    afiliados:
-      'Links de Afiliado'
+    configuracoes:
+      'Configurações'
 
   };
 
   document
-  .getElementById('titulo')
-  .innerText =
-    nomes[pagina];
+    .getElementById('titulo')
+    .innerText =
+      titulos[pagina];
 
-  if (pagina === 'ofertas') {
+  if (
+    pagina === 'ofertas'
+  ) {
 
-    carregar();
+    carregarOfertas();
+
+  }
+
+  if (
+    pagina === 'produtos'
+  ) {
+
+    carregarProdutos();
 
   }
 
 }
 
-async function cadastrar() {
+// ========================================
+// CRIAR OFERTA
+// ========================================
 
-  const nome =
-    document
-    .getElementById('nome')
-    .value
-    .trim();
+async function criarOferta() {
 
-  const preco =
+  const produto =
     document
-    .getElementById('preco')
-    .value
-    .trim();
+      .getElementById(
+        'ofertaProduto'
+      )
+      .value
+      .trim();
+
+  const precoAntigo =
+    document
+      .getElementById(
+        'ofertaPrecoAntigo'
+      )
+      .value
+      .trim();
+
+  const precoOferta =
+    document
+      .getElementById(
+        'ofertaPreco'
+      )
+      .value
+      .trim();
+
+  const desconto =
+    document
+      .getElementById(
+        'ofertaDesconto'
+      )
+      .value
+      .trim();
 
   const link =
     document
-    .getElementById('link')
-    .value
-    .trim();
+      .getElementById(
+        'ofertaLink'
+      )
+      .value
+      .trim();
 
   const plataforma =
     document
-    .getElementById('plataforma')
-    .value;
+      .getElementById(
+        'ofertaPlataforma'
+      )
+      .value;
 
-  const mensagem =
+  const resultado =
     document
-    .getElementById('mensagem');
+      .getElementById(
+        'resultadoOferta'
+      );
 
-  if (!nome || !link) {
+  if (
+    !produto ||
+    !precoOferta ||
+    !link
+  ) {
 
-    mensagem.innerText =
-      '❌ Informe nome e link.';
+    resultado.innerText =
+      '❌ Preencha produto, preço e link.';
+
+    return;
+
+  }
+
+  resultado.innerText =
+    '⏳ Criando oferta...';
+
+  try {
+
+    const resposta =
+      await fetch(
+        '/api/ofertas',
+        {
+
+          method:
+            'POST',
+
+          headers: {
+            'Content-Type':
+              'application/json'
+          },
+
+          body:
+            JSON.stringify({
+
+              produto,
+
+              precoAntigo,
+
+              precoOferta,
+
+              desconto,
+
+              link,
+
+              plataforma
+
+            })
+
+        }
+      );
+
+    const dados =
+      await resposta.json();
+
+    if (
+      !resposta.ok ||
+      !dados.success
+    ) {
+
+      throw new Error(
+        dados.message ||
+        'Erro ao criar oferta'
+      );
+
+    }
+
+    resultado.innerText =
+      '✅ Oferta criada com sucesso!';
+
+    document
+      .getElementById(
+        'ofertaProduto'
+      )
+      .value = '';
+
+    document
+      .getElementById(
+        'ofertaPrecoAntigo'
+      )
+      .value = '';
+
+    document
+      .getElementById(
+        'ofertaPreco'
+      )
+      .value = '';
+
+    document
+      .getElementById(
+        'ofertaDesconto'
+      )
+      .value = '';
+
+    document
+      .getElementById(
+        'ofertaLink'
+      )
+      .value = '';
+
+    carregarOfertas();
+
+    atualizarDashboard();
+
+  } catch (erro) {
+
+    resultado.innerText =
+      '❌ ' +
+      erro.message;
+
+  }
+
+}
+
+// ========================================
+// CARREGAR OFERTAS
+// ========================================
+
+async function carregarOfertas() {
+
+  const lista =
+    document
+      .getElementById(
+        'listaOfertas'
+      );
+
+  if (!lista) return;
+
+  lista.innerHTML =
+    '⏳ Carregando...';
+
+  try {
+
+    const resposta =
+      await fetch(
+        '/api/ofertas'
+      );
+
+    const dados =
+      await resposta.json();
+
+    if (
+      !dados.success
+    ) {
+
+      throw new Error(
+        dados.message
+      );
+
+    }
+
+    if (
+      !dados.ofertas.length
+    ) {
+
+      lista.innerHTML =
+        '🔥 Nenhuma oferta criada ainda.';
+
+      return;
+
+    }
+
+    lista.innerHTML =
+      dados.ofertas
+        .map(
+          function(oferta) {
+
+            return `
+
+<div class="oferta">
+
+<span class="badge">
+${escaparHTML(
+  oferta.plataforma
+)}
+</span>
+
+<h3>
+🔥 ${escaparHTML(
+  oferta.produto
+)}
+</h3>
+
+<p>
+💰 Preço:
+<strong>
+${escaparHTML(
+  oferta.preco_oferta
+)}
+</strong>
+</p>
+
+<p>
+📉 ${escaparHTML(
+  oferta.desconto ||
+  ''
+)}
+</p>
+
+<p>
+<a
+href="${escaparHTML(
+  oferta.link
+)}"
+target="_blank"
+>
+🔗 Abrir oferta
+</a>
+</p>
+
+<textarea
+readonly
+>${escaparHTML(
+  oferta.texto_post
+)}</textarea>
+
+<div class="botoes">
+
+<button
+class="secondary"
+onclick="copiarTexto(
+${JSON.stringify(
+  oferta.texto_post
+)}
+)"
+>
+📋 Copiar
+</button>
+
+<button
+class="primary"
+onclick="abrirWhatsApp()"
+>
+👥 WhatsApp
+</button>
+
+<button
+class="danger"
+onclick="deletarOferta(
+${oferta.id}
+)"
+>
+🗑️ Excluir
+</button>
+
+</div>
+
+</div>
+
+`;
+
+          }
+        )
+        .join('');
+
+  } catch (erro) {
+
+    lista.innerHTML =
+      '❌ Erro: ' +
+      escaparHTML(
+        erro.message
+      );
+
+  }
+
+}
+
+// ========================================
+// DELETAR OFERTA
+// ========================================
+
+async function deletarOferta(id) {
+
+  if (
+    !confirm(
+      'Deseja excluir esta oferta?'
+    )
+  ) {
+
+    return;
+
+  }
+
+  try {
+
+    const resposta =
+      await fetch(
+        '/api/ofertas/' + id,
+        {
+          method:
+            'DELETE'
+        }
+      );
+
+    const dados =
+      await resposta.json();
+
+    if (
+      !dados.success
+    ) {
+
+      throw new Error(
+        dados.message
+      );
+
+    }
+
+    carregarOfertas();
+
+    atualizarDashboard();
+
+  } catch (erro) {
+
+    alert(
+      'Erro: ' +
+      erro.message
+    );
+
+  }
+
+}
+
+// ========================================
+// PRODUTOS
+// ========================================
+
+async function cadastrarProduto() {
+
+  const nome =
+    document
+      .getElementById(
+        'produtoNome'
+      )
+      .value
+      .trim();
+
+  const preco =
+    document
+      .getElementById(
+        'produtoPreco'
+      )
+      .value
+      .trim();
+
+  const link =
+    document
+      .getElementById(
+        'produtoLink'
+      )
+      .value
+      .trim();
+
+  const plataforma =
+    document
+      .getElementById(
+        'produtoPlataforma'
+      )
+      .value;
+
+  const resultado =
+    document
+      .getElementById(
+        'resultadoProduto'
+      );
+
+  if (
+    !nome ||
+    !link
+  ) {
+
+    resultado.innerText =
+      '❌ Preencha nome e link.';
 
     return;
 
@@ -631,21 +1332,26 @@ async function cadastrar() {
         '/api/produtos',
         {
 
-          method: 'POST',
+          method:
+            'POST',
 
           headers: {
             'Content-Type':
               'application/json'
           },
 
-          body: JSON.stringify({
+          body:
+            JSON.stringify({
 
-            nome,
-            preco,
-            link,
-            plataforma
+              nome,
 
-          })
+              preco,
+
+              link,
+
+              plataforma
+
+            })
 
         }
       );
@@ -653,7 +1359,9 @@ async function cadastrar() {
     const dados =
       await resposta.json();
 
-    if (!dados.success) {
+    if (
+      !dados.success
+    ) {
 
       throw new Error(
         dados.message
@@ -661,26 +1369,34 @@ async function cadastrar() {
 
     }
 
-    mensagem.innerText =
-      '✅ Oferta cadastrada!';
+    resultado.innerText =
+      '✅ Produto salvo!';
 
     document
-    .getElementById('nome')
-    .value = '';
+      .getElementById(
+        'produtoNome'
+      )
+      .value = '';
 
     document
-    .getElementById('preco')
-    .value = '';
+      .getElementById(
+        'produtoPreco'
+      )
+      .value = '';
 
     document
-    .getElementById('link')
-    .value = '';
+      .getElementById(
+        'produtoLink'
+      )
+      .value = '';
 
-    atualizar();
+    carregarProdutos();
+
+    atualizarDashboard();
 
   } catch (erro) {
 
-    mensagem.innerText =
+    resultado.innerText =
       '❌ ' +
       erro.message;
 
@@ -688,11 +1404,19 @@ async function cadastrar() {
 
 }
 
-async function carregar() {
+// ========================================
+// LISTAR PRODUTOS
+// ========================================
+
+async function carregarProdutos() {
 
   const lista =
     document
-    .getElementById('lista');
+      .getElementById(
+        'listaProdutos'
+      );
+
+  if (!lista) return;
 
   try {
 
@@ -704,10 +1428,12 @@ async function carregar() {
     const dados =
       await resposta.json();
 
-    if (!dados.produtos.length) {
+    if (
+      !dados.produtos.length
+    ) {
 
       lista.innerHTML =
-        '📦 Nenhuma oferta cadastrada.';
+        '📦 Nenhum produto cadastrado.';
 
       return;
 
@@ -715,205 +1441,310 @@ async function carregar() {
 
     lista.innerHTML =
       dados.produtos
-      .map(p => `
+        .map(
+          function(p) {
 
-        <div class="oferta">
+            return `
 
-          <h3>
-          📦 ${escapar(p.nome)}
-          </h3>
+<div class="produto">
 
-          <p>
-          💰 ${escapar(p.preco || '')}
-          </p>
+<span class="badge">
+${escaparHTML(
+  p.plataforma
+)}
+</span>
 
-          <p>
-          🏷️ ${escapar(p.plataforma)}
-          </p>
+<h3>
+📦 ${escaparHTML(
+  p.nome
+)}
+</h3>
 
-          <a
-          href="${escapar(p.link)}"
-          target="_blank"
-          >
-          🔗 Ver produto
-          </a>
+<p>
+💰 ${escaparHTML(
+  p.preco ||
+  'Preço não informado'
+)}
+</p>
 
-          <br>
+<a
+href="${escaparHTML(
+  p.link
+)}"
+target="_blank"
+>
+🔗 Abrir produto
+</a>
 
-          <a
-          class="btn-whatsapp"
-          target="_blank"
-          href="${grupoWhatsApp}"
-          >
-          📱 Abrir grupo
-          </a>
+</div>
 
-          <br><br>
+`;
 
-          <button
-          class="btn-delete"
-          onclick="deletar(${p.id})"
-          >
-          🗑️ Excluir
-          </button>
-
-        </div>
-
-      `)
-      .join('');
+          }
+        )
+        .join('');
 
   } catch (erro) {
 
-    lista.innerText =
-      '❌ Erro ao carregar ofertas.';
+    lista.innerHTML =
+      '❌ Erro ao carregar produtos.';
 
   }
 
 }
 
-async function deletar(id) {
+// ========================================
+// DASHBOARD
+// ========================================
 
-  if (
-    !confirm(
-      'Excluir esta oferta?'
-    )
-  ) {
+async function atualizarDashboard() {
 
-    return;
+  try {
+
+    const produtosResposta =
+      await fetch(
+        '/api/produtos'
+      );
+
+    const produtosDados =
+      await produtosResposta.json();
+
+    const ofertasResposta =
+      await fetch(
+        '/api/ofertas'
+      );
+
+    const ofertasDados =
+      await ofertasResposta.json();
+
+    const produtos =
+      produtosDados.produtos ||
+      [];
+
+    const ofertas =
+      ofertasDados.ofertas ||
+      [];
+
+    document
+      .getElementById(
+        'totalProdutos'
+      )
+      .innerText =
+        produtos.length;
+
+    document
+      .getElementById(
+        'totalOfertas'
+      )
+      .innerText =
+        ofertas.length;
+
+    document
+      .getElementById(
+        'totalMercadoLivre'
+      )
+      .innerText =
+        produtos.filter(
+          function(p) {
+
+            return p.plataforma ===
+              'Mercado Livre';
+
+          }
+        ).length;
+
+    document
+      .getElementById(
+        'totalShopee'
+      )
+      .innerText =
+        produtos.filter(
+          function(p) {
+
+            return p.plataforma ===
+              'Shopee';
+
+          }
+        ).length;
+
+  } catch (erro) {
+
+    console.error(
+      erro
+    );
 
   }
 
-  await fetch(
-    '/api/produtos/' + id,
-    {
-      method: 'DELETE'
-    }
-  );
-
-  carregar();
-
-  atualizar();
-
 }
+
+// ========================================
+// GERAR POST
+// ========================================
 
 function gerarPost() {
 
   const nome =
     document
-    .getElementById('postNome')
-    .value
-    .trim();
+      .getElementById(
+        'postNome'
+      )
+      .value
+      .trim();
 
   const preco =
     document
-    .getElementById('postPreco')
-    .value
-    .trim();
+      .getElementById(
+        'postPreco'
+      )
+      .value
+      .trim();
 
   const link =
     document
-    .getElementById('postLink')
-    .value
-    .trim();
+      .getElementById(
+        'postLink'
+      )
+      .value
+      .trim();
 
-  if (!nome || !link) {
+  if (
+    !nome ||
+    !link
+  ) {
 
     alert(
-      'Informe o produto e o link.'
+      'Preencha nome e link.'
     );
 
     return;
 
   }
 
-  const texto =
-
-`🔥 OFERTA IMPERDÍVEL! 🔥
+  const texto = `🔥 OFERTA IMPERDÍVEL!
 
 📦 ${nome}
 
-💰 Por apenas ${preco || 'consulte o preço'}
+💰 POR APENAS:
+${preco || 'Consulte o preço'}
 
 🛒 COMPRE AQUI:
 ${link}
 
-⚡ Eletromax
+⚡ ELETROMAX
+Ofertas e produtos selecionados!
 
-📱 Entre no nosso grupo de ofertas:
-${grupoWhatsApp}`;
+👥 ENTRE NO NOSSO GRUPO:
+${LINK_WHATSAPP}`;
 
   document
-  .getElementById('resultado')
-  .value =
-    texto;
+    .getElementById(
+      'postResultado'
+    )
+    .value =
+      texto;
 
 }
 
-async function atualizar() {
+// ========================================
+// COPIAR POST
+// ========================================
 
-  try {
+function copiarPost() {
 
-    const resposta =
-      await fetch(
-        '/api/produtos'
-      );
-
-    const dados =
-      await resposta.json();
-
-    const produtos =
-      dados.produtos || [];
-
+  const texto =
     document
-    .getElementById('total')
-    .innerText =
-      produtos.length;
+      .getElementById(
+        'postResultado'
+      )
+      .value;
 
-    document
-    .getElementById('ml')
-    .innerText =
-      produtos.filter(
-        p =>
-          p.plataforma ===
-          'Mercado Livre'
-      ).length;
-
-    document
-    .getElementById('shopee')
-    .innerText =
-      produtos.filter(
-        p =>
-          p.plataforma ===
-          'Shopee'
-      ).length;
-
-  } catch (erro) {
-
-    console.error(erro);
-
-  }
+  copiarTexto(
+    texto
+  );
 
 }
 
-function escapar(texto) {
+function copiarTexto(
+  texto
+) {
 
-  return String(texto)
+  navigator
+    .clipboard
+    .writeText(
+      texto
+    )
+    .then(
+      function() {
+
+        alert(
+          '✅ Texto copiado!'
+        );
+
+      }
+    );
+
+}
+
+// ========================================
+// ABRIR WHATSAPP
+// ========================================
+
+function abrirWhatsApp() {
+
+  window.open(
+    LINK_WHATSAPP,
+    '_blank'
+  );
+
+}
+
+// ========================================
+// ABRIR AFILIADO
+// ========================================
+
+function abrirAfiliado(
+  link
+) {
+
+  window.open(
+    link,
+    '_blank'
+  );
+
+}
+
+// ========================================
+// SEGURANÇA
+// ========================================
+
+function escaparHTML(
+  texto
+) {
+
+  return String(
+    texto || ''
+  )
+
   .replace(
     /&/g,
     '&amp;'
   )
+
   .replace(
     /</g,
     '&lt;'
   )
+
   .replace(
     />/g,
     '&gt;'
   )
+
   .replace(
     /"/g,
     '&quot;'
   )
+
   .replace(
     /'/g,
     '&#039;'
@@ -921,11 +1752,15 @@ function escapar(texto) {
 
 }
 
+// ========================================
+// INICIAR
+// ========================================
+
 window.addEventListener(
   'DOMContentLoaded',
-  () => {
+  function() {
 
-    atualizar();
+    atualizarDashboard();
 
   }
 );
