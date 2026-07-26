@@ -4,7 +4,6 @@ const path = require('path');
 const { Pool } = require('pg');
 
 const app = express();
-
 const PORT = process.env.PORT || 3000;
 
 // ======================================================
@@ -15,44 +14,66 @@ app.use(cors());
 app.use(express.json());
 
 // ======================================================
-// FRONTEND
+// CAMINHO DO FRONTEND
 // Estrutura:
-// projeto/
-// ├── backend/
-// │   └── server.js
-// └── frontend/
-//     └── index.html
+// backend/server.js
+// frontend/index.html
 // ======================================================
 
-const frontendPath = path.join(__dirname, '../frontend');
+const frontendPath = path.join(
+  __dirname,
+  '../frontend'
+);
 
-app.use(express.static(frontendPath));
+// Servir arquivos do frontend
+app.use(
+  express.static(frontendPath)
+);
 
 // ======================================================
 // POSTGRESQL
 // ======================================================
 
-if (!process.env.DATABASE_URL) {
-  console.error('⚠️ ERRO: DATABASE_URL não configurada.');
+let pool = null;
+
+if (process.env.DATABASE_URL) {
+
+  pool = new Pool({
+    connectionString:
+      process.env.DATABASE_URL,
+
+    ssl: {
+      rejectUnauthorized: false
+    }
+  });
+
+} else {
+
+  console.error(
+    'ERRO: DATABASE_URL não foi configurada.'
+  );
+
 }
 
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-
-  ssl: process.env.DATABASE_URL
-    ? {
-        rejectUnauthorized: false
-      }
-    : false
-});
-
 // ======================================================
-// BANCO DE DADOS
+// INICIALIZAR BANCO
 // ======================================================
 
 async function inicializarBanco() {
+
+  if (!pool) {
+
+    console.error(
+      'Banco não inicializado: DATABASE_URL ausente.'
+    );
+
+    return false;
+
+  }
+
   try {
 
+    // Tabela de produtos
     await pool.query(`
       CREATE TABLE IF NOT EXISTS produtos (
         id SERIAL PRIMARY KEY,
@@ -64,6 +85,7 @@ async function inicializarBanco() {
       )
     `);
 
+    // Tabela de ofertas
     await pool.query(`
       CREATE TABLE IF NOT EXISTS ofertas (
         id SERIAL PRIMARY KEY,
@@ -74,15 +96,15 @@ async function inicializarBanco() {
         plataforma TEXT NOT NULL,
         imagem TEXT,
         descricao TEXT,
-        status TEXT DEFAULT 'ativa',
         criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
+    // Tabela de configurações
     await pool.query(`
       CREATE TABLE IF NOT EXISTS configuracoes (
-        id INTEGER PRIMARY KEY DEFAULT 1,
-        nome_loja TEXT DEFAULT 'Eletromax',
+        id SERIAL PRIMARY KEY,
+        nome_loja TEXT,
         link_mercadolivre TEXT,
         link_shopee TEXT,
         link_whatsapp TEXT,
@@ -90,862 +112,1122 @@ async function inicializarBanco() {
       )
     `);
 
-    await pool.query(`
-      INSERT INTO configuracoes
-      (
-        id,
-        nome_loja,
-        link_mercadolivre,
-        link_shopee,
-        link_whatsapp
-      )
-      VALUES
-      (
-        1,
-        'Eletromax',
-        'https://meli.la/33A3HdG',
-        'https://s.shopee.com.br/6VMYjYBtKZ',
-        'https://chat.whatsapp.com/Je7ddU2rbdBKDxEidcBiuU?s=cl&p=a&ilr=1'
-      )
-      ON CONFLICT (id) DO NOTHING
-    `);
+    // Criar configuração inicial
+    const config =
+      await pool.query(
+        'SELECT id FROM configuracoes LIMIT 1'
+      );
 
-    console.log('=================================');
-    console.log('✅ BANCO DE DADOS CONECTADO');
-    console.log('✅ TABELA PRODUTOS PRONTA');
-    console.log('✅ TABELA OFERTAS PRONTA');
-    console.log('✅ CONFIGURAÇÕES PRONTAS');
-    console.log('=================================');
+    if (config.rows.length === 0) {
+
+      await pool.query(
+        `
+        INSERT INTO configuracoes
+        (
+          nome_loja,
+          link_mercadolivre,
+          link_shopee,
+          link_whatsapp
+        )
+        VALUES ($1, $2, $3, $4)
+        `,
+        [
+          'Eletromax',
+          'https://meli.la/33A3HdG',
+          'https://s.shopee.com.br/6VMYjYBtKZ',
+          'https://chat.whatsapp.com/Je7ddU2rbdBKDxEidcBiuU?s=cl&p=a&ilr=1'
+        ]
+      );
+
+    }
+
+    console.log(
+      '================================='
+    );
+
+    console.log(
+      'BANCO DE DADOS CONECTADO'
+    );
+
+    console.log(
+      'TABELA PRODUTOS PRONTA'
+    );
+
+    console.log(
+      'TABELA OFERTAS PRONTA'
+    );
+
+    console.log(
+      'TABELA CONFIGURAÇÕES PRONTA'
+    );
+
+    console.log(
+      '================================='
+    );
 
     return true;
 
   } catch (erro) {
 
     console.error(
-      '❌ ERRO AO INICIALIZAR BANCO:',
+      'ERRO AO INICIALIZAR BANCO:',
       erro.message
     );
 
     return false;
+
   }
+
 }
 
 // ======================================================
 // PÁGINA PRINCIPAL
 // ======================================================
 
-app.get('/', (req, res) => {
+app.get(
+  '/',
+  (req, res) => {
 
-  res.sendFile(
-    path.join(frontendPath, 'index.html')
-  );
+    res.sendFile(
+      path.join(
+        frontendPath,
+        'index.html'
+      )
+    );
 
-});
+  }
+);
 
 // ======================================================
 // STATUS DA API
 // ======================================================
 
-app.get('/api/status', async (req, res) => {
+app.get(
+  '/api/status',
+  async (req, res) => {
 
-  try {
+    try {
 
-    await pool.query('SELECT NOW()');
+      if (!pool) {
 
-    res.json({
+        return res.status(500).json({
 
-      success: true,
+          success: false,
 
-      message: 'Eletromax API funcionando!',
+          message:
+            'DATABASE_URL não configurada.',
 
-      status: 'online',
+          status:
+            'offline',
 
-      database: 'connected'
+          database:
+            'disconnected'
 
-    });
+        });
 
-  } catch (erro) {
+      }
 
-    console.error(
-      'ERRO STATUS:',
-      erro.message
-    );
+      await pool.query(
+        'SELECT NOW()'
+      );
 
-    res.status(500).json({
+      res.json({
 
-      success: false,
+        success: true,
 
-      message: 'Erro na conexão com banco',
+        message:
+          'Eletromax API funcionando!',
 
-      error: erro.message
+        status:
+          'online',
 
-    });
+        database:
+          'connected'
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+        'ERRO STATUS:',
+        erro.message
+      );
+
+      res.status(500).json({
+
+        success: false,
+
+        message:
+          'Erro na conexão com banco.',
+
+        status:
+          'offline',
+
+        database:
+          'disconnected',
+
+        error:
+          erro.message
+
+      });
+
+    }
 
   }
-
-});
+);
 
 // ======================================================
 // DASHBOARD
 // ======================================================
 
-app.get('/api/dashboard', async (req, res) => {
+app.get(
+  '/api/dashboard',
+  async (req, res) => {
 
-  try {
+    try {
 
-    const produtos =
-      await pool.query(
-        'SELECT COUNT(*) FROM produtos'
+      if (!pool) {
+
+        return res.status(500).json({
+
+          success: false,
+
+          message:
+            'Banco de dados não conectado.'
+
+        });
+
+      }
+
+      const produtos =
+        await pool.query(
+          'SELECT COUNT(*) FROM produtos'
+        );
+
+      const ofertas =
+        await pool.query(
+          'SELECT COUNT(*) FROM ofertas'
+        );
+
+      const mercadoLivre =
+        await pool.query(
+          `
+          SELECT COUNT(*)
+          FROM produtos
+          WHERE plataforma = 'Mercado Livre'
+          `
+        );
+
+      const shopee =
+        await pool.query(
+          `
+          SELECT COUNT(*)
+          FROM produtos
+          WHERE plataforma = 'Shopee'
+          `
+        );
+
+      res.json({
+
+        success: true,
+
+        totalProdutos:
+          Number(
+            produtos.rows[0].count
+          ),
+
+        totalOfertas:
+          Number(
+            ofertas.rows[0].count
+          ),
+
+        totalMercadoLivre:
+          Number(
+            mercadoLivre.rows[0].count
+          ),
+
+        totalShopee:
+          Number(
+            shopee.rows[0].count
+          )
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+        'ERRO DASHBOARD:',
+        erro.message
       );
 
-    const ofertas =
-      await pool.query(
-        "SELECT COUNT(*) FROM ofertas WHERE status = 'ativa'"
-      );
-
-    const mercadoLivre =
-      await pool.query(
-        "SELECT COUNT(*) FROM ofertas WHERE plataforma = 'Mercado Livre' AND status = 'ativa'"
-      );
-
-    const shopee =
-      await pool.query(
-        "SELECT COUNT(*) FROM ofertas WHERE plataforma = 'Shopee' AND status = 'ativa'"
-      );
-
-    res.json({
-
-      success: true,
-
-      totalProdutos:
-        Number(produtos.rows[0].count),
-
-      totalOfertas:
-        Number(ofertas.rows[0].count),
-
-      totalMercadoLivre:
-        Number(mercadoLivre.rows[0].count),
-
-      totalShopee:
-        Number(shopee.rows[0].count)
-
-    });
-
-  } catch (erro) {
-
-    console.error(
-      'ERRO DASHBOARD:',
-      erro.message
-    );
-
-    res.status(500).json({
-
-      success: false,
-
-      message: 'Erro ao carregar dashboard.',
-
-      error: erro.message
-
-    });
-
-  }
-
-});
-
-// ======================================================
-// PRODUTOS
-// ======================================================
-
-// SALVAR PRODUTO
-
-app.post('/api/produtos', async (req, res) => {
-
-  try {
-
-    const {
-      nome,
-      preco,
-      link,
-      plataforma
-    } = req.body;
-
-    if (
-      !nome ||
-      !link ||
-      !plataforma
-    ) {
-
-      return res.status(400).json({
+      res.status(500).json({
 
         success: false,
 
         message:
-          'Nome, link e plataforma são obrigatórios.'
+          'Erro ao carregar dashboard.',
+
+        error:
+          erro.message
 
       });
 
     }
 
-    const resultado =
-      await pool.query(
-
-        `
-        INSERT INTO produtos
-        (
-          nome,
-          preco,
-          link,
-          plataforma
-        )
-        VALUES
-        ($1, $2, $3, $4)
-        RETURNING *
-        `,
-
-        [
-          nome.trim(),
-          preco ? preco.trim() : '',
-          link.trim(),
-          plataforma.trim()
-        ]
-
-      );
-
-    res.status(201).json({
-
-      success: true,
-
-      message:
-        'Produto salvo com sucesso!',
-
-      produto:
-        resultado.rows[0]
-
-    });
-
-  } catch (erro) {
-
-    console.error(
-      'ERRO AO SALVAR PRODUTO:',
-      erro.message
-    );
-
-    res.status(500).json({
-
-      success: false,
-
-      message:
-        'Erro ao salvar produto.',
-
-      error:
-        erro.message
-
-    });
-
   }
+);
 
-});
+// ======================================================
+// PRODUTOS - CADASTRAR
+// ======================================================
 
-// LISTAR PRODUTOS
+app.post(
+  '/api/produtos',
+  async (req, res) => {
 
-app.get('/api/produtos', async (req, res) => {
+    try {
 
-  try {
+      if (!pool) {
 
-    const resultado =
-      await pool.query(
+        return res.status(500).json({
 
-        `
-        SELECT *
-        FROM produtos
-        ORDER BY id DESC
-        `
+          success: false,
 
-      );
+          message:
+            'Banco de dados não conectado.'
 
-    res.json({
+        });
 
-      success: true,
+      }
 
-      produtos:
-        resultado.rows
+      const {
+        nome,
+        preco,
+        link,
+        plataforma
+      } = req.body;
 
-    });
+      if (
+        !nome ||
+        !link ||
+        !plataforma
+      ) {
 
-  } catch (erro) {
+        return res.status(400).json({
 
-    console.error(
-      'ERRO AO BUSCAR PRODUTOS:',
-      erro.message
-    );
+          success: false,
 
-    res.status(500).json({
+          message:
+            'Nome, link e plataforma são obrigatórios.'
 
-      success: false,
+        });
 
-      message:
-        'Erro ao buscar produtos.',
+      }
 
-      error:
+      const resultado =
+        await pool.query(
+          `
+          INSERT INTO produtos
+          (
+            nome,
+            preco,
+            link,
+            plataforma
+          )
+          VALUES
+          ($1, $2, $3, $4)
+          RETURNING *
+          `,
+          [
+            nome.trim(),
+            preco
+              ? String(preco).trim()
+              : '',
+            link.trim(),
+            plataforma.trim()
+          ]
+        );
+
+      res.status(201).json({
+
+        success: true,
+
+        message:
+          'Produto salvo com sucesso!',
+
+        produto:
+          resultado.rows[0]
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+        'ERRO AO SALVAR PRODUTO:',
         erro.message
-
-    });
-
-  }
-
-});
-
-// DELETAR PRODUTO
-
-app.delete('/api/produtos/:id', async (req, res) => {
-
-  try {
-
-    const {
-      id
-    } = req.params;
-
-    const resultado =
-      await pool.query(
-
-        `
-        DELETE FROM produtos
-        WHERE id = $1
-        RETURNING *
-        `,
-
-        [id]
-
       );
 
-    if (
-      resultado.rows.length === 0
-    ) {
-
-      return res.status(404).json({
+      res.status(500).json({
 
         success: false,
 
         message:
-          'Produto não encontrado.'
+          'Erro ao salvar produto.',
+
+        error:
+          erro.message
 
       });
 
     }
 
-    res.json({
-
-      success: true,
-
-      message:
-        'Produto excluído com sucesso!'
-
-    });
-
-  } catch (erro) {
-
-    console.error(
-      'ERRO AO DELETAR PRODUTO:',
-      erro.message
-    );
-
-    res.status(500).json({
-
-      success: false,
-
-      message:
-        'Erro ao excluir produto.',
-
-      error:
-        erro.message
-
-    });
-
   }
-
-});
+);
 
 // ======================================================
-// CENTRAL DE OFERTAS
+// PRODUTOS - LISTAR
 // ======================================================
 
-// CADASTRAR OFERTA
+app.get(
+  '/api/produtos',
+  async (req, res) => {
 
-app.post('/api/ofertas', async (req, res) => {
+    try {
 
-  try {
+      if (!pool) {
 
-    const {
-      nome,
-      preco,
-      precoAnterior,
-      link,
-      plataforma,
-      imagem,
-      descricao
-    } = req.body;
+        return res.status(500).json({
 
-    if (
-      !nome ||
-      !link ||
-      !plataforma
-    ) {
+          success: false,
 
-      return res.status(400).json({
+          message:
+            'Banco de dados não conectado.',
+
+          produtos: []
+
+        });
+
+      }
+
+      const resultado =
+        await pool.query(
+          `
+          SELECT *
+          FROM produtos
+          ORDER BY id DESC
+          `
+        );
+
+      res.json({
+
+        success: true,
+
+        produtos:
+          resultado.rows
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+        'ERRO AO BUSCAR PRODUTOS:',
+        erro.message
+      );
+
+      res.status(500).json({
 
         success: false,
 
         message:
-          'Nome, link e plataforma são obrigatórios.'
+          'Erro ao buscar produtos.',
+
+        error:
+          erro.message,
+
+        produtos: []
 
       });
 
     }
 
-    const resultado =
-      await pool.query(
-
-        `
-        INSERT INTO ofertas
-        (
-          nome,
-          preco,
-          preco_anterior,
-          link,
-          plataforma,
-          imagem,
-          descricao
-        )
-        VALUES
-        ($1, $2, $3, $4, $5, $6, $7)
-        RETURNING *
-        `,
-
-        [
-          nome.trim(),
-          preco || '',
-          precoAnterior || '',
-          link.trim(),
-          plataforma.trim(),
-          imagem || '',
-          descricao || ''
-        ]
-
-      );
-
-    res.status(201).json({
-
-      success: true,
-
-      message:
-        'Oferta cadastrada com sucesso!',
-
-      oferta:
-        resultado.rows[0]
-
-    });
-
-  } catch (erro) {
-
-    console.error(
-      'ERRO AO SALVAR OFERTA:',
-      erro.message
-    );
-
-    res.status(500).json({
-
-      success: false,
-
-      message:
-        'Erro ao salvar oferta.',
-
-      error:
-        erro.message
-
-    });
-
   }
-
-});
+);
 
 // ======================================================
-// LISTAR OFERTAS
+// PRODUTOS - DELETAR
 // ======================================================
 
-app.get('/api/ofertas', async (req, res) => {
+app.delete(
+  '/api/produtos/:id',
+  async (req, res) => {
 
-  try {
+    try {
 
-    const resultado =
-      await pool.query(
+      if (!pool) {
 
-        `
-        SELECT *
-        FROM ofertas
-        WHERE status = 'ativa'
-        ORDER BY id DESC
-        `
+        return res.status(500).json({
 
-      );
+          success: false,
 
-    res.json({
+          message:
+            'Banco de dados não conectado.'
 
-      success: true,
+        });
 
-      ofertas:
-        resultado.rows
+      }
 
-    });
+      const {
+        id
+      } = req.params;
 
-  } catch (erro) {
+      const resultado =
+        await pool.query(
+          `
+          DELETE FROM produtos
+          WHERE id = $1
+          RETURNING *
+          `,
+          [id]
+        );
 
-    console.error(
-      'ERRO AO BUSCAR OFERTAS:',
-      erro.message
-    );
+      if (
+        resultado.rows.length === 0
+      ) {
 
-    res.status(500).json({
+        return res.status(404).json({
 
-      success: false,
+          success: false,
 
-      message:
-        'Erro ao buscar ofertas.',
+          message:
+            'Produto não encontrado.'
 
-      error:
+        });
+
+      }
+
+      res.json({
+
+        success: true,
+
+        message:
+          'Produto excluído com sucesso!',
+
+        produto:
+          resultado.rows[0]
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+        'ERRO AO DELETAR PRODUTO:',
         erro.message
-
-    });
-
-  }
-
-});
-
-// ======================================================
-// EXCLUIR OFERTA
-// ======================================================
-
-app.delete('/api/ofertas/:id', async (req, res) => {
-
-  try {
-
-    const {
-      id
-    } = req.params;
-
-    const resultado =
-      await pool.query(
-
-        `
-        DELETE FROM ofertas
-        WHERE id = $1
-        RETURNING *
-        `,
-
-        [id]
-
       );
 
-    if (
-      resultado.rows.length === 0
-    ) {
-
-      return res.status(404).json({
+      res.status(500).json({
 
         success: false,
 
         message:
-          'Oferta não encontrada.'
+          'Erro ao excluir produto.',
+
+        error:
+          erro.message
 
       });
 
     }
 
-    res.json({
-
-      success: true,
-
-      message:
-        'Oferta excluída com sucesso!'
-
-    });
-
-  } catch (erro) {
-
-    console.error(
-      'ERRO AO EXCLUIR OFERTA:',
-      erro.message
-    );
-
-    res.status(500).json({
-
-      success: false,
-
-      message:
-        'Erro ao excluir oferta.',
-
-      error:
-        erro.message
-
-    });
-
   }
-
-});
+);
 
 // ======================================================
-// GERAR TEXTO DE OFERTA
+// OFERTAS - CADASTRAR
 // ======================================================
 
-app.post('/api/ofertas/gerar-post', async (req, res) => {
+app.post(
+  '/api/ofertas',
+  async (req, res) => {
 
-  try {
+    try {
 
-    const {
-      nome,
-      preco,
-      precoAnterior,
-      link,
-      plataforma
-    } = req.body;
+      if (!pool) {
 
-    if (
-      !nome ||
-      !link
-    ) {
+        return res.status(500).json({
 
-      return res.status(400).json({
+          success: false,
+
+          message:
+            'Banco de dados não conectado.'
+
+        });
+
+      }
+
+      const {
+        nome,
+        preco,
+        precoAnterior,
+        link,
+        plataforma,
+        imagem,
+        descricao
+      } = req.body;
+
+      if (
+        !nome ||
+        !link ||
+        !plataforma
+      ) {
+
+        return res.status(400).json({
+
+          success: false,
+
+          message:
+            'Nome, link e plataforma são obrigatórios.'
+
+        });
+
+      }
+
+      const resultado =
+        await pool.query(
+          `
+          INSERT INTO ofertas
+          (
+            nome,
+            preco,
+            preco_anterior,
+            link,
+            plataforma,
+            imagem,
+            descricao
+          )
+          VALUES
+          ($1, $2, $3, $4, $5, $6, $7)
+          RETURNING *
+          `,
+          [
+            nome.trim(),
+
+            preco
+              ? String(preco).trim()
+              : '',
+
+            precoAnterior
+              ? String(precoAnterior).trim()
+              : '',
+
+            link.trim(),
+
+            plataforma.trim(),
+
+            imagem
+              ? String(imagem).trim()
+              : '',
+
+            descricao
+              ? String(descricao).trim()
+              : ''
+          ]
+        );
+
+      res.status(201).json({
+
+        success: true,
+
+        message:
+          'Oferta salva com sucesso!',
+
+        oferta:
+          resultado.rows[0]
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+        'ERRO AO SALVAR OFERTA:',
+        erro.message
+      );
+
+      res.status(500).json({
 
         success: false,
 
         message:
-          'Nome e link são obrigatórios.'
+          'Erro ao salvar oferta.',
+
+        error:
+          erro.message
 
       });
 
     }
 
-    const texto =
+  }
+);
 
-`🔥 OFERTA IMPERDÍVEL! 🔥
+// ======================================================
+// OFERTAS - LISTAR
+// ======================================================
+
+app.get(
+  '/api/ofertas',
+  async (req, res) => {
+
+    try {
+
+      if (!pool) {
+
+        return res.status(500).json({
+
+          success: false,
+
+          message:
+            'Banco de dados não conectado.',
+
+          ofertas: []
+
+        });
+
+      }
+
+      const resultado =
+        await pool.query(
+          `
+          SELECT *
+          FROM ofertas
+          ORDER BY id DESC
+          `
+        );
+
+      res.json({
+
+        success: true,
+
+        ofertas:
+          resultado.rows
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+        'ERRO AO BUSCAR OFERTAS:',
+        erro.message
+      );
+
+      res.status(500).json({
+
+        success: false,
+
+        message:
+          'Erro ao buscar ofertas.',
+
+        error:
+          erro.message,
+
+        ofertas: []
+
+      });
+
+    }
+
+  }
+);
+
+// ======================================================
+// OFERTAS - DELETAR
+// ======================================================
+
+app.delete(
+  '/api/ofertas/:id',
+  async (req, res) => {
+
+    try {
+
+      if (!pool) {
+
+        return res.status(500).json({
+
+          success: false,
+
+          message:
+            'Banco de dados não conectado.'
+
+        });
+
+      }
+
+      const {
+        id
+      } = req.params;
+
+      const resultado =
+        await pool.query(
+          `
+          DELETE FROM ofertas
+          WHERE id = $1
+          RETURNING *
+          `,
+          [id]
+        );
+
+      if (
+        resultado.rows.length === 0
+      ) {
+
+        return res.status(404).json({
+
+          success: false,
+
+          message:
+            'Oferta não encontrada.'
+
+        });
+
+      }
+
+      res.json({
+
+        success: true,
+
+        message:
+          'Oferta excluída com sucesso!',
+
+        oferta:
+          resultado.rows[0]
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+        'ERRO AO DELETAR OFERTA:',
+        erro.message
+      );
+
+      res.status(500).json({
+
+        success: false,
+
+        message:
+          'Erro ao excluir oferta.',
+
+        error:
+          erro.message
+
+      });
+
+    }
+
+  }
+);
+
+// ======================================================
+// GERAR POST
+// ======================================================
+
+app.post(
+  '/api/ofertas/gerar-post',
+  async (req, res) => {
+
+    try {
+
+      const {
+        nome,
+        preco,
+        precoAnterior,
+        link,
+        plataforma
+      } = req.body;
+
+      if (
+        !nome ||
+        !link
+      ) {
+
+        return res.status(400).json({
+
+          success: false,
+
+          message:
+            'Nome e link são obrigatórios.'
+
+        });
+
+      }
+
+      const texto = `🔥 OFERTA IMPERDÍVEL! 🔥
 
 📦 ${nome}
 
-${precoAnterior ? `❌ De: ${precoAnterior}\n` : ''}💰 ${preco ? `Por apenas: ${preco}` : 'Confira o preço atual!'}
+${
+  precoAnterior
+  ?
+  `❌ De: ${precoAnterior}
+`
+  :
+  ''
+}💰 POR APENAS: ${preco || 'CONSULTE O PREÇO'}!
 
 🛒 Plataforma: ${plataforma || 'Oferta'}
 
-👇 COMPRE AQUI:
+🔗 COMPRE AQUI:
 ${link}
 
-⚡ ELETROMAX
-🔥 Ofertas selecionadas para você!
+⚡ Aproveite enquanto durar o estoque!
 
-⚠️ Preço e disponibilidade podem mudar sem aviso.`;
+📲 Eletromax | Ofertas e oportunidades todos os dias`;
 
-    res.json({
+      res.json({
 
-      success: true,
+        success: true,
 
-      texto
+        texto
 
-    });
+      });
 
-  } catch (erro) {
+    } catch (erro) {
 
-    console.error(
-      'ERRO AO GERAR POST:',
-      erro.message
-    );
-
-    res.status(500).json({
-
-      success: false,
-
-      message:
-        'Erro ao gerar post.'
-
-    });
-
-  }
-
-});
-
-// ======================================================
-// CONFIGURAÇÕES
-// ======================================================
-
-// BUSCAR CONFIGURAÇÕES
-
-app.get('/api/configuracoes', async (req, res) => {
-
-  try {
-
-    const resultado =
-      await pool.query(
-
-        `
-        SELECT *
-        FROM configuracoes
-        WHERE id = 1
-        `
-
-      );
-
-    res.json({
-
-      success: true,
-
-      configuracoes:
-        resultado.rows[0] || null
-
-    });
-
-  } catch (erro) {
-
-    console.error(
-      'ERRO CONFIGURAÇÕES:',
-      erro.message
-    );
-
-    res.status(500).json({
-
-      success: false,
-
-      message:
-        'Erro ao buscar configurações.'
-
-    });
-
-  }
-
-});
-
-// SALVAR CONFIGURAÇÕES
-
-app.put('/api/configuracoes', async (req, res) => {
-
-  try {
-
-    const {
-      nomeLoja,
-      linkMercadoLivre,
-      linkShopee,
-      linkWhatsapp
-    } = req.body;
-
-    const resultado =
-      await pool.query(
-
-        `
-        INSERT INTO configuracoes
-        (
-          id,
-          nome_loja,
-          link_mercadolivre,
-          link_shopee,
-          link_whatsapp,
-          atualizado_em
-        )
-        VALUES
-        (
-          1,
-          $1,
-          $2,
-          $3,
-          $4,
-          CURRENT_TIMESTAMP
-        )
-
-        ON CONFLICT (id)
-        DO UPDATE SET
-
-          nome_loja = EXCLUDED.nome_loja,
-
-          link_mercadolivre =
-            EXCLUDED.link_mercadolivre,
-
-          link_shopee =
-            EXCLUDED.link_shopee,
-
-          link_whatsapp =
-            EXCLUDED.link_whatsapp,
-
-          atualizado_em =
-            CURRENT_TIMESTAMP
-
-        RETURNING *
-        `,
-
-        [
-          nomeLoja || 'Eletromax',
-          linkMercadoLivre || '',
-          linkShopee || '',
-          linkWhatsapp || ''
-        ]
-
-      );
-
-    res.json({
-
-      success: true,
-
-      message:
-        'Configurações salvas com sucesso!',
-
-      configuracoes:
-        resultado.rows[0]
-
-    });
-
-  } catch (erro) {
-
-    console.error(
-      'ERRO AO SALVAR CONFIGURAÇÕES:',
-      erro.message
-    );
-
-    res.status(500).json({
-
-      success: false,
-
-      message:
-        'Erro ao salvar configurações.',
-
-      error:
+      console.error(
+        'ERRO AO GERAR POST:',
         erro.message
+      );
 
-    });
+      res.status(500).json({
+
+        success: false,
+
+        message:
+          'Erro ao gerar post.',
+
+        error:
+          erro.message
+
+      });
+
+    }
 
   }
-
-});
+);
 
 // ======================================================
-// ROTA FINAL PARA FRONTEND
+// CONFIGURAÇÕES - BUSCAR
 // ======================================================
 
-app.get('*', (req, res) => {
+app.get(
+  '/api/configuracoes',
+  async (req, res) => {
 
-  if (
-    req.path.startsWith('/api/')
-  ) {
+    try {
 
-    return res.status(404).json({
+      if (!pool) {
+
+        return res.status(500).json({
+
+          success: false,
+
+          message:
+            'Banco de dados não conectado.'
+
+        });
+
+      }
+
+      const resultado =
+        await pool.query(
+          `
+          SELECT *
+          FROM configuracoes
+          ORDER BY id ASC
+          LIMIT 1
+          `
+        );
+
+      if (
+        resultado.rows.length === 0
+      ) {
+
+        return res.json({
+
+          success: true,
+
+          configuracoes: {
+
+            nome_loja:
+              'Eletromax',
+
+            link_mercadolivre:
+              'https://meli.la/33A3HdG',
+
+            link_shopee:
+              'https://s.shopee.com.br/6VMYjYBtKZ',
+
+            link_whatsapp:
+              'https://chat.whatsapp.com/Je7ddU2rbdBKDxEidcBiuU?s=cl&p=a&ilr=1'
+
+          }
+
+        });
+
+      }
+
+      res.json({
+
+        success: true,
+
+        configuracoes:
+          resultado.rows[0]
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+        'ERRO CONFIGURAÇÕES:',
+        erro.message
+      );
+
+      res.status(500).json({
+
+        success: false,
+
+        message:
+          'Erro ao carregar configurações.',
+
+        error:
+          erro.message
+
+      });
+
+    }
+
+  }
+);
+
+// ======================================================
+// CONFIGURAÇÕES - SALVAR
+// ======================================================
+
+app.put(
+  '/api/configuracoes',
+  async (req, res) => {
+
+    try {
+
+      if (!pool) {
+
+        return res.status(500).json({
+
+          success: false,
+
+          message:
+            'Banco de dados não conectado.'
+
+        });
+
+      }
+
+      const {
+        nomeLoja,
+        linkMercadoLivre,
+        linkShopee,
+        linkWhatsapp
+      } = req.body;
+
+      const resultado =
+        await pool.query(
+          `
+          UPDATE configuracoes
+          SET
+            nome_loja = $1,
+            link_mercadolivre = $2,
+            link_shopee = $3,
+            link_whatsapp = $4,
+            atualizado_em = CURRENT_TIMESTAMP
+          WHERE id = (
+            SELECT id
+            FROM configuracoes
+            ORDER BY id ASC
+            LIMIT 1
+          )
+          RETURNING *
+          `,
+          [
+            nomeLoja ||
+              'Eletromax',
+
+            linkMercadoLivre ||
+              '',
+
+            linkShopee ||
+              '',
+
+            linkWhatsapp ||
+              ''
+          ]
+        );
+
+      res.json({
+
+        success: true,
+
+        message:
+          'Configurações salvas com sucesso!',
+
+        configuracoes:
+          resultado.rows[0]
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+        'ERRO AO SALVAR CONFIGURAÇÕES:',
+        erro.message
+      );
+
+      res.status(500).json({
+
+        success: false,
+
+        message:
+          'Erro ao salvar configurações.',
+
+        error:
+          erro.message
+
+      });
+
+    }
+
+  }
+);
+
+// ======================================================
+// ROTA PARA ERROS DE API
+// IMPORTANTE:
+// NÃO USAR app.get('*') NO EXPRESS 5
+// ======================================================
+
+app.use(
+  '/api',
+  (req, res) => {
+
+    res.status(404).json({
 
       success: false,
 
       message:
-        'API não encontrada.'
+        'Endpoint da API não encontrado.'
 
     });
 
   }
-
-  res.sendFile(
-    path.join(frontendPath, 'index.html')
-  );
-
-});
+);
 
 // ======================================================
 // INICIAR SERVIDOR
@@ -987,6 +1269,11 @@ async function iniciarServidor() {
       console.log(
         '🌐 PORTA:',
         PORT
+      );
+
+      console.log(
+        '📂 FRONTEND:',
+        frontendPath
       );
 
       console.log(
