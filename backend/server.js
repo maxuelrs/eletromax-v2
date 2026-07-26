@@ -1,16 +1,25 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const { Pool } = require("pg");
 
 const app = express();
 
 const PORT = process.env.PORT || 10000;
 
 // ======================================================
-// CONFIGURAÇÕES
+// CAMINHO DO FRONTEND
 // ======================================================
 
-const FRONTEND_PATH = path.join(__dirname, "..", "frontend");
+const FRONTEND_PATH = path.join(
+  __dirname,
+  "..",
+  "frontend"
+);
+
+// ======================================================
+// CONFIGURAÇÕES
+// ======================================================
 
 const LINK_MERCADO_LIVRE =
   process.env.LINK_MERCADO_LIVRE ||
@@ -37,75 +46,270 @@ app.use(express.urlencoded({
 }));
 
 // ======================================================
-// BANCO TEMPORÁRIO EM MEMÓRIA
-// ======================================================
-//
-// Esta versão funciona sem PostgreSQL.
-// Os dados serão perdidos quando o servidor reiniciar.
-//
-// Depois podemos conectar ao PostgreSQL para salvar tudo
-// permanentemente.
-//
-
-let produtos = [];
-
-let ofertas = [];
-
-let configuracoes = {
-
-  nome_loja: "Eletromax",
-
-  link_mercadolivre:
-    LINK_MERCADO_LIVRE,
-
-  link_shopee:
-    LINK_SHOPEE,
-
-  link_whatsapp:
-    LINK_WHATSAPP
-
-};
-
-// IDs automáticos
-
-let proximoProdutoId = 1;
-
-let proximaOfertaId = 1;
-
-
-// ======================================================
-// FUNÇÃO AUXILIAR
+// POSTGRESQL
 // ======================================================
 
-function gerarIdProduto() {
+if (!process.env.DATABASE_URL) {
 
-  return proximoProdutoId++;
+  console.error(
+    "ERRO: DATABASE_URL não foi configurada."
+  );
 
 }
 
+const pool = new Pool({
 
-function gerarIdOferta() {
+  connectionString:
+    process.env.DATABASE_URL,
 
-  return proximaOfertaId++;
-
-}
-
-
-// ======================================================
-// ROTA PRINCIPAL
-// ======================================================
-
-app.get("/", (req, res) => {
-
-  const indexPath =
-    path.join(
-      FRONTEND_PATH,
-      "index.html"
-    );
-
-  res.sendFile(indexPath);
+  ssl:
+    process.env.DATABASE_URL
+      ? {
+          rejectUnauthorized: false
+        }
+      : false
 
 });
+
+
+// ======================================================
+// TESTE DE CONEXÃO
+// ======================================================
+
+async function testarBanco() {
+
+  try {
+
+    await pool.query(
+      "SELECT NOW()"
+    );
+
+    console.log(
+      "BANCO POSTGRESQL CONECTADO"
+    );
+
+    return true;
+
+  } catch (erro) {
+
+    console.error(
+      "ERRO AO CONECTAR POSTGRESQL:",
+      erro.message
+    );
+
+    return false;
+
+  }
+
+}
+
+
+// ======================================================
+// CRIAR TABELAS
+// ======================================================
+
+async function inicializarBanco() {
+
+  try {
+
+    // ==================================================
+    // PRODUTOS
+    // ==================================================
+
+    await pool.query(`
+
+      CREATE TABLE IF NOT EXISTS produtos (
+
+        id SERIAL PRIMARY KEY,
+
+        nome TEXT NOT NULL,
+
+        preco TEXT,
+
+        link TEXT NOT NULL,
+
+        plataforma TEXT NOT NULL,
+
+        criado_em TIMESTAMP
+          DEFAULT CURRENT_TIMESTAMP
+
+      )
+
+    `);
+
+
+    // ==================================================
+    // OFERTAS
+    // ==================================================
+
+    await pool.query(`
+
+      CREATE TABLE IF NOT EXISTS ofertas (
+
+        id SERIAL PRIMARY KEY,
+
+        nome TEXT NOT NULL,
+
+        preco TEXT,
+
+        preco_anterior TEXT,
+
+        link TEXT NOT NULL,
+
+        plataforma TEXT NOT NULL,
+
+        imagem TEXT,
+
+        descricao TEXT,
+
+        criado_em TIMESTAMP
+          DEFAULT CURRENT_TIMESTAMP
+
+      )
+
+    `);
+
+
+    // ==================================================
+    // CONFIGURAÇÕES
+    // ==================================================
+
+    await pool.query(`
+
+      CREATE TABLE IF NOT EXISTS configuracoes (
+
+        id INTEGER PRIMARY KEY,
+
+        nome_loja TEXT,
+
+        link_mercadolivre TEXT,
+
+        link_shopee TEXT,
+
+        link_whatsapp TEXT,
+
+        atualizado_em TIMESTAMP
+          DEFAULT CURRENT_TIMESTAMP
+
+      )
+
+    `);
+
+
+    // ==================================================
+    // CONFIGURAÇÃO PADRÃO
+    // ==================================================
+
+    await pool.query(`
+
+      INSERT INTO configuracoes (
+
+        id,
+
+        nome_loja,
+
+        link_mercadolivre,
+
+        link_shopee,
+
+        link_whatsapp
+
+      )
+
+      VALUES (
+
+        1,
+
+        'Eletromax',
+
+        $1,
+
+        $2,
+
+        $3
+
+      )
+
+      ON CONFLICT (id)
+
+      DO NOTHING
+
+    `, [
+
+      LINK_MERCADO_LIVRE,
+
+      LINK_SHOPEE,
+
+      LINK_WHATSAPP
+
+    ]);
+
+
+    console.log(
+      "TABELA PRODUTOS PRONTA"
+    );
+
+    console.log(
+      "TABELA OFERTAS PRONTA"
+    );
+
+    console.log(
+      "TABELA CONFIGURACOES PRONTA"
+    );
+
+
+    return true;
+
+  } catch (erro) {
+
+    console.error(
+      "ERRO AO INICIALIZAR BANCO:",
+      erro.message
+    );
+
+    return false;
+
+  }
+
+}
+
+
+// ======================================================
+// PÁGINA PRINCIPAL
+// ======================================================
+
+app.get(
+  "/",
+  (req, res) => {
+
+    res.sendFile(
+
+      path.join(
+        FRONTEND_PATH,
+        "index.html"
+      ),
+
+      (erro) => {
+
+        if (erro) {
+
+          console.error(
+            "ERRO AO ENVIAR INDEX:",
+            erro.message
+          );
+
+          res.status(500).send(
+            "Erro: index.html não foi encontrado."
+          );
+
+        }
+
+      }
+
+    );
+
+  }
+);
 
 
 // ======================================================
@@ -120,25 +324,55 @@ app.use(
 
 
 // ======================================================
-// STATUS DA API
+// STATUS
 // ======================================================
 
 app.get(
   "/api/status",
-  (req, res) => {
+  async (req, res) => {
 
-    res.json({
+    try {
 
-      success: true,
+      await pool.query(
+        "SELECT NOW()"
+      );
 
-      status: "online",
+      res.json({
 
-      sistema: "Eletromax V2",
+        success: true,
 
-      timestamp:
-        new Date().toISOString()
+        message:
+          "Eletromax API funcionando!",
 
-    });
+        status:
+          "online",
+
+        database:
+          "connected"
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO STATUS:",
+        erro.message
+      );
+
+      res.status(500)
+        .json({
+
+          success: false,
+
+          message:
+            "Erro na conexão com banco.",
+
+          database:
+            "disconnected"
+
+        });
+
+    }
 
   }
 );
@@ -150,82 +384,160 @@ app.get(
 
 app.get(
   "/api/dashboard",
-  (req, res) => {
+  async (req, res) => {
 
-    const totalProdutos =
-      produtos.length;
+    try {
 
-    const totalOfertas =
-      ofertas.length;
+      const produtosResult =
+        await pool.query(
+          `
+          SELECT COUNT(*) AS total
+          FROM produtos
+          `
+        );
 
-    const totalMercadoLivre =
-      produtos.filter(
-        produto =>
-          String(
-            produto.plataforma
-          ).toLowerCase()
-          .includes(
-            "mercado"
+
+      const ofertasResult =
+        await pool.query(
+          `
+          SELECT COUNT(*) AS total
+          FROM ofertas
+          `
+        );
+
+
+      const mlResult =
+        await pool.query(
+          `
+          SELECT COUNT(*) AS total
+          FROM produtos
+          WHERE LOWER(plataforma)
+          LIKE '%mercado%'
+          `
+        );
+
+
+      const shopeeResult =
+        await pool.query(
+          `
+          SELECT COUNT(*) AS total
+          FROM produtos
+          WHERE LOWER(plataforma)
+          LIKE '%shopee%'
+          `
+        );
+
+
+      res.json({
+
+        success: true,
+
+        totalProdutos:
+          Number(
+            produtosResult.rows[0].total
+          ),
+
+        totalOfertas:
+          Number(
+            ofertasResult.rows[0].total
+          ),
+
+        totalMercadoLivre:
+          Number(
+            mlResult.rows[0].total
+          ),
+
+        totalShopee:
+          Number(
+            shopeeResult.rows[0].total
           )
-      ).length;
 
-    const totalShopee =
-      produtos.filter(
-        produto =>
-          String(
-            produto.plataforma
-          ).toLowerCase()
-          .includes(
-            "shopee"
-          )
-      ).length;
+      });
 
+    } catch (erro) {
 
-    res.json({
+      console.error(
+        "ERRO DASHBOARD:",
+        erro.message
+      );
 
-      success: true,
+      res.status(500)
+        .json({
 
-      totalProdutos,
+          success: false,
 
-      totalOfertas,
+          message:
+            "Erro ao carregar dashboard."
 
-      totalMercadoLivre,
+        });
 
-      totalShopee
-
-    });
+    }
 
   }
 );
 
 
 // ======================================================
-// PRODUTOS
+// PRODUTOS - LISTAR
 // ======================================================
-
-// LISTAR PRODUTOS
 
 app.get(
   "/api/produtos",
-  (req, res) => {
+  async (req, res) => {
 
-    res.json({
+    try {
 
-      success: true,
+      const resultado =
+        await pool.query(
+          `
+          SELECT *
 
-      produtos
+          FROM produtos
 
-    });
+          ORDER BY id DESC
+          `
+        );
+
+
+      res.json({
+
+        success: true,
+
+        produtos:
+          resultado.rows
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO AO BUSCAR PRODUTOS:",
+        erro.message
+      );
+
+      res.status(500)
+        .json({
+
+          success: false,
+
+          message:
+            "Erro ao buscar produtos."
+
+        });
+
+    }
 
   }
 );
 
 
-// CADASTRAR PRODUTO
+// ======================================================
+// PRODUTOS - CADASTRAR
+// ======================================================
 
 app.post(
   "/api/produtos",
-  (req, res) => {
+  async (req, res) => {
 
     try {
 
@@ -248,7 +560,8 @@ app.post(
         !plataforma
       ) {
 
-        return res.status(400)
+        return res
+          .status(400)
           .json({
 
             success: false,
@@ -261,34 +574,45 @@ app.post(
       }
 
 
-      const produto = {
+      const resultado =
+        await pool.query(
 
-        id:
-          gerarIdProduto(),
+          `
+          INSERT INTO produtos
 
-        nome:
-          String(nome),
+          (
+            nome,
+            preco,
+            link,
+            plataforma
+          )
 
-        preco:
-          preco
-          ? String(preco)
-          : "",
+          VALUES
+          (
+            $1,
+            $2,
+            $3,
+            $4
+          )
 
-        link:
-          String(link),
+          RETURNING *
+          `,
 
-        plataforma:
-          String(plataforma),
+          [
 
-        criadoEm:
-          new Date().toISOString()
+            String(nome).trim(),
 
-      };
+            preco
+              ? String(preco).trim()
+              : "",
 
+            String(link).trim(),
 
-      produtos.push(
-        produto
-      );
+            String(plataforma).trim()
+
+          ]
+
+        );
 
 
       res.status(201)
@@ -297,19 +621,19 @@ app.post(
           success: true,
 
           message:
-            "Produto cadastrado com sucesso.",
+            "Produto salvo com sucesso!",
 
-          produto
+          produto:
+            resultado.rows[0]
 
         });
 
-    } catch (error) {
+    } catch (erro) {
 
       console.error(
-        "Erro ao cadastrar produto:",
-        error
+        "ERRO AO SALVAR PRODUTO:",
+        erro.message
       );
-
 
       res.status(500)
         .json({
@@ -317,7 +641,10 @@ app.post(
           success: false,
 
           message:
-            "Erro interno ao cadastrar produto."
+            "Erro ao salvar produto.",
+
+          error:
+            erro.message
 
         });
 
@@ -327,87 +654,190 @@ app.post(
 );
 
 
-// EXCLUIR PRODUTO
+// ======================================================
+// PRODUTOS - EXCLUIR
+// ======================================================
 
 app.delete(
   "/api/produtos/:id",
-  (req, res) => {
+  async (req, res) => {
 
-    const id =
-      Number(
-        req.params.id
+    try {
+
+      const id =
+        Number(
+          req.params.id
+        );
+
+
+      if (
+        !Number.isInteger(id)
+      ) {
+
+        return res
+          .status(400)
+          .json({
+
+            success: false,
+
+            message:
+              "ID inválido."
+
+          });
+
+      }
+
+
+      const resultado =
+        await pool.query(
+
+          `
+          DELETE FROM produtos
+
+          WHERE id = $1
+
+          RETURNING *
+          `,
+
+          [id]
+
+        );
+
+
+      if (
+        resultado.rows.length === 0
+      ) {
+
+        return res
+          .status(404)
+          .json({
+
+            success: false,
+
+            message:
+              "Produto não encontrado."
+
+          });
+
+      }
+
+
+      res.json({
+
+        success: true,
+
+        message:
+          "Produto excluído com sucesso!",
+
+        produto:
+          resultado.rows[0]
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO AO DELETAR PRODUTO:",
+        erro.message
       );
 
-
-    const quantidadeAntes =
-      produtos.length;
-
-
-    produtos =
-      produtos.filter(
-        produto =>
-          produto.id !== id
-      );
-
-
-    if (
-      produtos.length ===
-      quantidadeAntes
-    ) {
-
-      return res.status(404)
+      res.status(500)
         .json({
 
           success: false,
 
           message:
-            "Produto não encontrado."
+            "Erro ao excluir produto."
 
         });
 
     }
 
-
-    res.json({
-
-      success: true,
-
-      message:
-        "Produto excluído com sucesso."
-
-    });
-
   }
 );
 
 
 // ======================================================
-// OFERTAS
+// OFERTAS - LISTAR
 // ======================================================
-
-// LISTAR OFERTAS
 
 app.get(
   "/api/ofertas",
-  (req, res) => {
+  async (req, res) => {
 
-    res.json({
+    try {
 
-      success: true,
+      const resultado =
+        await pool.query(
+          `
+          SELECT
 
-      ofertas
+            id,
 
-    });
+            nome,
+
+            preco,
+
+            preco_anterior
+              AS "precoAnterior",
+
+            link,
+
+            plataforma,
+
+            imagem,
+
+            descricao,
+
+            criado_em
+              AS "criadoEm"
+
+          FROM ofertas
+
+          ORDER BY id DESC
+          `
+        );
+
+
+      res.json({
+
+        success: true,
+
+        ofertas:
+          resultado.rows
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO AO BUSCAR OFERTAS:",
+        erro.message
+      );
+
+      res.status(500)
+        .json({
+
+          success: false,
+
+          message:
+            "Erro ao buscar ofertas."
+
+        });
+
+    }
 
   }
 );
 
 
-// CADASTRAR OFERTA
+// ======================================================
+// OFERTAS - CADASTRAR
+// ======================================================
 
 app.post(
   "/api/ofertas",
-  (req, res) => {
+  async (req, res) => {
 
     try {
 
@@ -436,7 +866,8 @@ app.post(
         !plataforma
       ) {
 
-        return res.status(400)
+        return res
+          .status(400)
           .json({
 
             success: false,
@@ -449,49 +880,65 @@ app.post(
       }
 
 
-      const oferta = {
+      const resultado =
+        await pool.query(
 
-        id:
-          gerarIdOferta(),
+          `
+          INSERT INTO ofertas
 
-        nome:
-          String(nome),
+          (
+            nome,
+            preco,
+            preco_anterior,
+            link,
+            plataforma,
+            imagem,
+            descricao
+          )
 
-        preco:
-          preco
-          ? String(preco)
-          : "",
+          VALUES
 
-        precoAnterior:
-          precoAnterior
-          ? String(precoAnterior)
-          : "",
+          (
+            $1,
+            $2,
+            $3,
+            $4,
+            $5,
+            $6,
+            $7
+          )
 
-        link:
-          String(link),
+          RETURNING *
 
-        plataforma:
-          String(plataforma),
+          `,
 
-        imagem:
-          imagem
-          ? String(imagem)
-          : "",
+          [
 
-        descricao:
-          descricao
-          ? String(descricao)
-          : "",
+            String(nome).trim(),
 
-        criadoEm:
-          new Date().toISOString()
+            preco
+              ? String(preco).trim()
+              : "",
 
-      };
+            precoAnterior
+              ? String(precoAnterior).trim()
+              : "",
 
+            String(link).trim(),
 
-      ofertas.push(
-        oferta
-      );
+            String(plataforma).trim(),
+
+            imagem
+              ? String(imagem).trim()
+              : "",
+
+            descricao
+              ? String(descricao).trim()
+              : ""
+
+          ]
+
+        );
 
 
       res.status(201)
@@ -500,19 +947,19 @@ app.post(
           success: true,
 
           message:
-            "Oferta cadastrada com sucesso.",
+            "Oferta cadastrada com sucesso!",
 
-          oferta
+          oferta:
+            resultado.rows[0]
 
         });
 
-    } catch (error) {
+    } catch (erro) {
 
       console.error(
-        "Erro ao cadastrar oferta:",
-        error
+        "ERRO AO SALVAR OFERTA:",
+        erro.message
       );
-
 
       res.status(500)
         .json({
@@ -520,7 +967,90 @@ app.post(
           success: false,
 
           message:
-            "Erro interno ao cadastrar oferta."
+            "Erro ao salvar oferta.",
+
+          error:
+            erro.message
+
+        });
+
+    }
+
+  }
+);
+
+
+// ======================================================
+// CENTRAL DE OFERTAS
+// ======================================================
+
+app.get(
+  "/api/central-ofertas",
+  async (req, res) => {
+
+    try {
+
+      const resultado =
+        await pool.query(
+
+          `
+          SELECT
+
+            id,
+
+            nome,
+
+            preco,
+
+            preco_anterior
+              AS "precoAnterior",
+
+            link,
+
+            plataforma,
+
+            imagem,
+
+            descricao,
+
+            criado_em
+              AS "criadoEm"
+
+          FROM ofertas
+
+          ORDER BY id DESC
+
+          `
+
+        );
+
+
+      res.json({
+
+        success: true,
+
+        total:
+          resultado.rows.length,
+
+        ofertas:
+          resultado.rows
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO CENTRAL OFERTAS:",
+        erro.message
+      );
+
+      res.status(500)
+        .json({
+
+          success: false,
+
+          message:
+            "Erro ao carregar Central de Ofertas."
 
         });
 
@@ -536,7 +1066,7 @@ app.post(
 
 app.post(
   "/api/ofertas/gerar-post",
-  (req, res) => {
+  async (req, res) => {
 
     try {
 
@@ -559,7 +1089,8 @@ app.post(
         !nome
       ) {
 
-        return res.status(400)
+        return res
+          .status(400)
           .json({
 
             success: false,
@@ -570,6 +1101,33 @@ app.post(
           });
 
       }
+
+
+      const configResult =
+        await pool.query(
+
+          `
+          SELECT *
+
+          FROM configuracoes
+
+          WHERE id = 1
+
+          LIMIT 1
+
+          `
+
+        );
+
+
+      const config =
+        configResult.rows[0] ||
+        {};
+
+
+      const whatsapp =
+        config.link_whatsapp ||
+        LINK_WHATSAPP;
 
 
       let texto = "";
@@ -636,7 +1194,7 @@ app.post(
 
       texto +=
         "📲 Entre no nosso grupo de ofertas:\n" +
-        LINK_WHATSAPP;
+        whatsapp;
 
 
       res.json({
@@ -647,13 +1205,12 @@ app.post(
 
       });
 
-    } catch (error) {
+    } catch (erro) {
 
       console.error(
-        "Erro ao gerar post:",
-        error
+        "ERRO AO GERAR POST:",
+        erro.message
       );
-
 
       res.status(500)
         .json({
@@ -672,32 +1229,110 @@ app.post(
 
 
 // ======================================================
-// CONFIGURAÇÕES
+// CONFIGURAÇÕES - BUSCAR
 // ======================================================
-
-// BUSCAR CONFIGURAÇÕES
 
 app.get(
   "/api/configuracoes",
-  (req, res) => {
+  async (req, res) => {
 
-    res.json({
+    try {
 
-      success: true,
+      const resultado =
+        await pool.query(
 
-      configuracoes
+          `
+          SELECT
 
-    });
+            id,
+
+            nome_loja,
+
+            link_mercadolivre,
+
+            link_shopee,
+
+            link_whatsapp
+
+          FROM configuracoes
+
+          WHERE id = 1
+
+          LIMIT 1
+
+          `
+
+        );
+
+
+      let config =
+        resultado.rows[0];
+
+
+      if (
+        !config
+      ) {
+
+        config = {
+
+          id: 1,
+
+          nome_loja:
+            "Eletromax",
+
+          link_mercadolivre:
+            LINK_MERCADO_LIVRE,
+
+          link_shopee:
+            LINK_SHOPEE,
+
+          link_whatsapp:
+            LINK_WHATSAPP
+
+        };
+
+      }
+
+
+      res.json({
+
+        success: true,
+
+        configuracoes:
+          config
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO AO BUSCAR CONFIGURAÇÕES:",
+        erro.message
+      );
+
+      res.status(500)
+        .json({
+
+          success: false,
+
+          message:
+            "Erro ao buscar configurações."
+
+        });
+
+    }
 
   }
 );
 
 
-// SALVAR CONFIGURAÇÕES
+// ======================================================
+// CONFIGURAÇÕES - SALVAR
+// ======================================================
 
 app.put(
   "/api/configuracoes",
-  (req, res) => {
+  async (req, res) => {
 
     try {
 
@@ -714,52 +1349,72 @@ app.put(
       } = req.body;
 
 
-      if (
-        nomeLoja
-      ) {
+      const resultado =
+        await pool.query(
 
-        configuracoes.nome_loja =
-          String(
-            nomeLoja
-          );
+          `
+          INSERT INTO configuracoes
 
-      }
+          (
+            id,
+            nome_loja,
+            link_mercadolivre,
+            link_shopee,
+            link_whatsapp,
+            atualizado_em
+          )
 
+          VALUES
 
-      if (
-        linkMercadoLivre
-      ) {
+          (
+            1,
+            $1,
+            $2,
+            $3,
+            $4,
+            CURRENT_TIMESTAMP
+          )
 
-        configuracoes.link_mercadolivre =
-          String(
-            linkMercadoLivre
-          );
+          ON CONFLICT (id)
 
-      }
+          DO UPDATE SET
 
+            nome_loja =
+              EXCLUDED.nome_loja,
 
-      if (
-        linkShopee
-      ) {
+            link_mercadolivre =
+              EXCLUDED.link_mercadolivre,
 
-        configuracoes.link_shopee =
-          String(
-            linkShopee
-          );
+            link_shopee =
+              EXCLUDED.link_shopee,
 
-      }
+            link_whatsapp =
+              EXCLUDED.link_whatsapp,
 
+            atualizado_em =
+              CURRENT_TIMESTAMP
 
-      if (
-        linkWhatsapp
-      ) {
+          RETURNING *
 
-        configuracoes.link_whatsapp =
-          String(
-            linkWhatsapp
-          );
+          `,
 
-      }
+          [
+
+            nomeLoja ||
+              "Eletromax",
+
+            linkMercadoLivre ||
+              LINK_MERCADO_LIVRE,
+
+            linkShopee ||
+              LINK_SHOPEE,
+
+            linkWhatsapp ||
+              LINK_WHATSAPP
+
+          ]
+
+        );
 
 
       res.json({
@@ -767,19 +1422,19 @@ app.put(
         success: true,
 
         message:
-          "Configurações salvas com sucesso.",
+          "Configurações salvas com sucesso!",
 
-        configuracoes
+        configuracoes:
+          resultado.rows[0]
 
       });
 
-    } catch (error) {
+    } catch (erro) {
 
       console.error(
-        "Erro nas configurações:",
-        error
+        "ERRO AO SALVAR CONFIGURAÇÕES:",
+        erro.message
       );
-
 
       res.status(500)
         .json({
@@ -798,110 +1453,163 @@ app.put(
 
 
 // ======================================================
-// LINKS DE AFILIADO
+// LINKS
 // ======================================================
 
 app.get(
   "/api/links",
-  (req, res) => {
+  async (req, res) => {
 
-    res.json({
+    try {
 
-      success: true,
+      const resultado =
+        await pool.query(
 
-      mercadoLivre:
-        configuracoes
-          .link_mercadolivre,
+          `
+          SELECT
 
-      shopee:
-        configuracoes
-          .link_shopee,
+            link_mercadolivre,
 
-      whatsapp:
-        configuracoes
-          .link_whatsapp
+            link_shopee,
 
-    });
+            link_whatsapp
 
-  }
-);
+          FROM configuracoes
 
+          WHERE id = 1
 
-// ======================================================
-// CENTRAL DE OFERTAS
-// ======================================================
+          LIMIT 1
 
-// Retorna todas as ofertas ordenadas
-// da mais recente para a mais antiga.
+          `
 
-app.get(
-  "/api/central-ofertas",
-  (req, res) => {
-
-    const lista =
-      [...ofertas]
-        .sort(
-          (
-            a,
-            b
-          ) =>
-            new Date(
-              b.criadoEm
-            ) -
-            new Date(
-              a.criadoEm
-            )
         );
 
 
-    res.json({
+      const config =
+        resultado.rows[0] ||
+        {};
 
-      success: true,
 
-      total:
-        lista.length,
+      res.json({
 
-      ofertas:
-        lista
+        success: true,
 
-    });
+        mercadoLivre:
+          config.link_mercadolivre ||
+          LINK_MERCADO_LIVRE,
+
+        shopee:
+          config.link_shopee ||
+          LINK_SHOPEE,
+
+        whatsapp:
+          config.link_whatsapp ||
+          LINK_WHATSAPP
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO AO BUSCAR LINKS:",
+        erro.message
+      );
+
+      res.status(500)
+        .json({
+
+          success: false,
+
+          message:
+            "Erro ao buscar links."
+
+        });
+
+    }
 
   }
 );
 
 
 // ======================================================
-// ROTA DE TESTE
+// TESTE
 // ======================================================
 
 app.get(
   "/api/teste",
-  (req, res) => {
+  async (req, res) => {
 
-    res.json({
+    try {
 
-      success: true,
+      const banco =
+        await testarBanco();
 
-      mensagem:
-        "Eletromax V2 funcionando corretamente!",
 
-      frontend:
-        FRONTEND_PATH,
+      const produtos =
+        await pool.query(
+          "SELECT COUNT(*) FROM produtos"
+        );
 
-      produtos:
-        produtos.length,
 
-      ofertas:
-        ofertas.length
+      const ofertas =
+        await pool.query(
+          "SELECT COUNT(*) FROM ofertas"
+        );
 
-    });
+
+      res.json({
+
+        success:
+          banco,
+
+        mensagem:
+          "Eletromax V2 funcionando corretamente!",
+
+        banco:
+          banco
+            ? "PostgreSQL conectado"
+            : "PostgreSQL com erro",
+
+        produtos:
+          Number(
+            produtos.rows[0].count
+          ),
+
+        ofertas:
+          Number(
+            ofertas.rows[0].count
+          )
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO TESTE:",
+        erro.message
+      );
+
+      res.status(500)
+        .json({
+
+          success: false,
+
+          message:
+            "Erro no teste do sistema.",
+
+          error:
+            erro.message
+
+        });
+
+    }
 
   }
 );
 
 
 // ======================================================
-// TRATAMENTO DE ERROS
+// ERROS
 // ======================================================
 
 app.use(
@@ -913,7 +1621,7 @@ app.use(
   ) => {
 
     console.error(
-      "Erro interno:",
+      "ERRO INTERNO:",
       err
     );
 
@@ -936,40 +1644,78 @@ app.use(
 // INICIAR SERVIDOR
 // ======================================================
 
-app.listen(
-  PORT,
-  "0.0.0.0",
-  () => {
+async function iniciarServidor() {
 
-    console.log(
-      "===================================="
+  console.log(
+    "===================================="
+  );
+
+  console.log(
+    "⚡ ELETROMAX V2"
+  );
+
+  console.log(
+    "===================================="
+  );
+
+
+  const bancoOK =
+    await inicializarBanco();
+
+
+  if (
+    !bancoOK
+  ) {
+
+    console.error(
+      "ATENÇÃO: Banco não foi inicializado."
     );
 
-    console.log(
-      "⚡ ELETROMAX V2"
-    );
-
-    console.log(
-      "===================================="
-    );
-
-    console.log(
-      "Servidor rodando na porta:",
-      PORT
-    );
-
-    console.log(
-      "Frontend:",
-      FRONTEND_PATH
-    );
-
-    console.log(
-      "Status: ONLINE"
-    );
-
-    console.log(
-      "===================================="
+    console.error(
+      "Verifique a variável DATABASE_URL."
     );
 
   }
-);
+
+
+  app.listen(
+
+    PORT,
+
+    "0.0.0.0",
+
+    () => {
+
+      console.log(
+        "Servidor rodando na porta:",
+        PORT
+      );
+
+      console.log(
+        "Frontend:",
+        FRONTEND_PATH
+      );
+
+      console.log(
+        "PostgreSQL:",
+        bancoOK
+          ? "CONECTADO"
+          : "ERRO"
+      );
+
+      console.log(
+        "Status: ONLINE"
+      );
+
+      console.log(
+        "===================================="
+      );
+
+    }
+
+  );
+
+}
+
+
+iniciarServidor();
