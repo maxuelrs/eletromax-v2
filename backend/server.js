@@ -4,373 +4,525 @@ const path = require('path');
 const { Pool } = require('pg');
 
 const app = express();
+
 const PORT = process.env.PORT || 3000;
 
-// =====================================================
+// ==========================================
 // CONFIGURAÇÕES
-// =====================================================
+// ==========================================
 
 app.use(cors());
-app.use(express.json({ limit: '1mb' }));
+app.use(express.json());
 
-// =====================================================
-// FRONTEND
-// =====================================================
+// ==========================================
+// CAMINHO DO FRONTEND
+// ==========================================
 
-const publicPath = path.join(__dirname, '../public');
+// IMPORTANTE:
+// O index.html está dentro da pasta frontend
 
-app.use(express.static(publicPath));
+const frontendPath = path.join(__dirname, '../frontend');
 
-// =====================================================
+console.log('Pasta frontend:', frontendPath);
+
+// Servir arquivos estáticos
+app.use(express.static(frontendPath));
+
+// ==========================================
 // POSTGRESQL
-// =====================================================
+// ==========================================
 
-let pool = null;
+if (!process.env.DATABASE_URL) {
 
-if (process.env.DATABASE_URL) {
-  pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: {
-      rejectUnauthorized: false
-    }
-  });
-} else {
-  console.error('⚠️ DATABASE_URL não configurada.');
+  console.error(
+    'ERRO: DATABASE_URL não foi configurada no Render.'
+  );
+
 }
 
-// =====================================================
-// BANCO DE DADOS
-// =====================================================
+const pool = new Pool({
 
-async function inicializarBanco() {
-  if (!pool) {
-    console.log('⚠️ Banco não configurado.');
-    return false;
+  connectionString:
+    process.env.DATABASE_URL,
+
+  ssl: {
+    rejectUnauthorized: false
   }
 
+});
+
+// ==========================================
+// BANCO DE DADOS
+// ==========================================
+
+async function inicializarBanco() {
+
   try {
+
     await pool.query(`
+
       CREATE TABLE IF NOT EXISTS produtos (
+
         id SERIAL PRIMARY KEY,
+
         nome TEXT NOT NULL,
-        preco TEXT DEFAULT '',
+
+        preco TEXT,
+
         link TEXT NOT NULL,
+
         plataforma TEXT NOT NULL,
-        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+
+        criado_em TIMESTAMP
+        DEFAULT CURRENT_TIMESTAMP
+
       )
+
     `);
 
-    console.log('✅ BANCO DE DADOS CONECTADO');
-    console.log('✅ TABELA PRODUTOS PRONTA');
+    console.log(
+      'BANCO DE DADOS CONECTADO'
+    );
+
+    console.log(
+      'TABELA PRODUTOS PRONTA'
+    );
 
     return true;
 
   } catch (erro) {
+
     console.error(
-      '❌ ERRO AO INICIALIZAR BANCO:',
+      'ERRO AO INICIALIZAR BANCO:',
       erro.message
     );
 
     return false;
+
   }
+
 }
 
-// =====================================================
+// ==========================================
 // PÁGINA PRINCIPAL
-// =====================================================
+// ==========================================
 
 app.get('/', (req, res) => {
+
   res.sendFile(
-    path.join(publicPath, 'index.html')
+
+    path.join(
+      frontendPath,
+      'index.html'
+    ),
+
+    (erro) => {
+
+      if (erro) {
+
+        console.error(
+          'ERRO: index.html não foi encontrado.'
+        );
+
+        console.error(
+          'Caminho procurado:',
+          path.join(
+            frontendPath,
+            'index.html'
+          )
+        );
+
+        res.status(404).send(
+          'ERRO: index.html não foi encontrado.'
+        );
+
+      }
+
+    }
+
   );
-});
-
-// =====================================================
-// STATUS DA API
-// =====================================================
-
-app.get('/api/status', async (req, res) => {
-
-  let banco = 'disconnected';
-
-  try {
-
-    if (pool) {
-      await pool.query('SELECT NOW()');
-      banco = 'connected';
-    }
-
-    res.json({
-      success: true,
-      status: 'online',
-      database: banco,
-      message: 'Eletromax V2 funcionando!'
-    });
-
-  } catch (erro) {
-
-    res.status(500).json({
-      success: false,
-      status: 'online',
-      database: 'disconnected',
-      message: 'Servidor online, mas banco indisponível.',
-      error: erro.message
-    });
-
-  }
 
 });
 
-// =====================================================
-// LISTAR PRODUTOS
-// =====================================================
+// ==========================================
+// API STATUS
+// ==========================================
 
-app.get('/api/produtos', async (req, res) => {
+app.get(
+  '/api/status',
+  async (req, res) => {
 
-  if (!pool) {
-    return res.status(500).json({
-      success: false,
-      message: 'Banco de dados não configurado.'
-    });
-  }
+    try {
 
-  try {
+      await pool.query(
+        'SELECT NOW()'
+      );
 
-    const resultado = await pool.query(`
-      SELECT *
-      FROM produtos
-      ORDER BY id DESC
-    `);
+      res.json({
 
-    res.json({
-      success: true,
-      produtos: resultado.rows
-    });
+        success: true,
 
-  } catch (erro) {
-
-    console.error(
-      'ERRO AO BUSCAR PRODUTOS:',
-      erro.message
-    );
-
-    res.status(500).json({
-      success: false,
-      message: 'Erro ao buscar produtos.',
-      error: erro.message
-    });
-
-  }
-
-});
-
-// =====================================================
-// CADASTRAR PRODUTO
-// =====================================================
-
-app.post('/api/produtos', async (req, res) => {
-
-  if (!pool) {
-    return res.status(500).json({
-      success: false,
-      message: 'Banco de dados não configurado.'
-    });
-  }
-
-  try {
-
-    const {
-      nome,
-      preco,
-      link,
-      plataforma
-    } = req.body;
-
-    if (!nome || !link || !plataforma) {
-
-      return res.status(400).json({
-        success: false,
         message:
-          'Nome, link e plataforma são obrigatórios.'
+          'Eletromax API funcionando!',
+
+        status:
+          'online',
+
+        database:
+          'connected'
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+        'ERRO STATUS:',
+        erro.message
+      );
+
+      res.status(500).json({
+
+        success: false,
+
+        message:
+          'Erro na conexão com banco',
+
+        error:
+          erro.message
+
       });
 
     }
 
-    const resultado = await pool.query(
-      `
-      INSERT INTO produtos
-      (nome, preco, link, plataforma)
-      VALUES ($1, $2, $3, $4)
-      RETURNING *
-      `,
-      [
-        String(nome).trim(),
-        preco ? String(preco).trim() : '',
-        String(link).trim(),
-        String(plataforma).trim()
-      ]
-    );
+  }
+);
 
-    res.status(201).json({
-      success: true,
-      message: 'Oferta cadastrada com sucesso!',
-      produto: resultado.rows[0]
-    });
+// ==========================================
+// LISTAR PRODUTOS
+// ==========================================
 
-  } catch (erro) {
+app.get(
+  '/api/produtos',
+  async (req, res) => {
 
-    console.error(
-      'ERRO AO SALVAR PRODUTO:',
-      erro.message
-    );
+    try {
 
-    res.status(500).json({
-      success: false,
-      message: 'Erro ao salvar produto.',
-      error: erro.message
-    });
+      const resultado =
+        await pool.query(`
+
+          SELECT *
+
+          FROM produtos
+
+          ORDER BY id DESC
+
+        `);
+
+      res.json({
+
+        success: true,
+
+        produtos:
+          resultado.rows
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+
+        'ERRO AO BUSCAR PRODUTOS:',
+
+        erro.message
+
+      );
+
+      res.status(500).json({
+
+        success: false,
+
+        message:
+          'Erro ao buscar produtos.',
+
+        error:
+          erro.message
+
+      });
+
+    }
 
   }
+);
 
-});
+// ==========================================
+// SALVAR PRODUTO
+// ==========================================
 
-// =====================================================
+app.post(
+  '/api/produtos',
+  async (req, res) => {
+
+    try {
+
+      const {
+
+        nome,
+
+        preco,
+
+        link,
+
+        plataforma
+
+      } = req.body;
+
+      // Validar dados
+
+      if (
+        !nome ||
+        !link ||
+        !plataforma
+      ) {
+
+        return res.status(400).json({
+
+          success: false,
+
+          message:
+            'Nome, link e plataforma são obrigatórios.'
+
+        });
+
+      }
+
+      // Inserir produto
+
+      const resultado =
+        await pool.query(
+
+          `
+
+          INSERT INTO produtos
+
+          (
+            nome,
+            preco,
+            link,
+            plataforma
+          )
+
+          VALUES
+          ($1, $2, $3, $4)
+
+          RETURNING *
+
+          `,
+
+          [
+
+            nome.trim(),
+
+            preco
+              ? preco.trim()
+              : '',
+
+            link.trim(),
+
+            plataforma.trim()
+
+          ]
+
+        );
+
+      res.status(201).json({
+
+        success: true,
+
+        message:
+          'Produto salvo com sucesso!',
+
+        produto:
+          resultado.rows[0]
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+
+        'ERRO AO SALVAR PRODUTO:',
+
+        erro.message
+
+      );
+
+      res.status(500).json({
+
+        success: false,
+
+        message:
+          'Erro ao salvar produto.',
+
+        error:
+          erro.message
+
+      });
+
+    }
+
+  }
+);
+
+// ==========================================
 // DELETAR PRODUTO
-// =====================================================
+// ==========================================
 
-app.delete('/api/produtos/:id', async (req, res) => {
+app.delete(
 
-  if (!pool) {
-    return res.status(500).json({
-      success: false,
-      message: 'Banco de dados não configurado.'
-    });
-  }
+  '/api/produtos/:id',
 
-  try {
+  async (req, res) => {
 
-    const id = Number(req.params.id);
+    try {
 
-    if (!Number.isInteger(id)) {
+      const { id } =
+        req.params;
 
-      return res.status(400).json({
+      const resultado =
+        await pool.query(
+
+          `
+
+          DELETE FROM produtos
+
+          WHERE id = $1
+
+          RETURNING *
+
+          `,
+
+          [id]
+
+        );
+
+      if (
+        resultado.rows.length === 0
+      ) {
+
+        return res.status(404).json({
+
+          success: false,
+
+          message:
+            'Produto não encontrado.'
+
+        });
+
+      }
+
+      res.json({
+
+        success: true,
+
+        message:
+          'Produto excluído com sucesso!',
+
+        produto:
+          resultado.rows[0]
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+
+        'ERRO AO DELETAR PRODUTO:',
+
+        erro.message
+
+      );
+
+      res.status(500).json({
+
         success: false,
-        message: 'ID inválido.'
+
+        message:
+          'Erro ao excluir produto.',
+
+        error:
+          erro.message
+
       });
 
     }
 
-    const resultado = await pool.query(
-      `
-      DELETE FROM produtos
-      WHERE id = $1
-      RETURNING *
-      `,
-      [id]
-    );
+  }
 
-    if (resultado.rows.length === 0) {
+);
 
-      return res.status(404).json({
-        success: false,
-        message: 'Oferta não encontrada.'
-      });
+// ==========================================
+// ROTA 404 DA API
+// ==========================================
 
-    }
+app.use(
+  '/api',
+  (req, res) => {
 
-    res.json({
-      success: true,
-      message: 'Oferta excluída com sucesso!',
-      produto: resultado.rows[0]
-    });
+    res.status(404).json({
 
-  } catch (erro) {
-
-    console.error(
-      'ERRO AO DELETAR PRODUTO:',
-      erro.message
-    );
-
-    res.status(500).json({
       success: false,
-      message: 'Erro ao excluir oferta.',
-      error: erro.message
+
+      message:
+        'Rota da API não encontrada.'
+
     });
 
   }
+);
 
-});
-
-// =====================================================
-// ROTA PARA FILTRAR PLATAFORMA
-// =====================================================
-
-app.get('/api/produtos/:plataforma', async (req, res) => {
-
-  if (!pool) {
-    return res.status(500).json({
-      success: false,
-      message: 'Banco de dados não configurado.'
-    });
-  }
-
-  try {
-
-    const plataforma = req.params.plataforma;
-
-    const resultado = await pool.query(
-      `
-      SELECT *
-      FROM produtos
-      WHERE plataforma = $1
-      ORDER BY id DESC
-      `,
-      [plataforma]
-    );
-
-    res.json({
-      success: true,
-      produtos: resultado.rows
-    });
-
-  } catch (erro) {
-
-    res.status(500).json({
-      success: false,
-      message: 'Erro ao filtrar produtos.',
-      error: erro.message
-    });
-
-  }
-
-});
-
-// =====================================================
-// INICIALIZAÇÃO
-// =====================================================
+// ==========================================
+// INICIAR SERVIDOR
+// ==========================================
 
 async function iniciarServidor() {
 
   await inicializarBanco();
 
   app.listen(
+
     PORT,
+
     '0.0.0.0',
+
     () => {
 
-      console.log('');
-      console.log('=================================');
-      console.log('⚡ ELETROMAX V2 ONLINE');
-      console.log('=================================');
-      console.log('🌐 Porta:', PORT);
-      console.log('📦 Sistema de ofertas ativo');
-      console.log('🛒 Mercado Livre integrado ao painel');
-      console.log('🛍️ Shopee integrada ao painel');
-      console.log('📱 Gerador de posts ativo');
-      console.log('=================================');
-      console.log('');
+      console.log(
+        '================================='
+      );
+
+      console.log(
+        '⚡ ELETROMAX V2 INICIADO'
+      );
+
+      console.log(
+        '📦 FRONTEND: /frontend'
+      );
+
+      console.log(
+        '🗄️ POSTGRESQL ATIVO'
+      );
+
+      console.log(
+        '🌐 PORTA:',
+        PORT
+      );
+
+      console.log(
+        '================================='
+      );
 
     }
+
   );
 
 }
