@@ -1,13 +1,17 @@
 {
-  "name": "eletromax-v2-mvp",
-  "version": "2.0.0",
-  "private": true,
+  "name": "eletromax-v2",
+  "version": "2.1.0",
+  "description": "Painel Eletromax V2 para gerenciamento de ofertas",
+  "main": "backend/server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node backend/server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "express": "^5.1.0",
-    "pg": "^8.16.3"
+    "express": "^4.21.2",
+    "pg": "^8.13.1"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }
