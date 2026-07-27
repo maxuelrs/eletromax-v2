@@ -8,10 +8,6 @@ const app = express();
 
 const PORT = process.env.PORT || 10000;
 
-// ======================================================
-// CAMINHO DO FRONTEND
-// ======================================================
-
 const FRONTEND_PATH = path.join(
   __dirname,
   "..",
@@ -45,7 +41,7 @@ const LINK_WHATSAPP =
   "https://chat.whatsapp.com/Je7ddU2rbdBKDxEidcBiuU?s=cl&p=a&ilr=1";
 
 // ======================================================
-// MIDDLEWARES
+// MIDDLEWARE
 // ======================================================
 
 app.use(cors());
@@ -234,10 +230,11 @@ app.get(
 
           if (!res.headersSent) {
 
-            res.status(500).send(
-              "Erro: frontend/index.html não foi encontrado."
-            );
-
+            res
+              .status(500)
+              .send(
+                "Erro: frontend/index.html não foi encontrado."
+              );
           }
         }
       }
@@ -284,25 +281,22 @@ app.get(
 
     } catch (erro) {
 
-      console.error(
-        "ERRO STATUS:",
-        erro.message
-      );
+      res
+        .status(500)
+        .json({
 
-      res.status(500).json({
+          success: false,
 
-        success: false,
+          status:
+            "online",
 
-        status:
-          "online",
+          database:
+            "disconnected",
 
-        database:
-          "disconnected",
+          error:
+            erro.message
 
-        error:
-          erro.message
-
-      });
+        });
     }
   }
 );
@@ -367,22 +361,19 @@ app.get(
 
     } catch (erro) {
 
-      console.error(
-        "ERRO DASHBOARD:",
-        erro.message
-      );
+      res
+        .status(500)
+        .json({
 
-      res.status(500).json({
+          success: false,
 
-        success: false,
+          message:
+            "Erro ao carregar dashboard.",
 
-        message:
-          "Erro ao carregar dashboard.",
+          error:
+            erro.message
 
-        error:
-          erro.message
-
-      });
+        });
     }
   }
 );
@@ -414,22 +405,19 @@ app.get(
 
     } catch (erro) {
 
-      console.error(
-        "ERRO PRODUTOS:",
-        erro.message
-      );
+      res
+        .status(500)
+        .json({
 
-      res.status(500).json({
+          success: false,
 
-        success: false,
+          message:
+            "Erro ao buscar produtos.",
 
-        message:
-          "Erro ao buscar produtos.",
+          error:
+            erro.message
 
-        error:
-          erro.message
-
-      });
+        });
     }
   }
 );
@@ -471,12 +459,10 @@ app.post(
 
       const resultado =
         await pool.query(
-
           "INSERT INTO produtos " +
           "(nome, preco, link, plataforma) " +
           "VALUES ($1, $2, $3, $4) " +
           "RETURNING *",
-
           [
             String(nome).trim(),
 
@@ -490,36 +476,35 @@ app.post(
           ]
         );
 
-      res.status(201).json({
+      res
+        .status(201)
+        .json({
 
-        success: true,
+          success: true,
 
-        message:
-          "Produto salvo com sucesso!",
+          message:
+            "Produto salvo com sucesso!",
 
-        produto:
-          resultado.rows[0]
+          produto:
+            resultado.rows[0]
 
-      });
+        });
 
     } catch (erro) {
 
-      console.error(
-        "ERRO AO SALVAR PRODUTO:",
-        erro.message
-      );
+      res
+        .status(500)
+        .json({
 
-      res.status(500).json({
+          success: false,
 
-        success: false,
+          message:
+            "Erro ao salvar produto.",
 
-        message:
-          "Erro ao salvar produto.",
+          error:
+            erro.message
 
-        error:
-          erro.message
-
-      });
+        });
     }
   }
 );
@@ -557,11 +542,9 @@ app.delete(
 
       const resultado =
         await pool.query(
-
           "DELETE FROM produtos " +
           "WHERE id = $1 " +
           "RETURNING *",
-
           [id]
         );
 
@@ -595,22 +578,19 @@ app.delete(
 
     } catch (erro) {
 
-      console.error(
-        "ERRO AO EXCLUIR PRODUTO:",
-        erro.message
-      );
+      res
+        .status(500)
+        .json({
 
-      res.status(500).json({
+          success: false,
 
-        success: false,
+          message:
+            "Erro ao excluir produto.",
 
-        message:
-          "Erro ao excluir produto.",
+          error:
+            erro.message
 
-        error:
-          erro.message
-
-      });
+        });
     }
   }
 );
@@ -627,20 +607,12 @@ app.get(
 
       const resultado =
         await pool.query(
-
-          "SELECT " +
-          "id, " +
-          "nome, " +
-          "preco, " +
+          "SELECT id, nome, preco, " +
           "preco_anterior AS \"precoAnterior\", " +
-          "link, " +
-          "plataforma, " +
-          "imagem, " +
-          "descricao, " +
+          "link, plataforma, imagem, descricao, " +
           "criado_em AS \"criadoEm\" " +
           "FROM ofertas " +
           "ORDER BY id DESC"
-
         );
 
       res.json({
@@ -654,28 +626,25 @@ app.get(
 
     } catch (erro) {
 
-      console.error(
-        "ERRO AO LISTAR OFERTAS:",
-        erro.message
-      );
+      res
+        .status(500)
+        .json({
 
-      res.status(500).json({
+          success: false,
 
-        success: false,
+          message:
+            "Erro ao buscar ofertas.",
 
-        message:
-          "Erro ao buscar ofertas.",
+          error:
+            erro.message
 
-        error:
-          erro.message
-
-      });
+        });
     }
   }
 );
 
 // ======================================================
-// OFERTAS - SALVAR
+// OFERTA - SALVAR
 // ======================================================
 
 app.post(
@@ -714,14 +683,11 @@ app.post(
 
       const resultado =
         await pool.query(
-
           "INSERT INTO ofertas " +
           "(nome, preco, preco_anterior, link, plataforma, imagem, descricao) " +
           "VALUES ($1, $2, $3, $4, $5, $6, $7) " +
           "RETURNING *",
-
           [
-
             String(nome).trim(),
 
             preco
@@ -743,40 +709,38 @@ app.post(
             descricao
               ? String(descricao).trim()
               : ""
-
           ]
         );
 
-      res.status(201).json({
+      res
+        .status(201)
+        .json({
 
-        success: true,
+          success: true,
 
-        message:
-          "Oferta salva com sucesso!",
+          message:
+            "Oferta salva com sucesso!",
 
-        oferta:
-          resultado.rows[0]
+          oferta:
+            resultado.rows[0]
 
-      });
+        });
 
     } catch (erro) {
 
-      console.error(
-        "ERRO AO SALVAR OFERTA:",
-        erro.message
-      );
+      res
+        .status(500)
+        .json({
 
-      res.status(500).json({
+          success: false,
 
-        success: false,
+          message:
+            "Erro ao salvar oferta.",
 
-        message:
-          "Erro ao salvar oferta.",
+          error:
+            erro.message
 
-        error:
-          erro.message
-
-      });
+        });
     }
   }
 );
@@ -793,20 +757,12 @@ app.get(
 
       const resultado =
         await pool.query(
-
-          "SELECT " +
-          "id, " +
-          "nome, " +
-          "preco, " +
+          "SELECT id, nome, preco, " +
           "preco_anterior AS \"precoAnterior\", " +
-          "link, " +
-          "plataforma, " +
-          "imagem, " +
-          "descricao, " +
+          "link, plataforma, imagem, descricao, " +
           "criado_em AS \"criadoEm\" " +
           "FROM ofertas " +
           "ORDER BY id DESC"
-
         );
 
       res.json({
@@ -823,59 +779,42 @@ app.get(
 
     } catch (erro) {
 
-      console.error(
-        "ERRO CENTRAL OFERTAS:",
-        erro.message
-      );
+      res
+        .status(500)
+        .json({
 
-      res.status(500).json({
+          success: false,
 
-        success: false,
+          message:
+            "Erro ao carregar Central de Ofertas.",
 
-        message:
-          "Erro ao carregar Central de Ofertas.",
+          error:
+            erro.message
 
-        error:
-          erro.message
-
-      });
+        });
     }
   }
 );
 
 // ======================================================
-// MERCADO LIVRE - SALVAR TOKENS
+// MERCADO LIVRE - SALVAR TOKEN
 // ======================================================
 
-async function salvarTokensMercadoLivre(
+async function salvarTokenMercadoLivre(
   dados
 ) {
 
-  if (
-    !dados ||
-    !dados.access_token
-  ) {
-
-    throw new Error(
-      "Access token não recebido do Mercado Livre."
-    );
-  }
-
   await pool.query(
-
     "INSERT INTO mercadolivre_tokens " +
     "(id, access_token, refresh_token, user_id, expires_in, atualizado_em) " +
     "VALUES (1, $1, $2, $3, $4, CURRENT_TIMESTAMP) " +
-    "ON CONFLICT (id) " +
-    "DO UPDATE SET " +
+    "ON CONFLICT (id) DO UPDATE SET " +
     "access_token = EXCLUDED.access_token, " +
     "refresh_token = EXCLUDED.refresh_token, " +
     "user_id = EXCLUDED.user_id, " +
     "expires_in = EXCLUDED.expires_in, " +
     "atualizado_em = CURRENT_TIMESTAMP",
-
     [
-
       dados.access_token,
 
       dados.refresh_token ||
@@ -889,34 +828,22 @@ async function salvarTokensMercadoLivre(
 
       dados.expires_in ||
         0
-
     ]
-  );
-
-  console.log(
-    "TOKENS DO MERCADO LIVRE SALVOS/ATUALIZADOS"
   );
 }
 
 // ======================================================
-// MERCADO LIVRE - OBTER TOKEN DO BANCO
+// MERCADO LIVRE - PEGAR TOKEN
 // ======================================================
 
 async function obterTokenMercadoLivre() {
 
   const resultado =
     await pool.query(
-
-      "SELECT " +
-      "access_token, " +
-      "refresh_token, " +
-      "user_id, " +
-      "expires_in, " +
-      "atualizado_em " +
+      "SELECT * " +
       "FROM mercadolivre_tokens " +
       "WHERE id = 1 " +
       "LIMIT 1"
-
     );
 
   if (
@@ -933,16 +860,18 @@ async function obterTokenMercadoLivre() {
 // MERCADO LIVRE - REFRESH TOKEN
 // ======================================================
 
-async function atualizarTokenMercadoLivre(
-  refreshToken
-) {
+async function atualizarTokenMercadoLivre() {
+
+  const tokenAtual =
+    await obterTokenMercadoLivre();
 
   if (
-    !refreshToken
+    !tokenAtual ||
+    !tokenAtual.refresh_token
   ) {
 
     throw new Error(
-      "Refresh token do Mercado Livre não disponível."
+      "Refresh token do Mercado Livre não encontrado."
     );
   }
 
@@ -952,19 +881,17 @@ async function atualizarTokenMercadoLivre(
   ) {
 
     throw new Error(
-      "MERCADOLIVRE_CLIENT_ID ou MERCADOLIVRE_CLIENT_SECRET não configurado."
+      "Credenciais do Mercado Livre não configuradas."
     );
   }
 
   console.log(
-    "ATUALIZANDO ACCESS TOKEN DO MERCADO LIVRE..."
+    "Atualizando token do Mercado Livre..."
   );
 
   const resposta =
     await fetch(
-
       "https://api.mercadolibre.com/oauth/token",
-
       {
 
         method:
@@ -973,10 +900,7 @@ async function atualizarTokenMercadoLivre(
         headers: {
 
           "Content-Type":
-            "application/x-www-form-urlencoded",
-
-          Accept:
-            "application/json"
+            "application/x-www-form-urlencoded"
 
         },
 
@@ -993,7 +917,7 @@ async function atualizarTokenMercadoLivre(
               MERCADOLIVRE_CLIENT_SECRET,
 
             refresh_token:
-              refreshToken
+              tokenAtual.refresh_token
 
           })
 
@@ -1043,32 +967,47 @@ async function atualizarTokenMercadoLivre(
     throw erro;
   }
 
-  await salvarTokensMercadoLivre(
-    dados
+  await salvarTokenMercadoLivre(
+    {
+
+      access_token:
+        dados.access_token,
+
+      refresh_token:
+        dados.refresh_token ||
+        tokenAtual.refresh_token,
+
+      user_id:
+        dados.user_id ||
+        tokenAtual.user_id,
+
+      expires_in:
+        dados.expires_in ||
+        0
+
+    }
   );
 
   console.log(
-    "ACCESS TOKEN DO MERCADO LIVRE ATUALIZADO COM SUCESSO"
+    "TOKEN DO MERCADO LIVRE ATUALIZADO"
   );
 
-  return dados.access_token;
+  return obterTokenMercadoLivre();
 }
 
 // ======================================================
-// MERCADO LIVRE - OBTER ACCESS TOKEN VÁLIDO
+// MERCADO LIVRE - GARANTIR TOKEN
 // ======================================================
 
-async function obterAccessTokenMercadoLivre() {
+async function garantirTokenMercadoLivre() {
 
-  const token =
+  let token =
     await obterTokenMercadoLivre();
 
-  if (
-    !token
-  ) {
+  if (!token) {
 
     throw new Error(
-      "Conta do Mercado Livre não autorizada. Conecte a conta primeiro."
+      "Conta do Mercado Livre ainda não autorizada."
     );
   }
 
@@ -1081,66 +1020,11 @@ async function obterAccessTokenMercadoLivre() {
     );
   }
 
-  // ----------------------------------------------------
-  // Verificação aproximada de expiração.
-  // Atualiza antecipadamente quando faltam poucos minutos.
-  // ----------------------------------------------------
-
-  if (
-    token.expires_in &&
-    token.atualizado_em
-  ) {
-
-    const atualizadoEm =
-      new Date(
-        token.atualizado_em
-      ).getTime();
-
-    const agora =
-      Date.now();
-
-    const idadeSegundos =
-      Math.floor(
-        (
-          agora -
-          atualizadoEm
-        ) / 1000
-      );
-
-    const margemSegundos =
-      300;
-
-    if (
-      idadeSegundos >=
-      (
-        Number(
-          token.expires_in
-        ) -
-        margemSegundos
-      )
-    ) {
-
-      console.log(
-        "TOKEN ML PRÓXIMO DA EXPIRAÇÃO. FAZENDO REFRESH..."
-      );
-
-      if (
-        token.refresh_token
-      ) {
-
-        return atualizarTokenMercadoLivre(
-          token.refresh_token
-        );
-
-      }
-    }
-  }
-
-  return token.access_token;
+  return token;
 }
 
 // ======================================================
-// MERCADO LIVRE - URL DE LOGIN
+// MERCADO LIVRE - LOGIN
 // ======================================================
 
 app.get(
@@ -1189,9 +1073,7 @@ app.get(
       const code =
         req.query.code;
 
-      if (
-        !code
-      ) {
+      if (!code) {
 
         return res
           .status(400)
@@ -1214,9 +1096,7 @@ app.get(
 
       const resposta =
         await fetch(
-
           "https://api.mercadolibre.com/oauth/token",
-
           {
 
             method:
@@ -1225,10 +1105,7 @@ app.get(
             headers: {
 
               "Content-Type":
-                "application/x-www-form-urlencoded",
-
-              Accept:
-                "application/json"
+                "application/x-www-form-urlencoded"
 
             },
 
@@ -1264,7 +1141,6 @@ app.get(
 
         console.error(
           "ERRO TOKEN ML:",
-          resposta.status,
           dados
         );
 
@@ -1283,71 +1159,46 @@ app.get(
           });
       }
 
-      await salvarTokensMercadoLivre(
+      await salvarTokenMercadoLivre(
         dados
       );
 
-      res.send(`<!DOCTYPE html>
+      res.send(
+        `
+<!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-
 <meta charset="UTF-8">
-
-<meta
-name="viewport"
-content="width=device-width, initial-scale=1.0"
->
-
-<title>
-Mercado Livre conectado
-</title>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mercado Livre conectado</title>
 <style>
-
 body {
   font-family: Arial, sans-serif;
   text-align: center;
   padding: 50px;
   background: #f4f6f8;
 }
-
 .box {
   background: white;
   padding: 30px;
   border-radius: 15px;
   max-width: 500px;
   margin: auto;
-  box-shadow:
-    0 4px 20px
-    rgba(0,0,0,.1);
+  box-shadow: 0 4px 20px rgba(0,0,0,.1);
 }
-
 </style>
-
 </head>
-
 <body>
-
 <div class="box">
-
-<h1>
-✅ Mercado Livre conectado!
-</h1>
-
-<p>
-A conta foi autorizada com sucesso.
-</p>
-
-<p>
-O Eletromax salvou o token e poderá renová-lo automaticamente.
-</p>
-
+<h1>✅ Mercado Livre conectado!</h1>
+<p>A conta foi autorizada com sucesso.</p>
+<p>O token foi salvo no PostgreSQL.</p>
+<p>Agora você pode voltar ao Eletromax.</p>
 </div>
-
 </body>
-
-</html>`);
+</html>
+`
+      );
 
     } catch (erro) {
 
@@ -1367,7 +1218,7 @@ O Eletromax salvou o token e poderá renová-lo automaticamente.
 );
 
 // ======================================================
-// MERCADO LIVRE - STATUS DA CONEXÃO
+// MERCADO LIVRE - STATUS
 // ======================================================
 
 app.get(
@@ -1376,27 +1227,14 @@ app.get(
 
     try {
 
-      const resultado =
-        await pool.query(
+      const token =
+        await obterTokenMercadoLivre();
 
-          "SELECT " +
-          "user_id, " +
-          "expires_in, " +
-          "atualizado_em " +
-          "FROM mercadolivre_tokens " +
-          "WHERE id = 1 " +
-          "LIMIT 1"
-
-        );
-
-      if (
-        resultado.rows.length === 0
-      ) {
+      if (!token) {
 
         return res.json({
 
-          success:
-            true,
+          success: true,
 
           conectado:
             false
@@ -1406,48 +1244,43 @@ app.get(
 
       res.json({
 
-        success:
-          true,
+        success: true,
 
         conectado:
           true,
 
         userId:
-          resultado.rows[0].user_id,
+          token.user_id,
 
         expiresIn:
-          resultado.rows[0].expires_in,
+          token.expires_in,
 
         atualizadoEm:
-          resultado.rows[0].atualizado_em
+          token.atualizado_em
 
       });
 
     } catch (erro) {
 
-      console.error(
-        "ERRO STATUS ML:",
-        erro.message
-      );
+      res
+        .status(500)
+        .json({
 
-      res.status(500).json({
+          success: false,
 
-        success:
-          false,
+          conectado:
+            false,
 
-        conectado:
-          false,
+          error:
+            erro.message
 
-        error:
-          erro.message
-
-      });
+        });
     }
   }
 );
 
 // ======================================================
-// FUNÇÃO AUXILIAR - NORMALIZAR LIMITE
+// FUNÇÃO AUXILIAR - LIMITE
 // ======================================================
 
 function normalizarLimite(
@@ -1460,9 +1293,7 @@ function normalizarLimite(
     );
 
   if (
-    !Number.isFinite(
-      limite
-    ) ||
+    !Number.isFinite(limite) ||
     limite < 1
   ) {
 
@@ -1471,24 +1302,23 @@ function normalizarLimite(
   }
 
   return Math.min(
-    Math.floor(
-      limite
-    ),
+    Math.floor(limite),
     50
   );
 }
 
 // ======================================================
-// MERCADO LIVRE - CONSULTAR API AUTENTICADA
+// MERCADO LIVRE - CONSULTA AUTENTICADA
 // ======================================================
 
 async function consultarMercadoLivre(
   busca,
-  limite
+  limite,
+  tentarNovamente = true
 ) {
 
-  let accessToken =
-    await obterAccessTokenMercadoLivre();
+  let token =
+    await garantirTokenMercadoLivre();
 
   const url =
     new URL(
@@ -1512,11 +1342,9 @@ async function consultarMercadoLivre(
     busca
   );
 
-  let resposta =
+  const resposta =
     await fetch(
-
       url.toString(),
-
       {
 
         method:
@@ -1529,7 +1357,7 @@ async function consultarMercadoLivre(
 
           Authorization:
             "Bearer " +
-            accessToken,
+            token.access_token,
 
           "User-Agent":
             "Eletromax-V2/1.0"
@@ -1538,60 +1366,6 @@ async function consultarMercadoLivre(
 
       }
     );
-
-  // ====================================================
-  // TOKEN EXPIRADO OU INVÁLIDO
-  // ====================================================
-
-  if (
-    resposta.status === 401
-  ) {
-
-    console.log(
-      "ACCESS TOKEN ML INVÁLIDO OU EXPIRADO."
-    );
-
-    const tokenAtual =
-      await obterTokenMercadoLivre();
-
-    if (
-      tokenAtual &&
-      tokenAtual.refresh_token
-    ) {
-
-      accessToken =
-        await atualizarTokenMercadoLivre(
-          tokenAtual.refresh_token
-        );
-
-      resposta =
-        await fetch(
-
-          url.toString(),
-
-          {
-
-            method:
-              "GET",
-
-            headers: {
-
-              Accept:
-                "application/json",
-
-              Authorization:
-                "Bearer " +
-                accessToken,
-
-              "User-Agent":
-                "Eletromax-V2/1.0"
-
-            }
-
-          }
-        );
-    }
-  }
 
   const texto =
     await resposta.text();
@@ -1602,65 +1376,79 @@ async function consultarMercadoLivre(
 
     dados =
       texto
-        ? JSON.parse(
-            texto
-          )
+        ? JSON.parse(texto)
         : {};
 
-  } catch (erroJSON) {
+  } catch (erro) {
 
-    console.error(
-      "RESPOSTA NÃO JSON DO MERCADO LIVRE:",
-      texto
-    );
-
-    const erro =
+    const erroAPI =
       new Error(
         "Mercado Livre retornou uma resposta inválida."
       );
 
-    erro.status =
+    erroAPI.status =
       resposta.status;
 
-    erro.detalhe =
+    erroAPI.detalhe =
       texto.substring(
         0,
         1000
       );
 
-    throw erro;
+    throw erroAPI;
   }
 
   // ====================================================
-  // ERRO 403
+  // TOKEN EXPIRADO OU RECUSADO
   // ====================================================
 
   if (
-    resposta.status === 403
+    (
+      resposta.status === 401 ||
+      resposta.status === 403
+    ) &&
+    tentarNovamente
   ) {
 
-    console.error(
-      "MERCADO LIVRE RETORNOU 403 FORBIDDEN:",
-      dados
+    console.log(
+      "API ML retornou " +
+      resposta.status +
+      ". Tentando atualizar token..."
     );
 
-    const erro =
-      new Error(
-        "Mercado Livre bloqueou a consulta (403 Forbidden)."
+    try {
+
+      await atualizarTokenMercadoLivre();
+
+      return consultarMercadoLivre(
+        busca,
+        limite,
+        false
       );
 
-    erro.status =
-      403;
+    } catch (erroRefresh) {
 
-    erro.detalhe =
-      dados;
+      console.error(
+        "ERRO AO RENOVAR TOKEN:",
+        erroRefresh.message
+      );
 
-    throw erro;
+      const erro =
+        new Error(
+          "Mercado Livre bloqueou a consulta (" +
+          resposta.status +
+          "). Não foi possível renovar o token automaticamente."
+        );
+
+      erro.status =
+        resposta.status;
+
+      erro.detalhe =
+        dados;
+
+      throw erro;
+    }
   }
-
-  // ====================================================
-  // OUTROS ERROS
-  // ====================================================
 
   if (
     !resposta.ok
@@ -1674,7 +1462,9 @@ async function consultarMercadoLivre(
 
     const erro =
       new Error(
-        "Mercado Livre recusou a consulta."
+        resposta.status === 403
+          ? "O Mercado Livre bloqueou a consulta (403 Forbidden). Verifique as permissões da aplicação."
+          : "Mercado Livre recusou a consulta."
       );
 
     erro.status =
@@ -1690,7 +1480,7 @@ async function consultarMercadoLivre(
 }
 
 // ======================================================
-// MERCADO LIVRE - BUSCAR PRODUTOS
+// MERCADO LIVRE - BUSCAR
 // ======================================================
 
 app.get(
@@ -1747,10 +1537,9 @@ app.get(
           })
         );
 
-      return res.json({
+      res.json({
 
-        success:
-          true,
+        success: true,
 
         busca,
 
@@ -1768,37 +1557,17 @@ app.get(
         erro
       );
 
-      let mensagem =
-        "Erro ao buscar produtos no Mercado Livre.";
-
-      if (
-        erro.status === 401
-      ) {
-
-        mensagem =
-          "A autorização do Mercado Livre expirou. Tente conectar a conta novamente.";
-
-      } else if (
-        erro.status === 403
-      ) {
-
-        mensagem =
-          "O Mercado Livre bloqueou a consulta (403 Forbidden). Verifique a autorização da aplicação e as permissões da conta.";
-
-      }
-
-      return res
+      res
         .status(
           erro.status ||
           500
         )
         .json({
 
-          success:
-            false,
+          success: false,
 
           message:
-            mensagem,
+            "Erro ao buscar produtos no Mercado Livre.",
 
           error:
             erro.message,
@@ -1872,44 +1641,34 @@ app.post(
         const preco =
           produto.price !== undefined &&
           produto.price !== null
-
             ? "R$ " +
               Number(
                 produto.price
               )
-                .toFixed(
-                  2
-                )
+                .toFixed(2)
                 .replace(
                   ".",
                   ","
                 )
-
             : "";
 
         const imagem =
           produto.thumbnail ||
-
           (
             produto.pictures &&
             produto.pictures[0] &&
             produto.pictures[0].url
           ) ||
-
           "";
 
         const existente =
           await pool.query(
-
-            "SELECT id " +
-            "FROM ofertas " +
+            "SELECT id FROM ofertas " +
             "WHERE link = $1 " +
             "LIMIT 1",
-
             [
               produto.permalink
             ]
-
           );
 
         if (
@@ -1922,11 +1681,9 @@ app.post(
         }
 
         await pool.query(
-
           "INSERT INTO ofertas " +
           "(nome, preco, preco_anterior, link, plataforma, imagem, descricao) " +
           "VALUES ($1, $2, $3, $4, $5, $6, $7)",
-
           [
 
             produto.title,
@@ -1944,35 +1701,14 @@ app.post(
             "Oferta encontrada automaticamente pelo Eletromax."
 
           ]
-
         );
 
         salvos++;
       }
 
-      console.log(
+      res.json({
 
-        "BUSCA DE OFERTAS CONCLUÍDA:",
-
-        {
-
-          busca,
-
-          encontrados:
-            produtos.length,
-
-          salvos,
-
-          duplicados
-
-        }
-
-      );
-
-      return res.json({
-
-        success:
-          true,
+        success: true,
 
         message:
           "Busca concluída com sucesso!",
@@ -1991,44 +1727,21 @@ app.post(
     } catch (erro) {
 
       console.error(
-
         "ERRO BUSCAR E SALVAR ML:",
-
         erro
-
       );
 
-      let mensagem =
-        "Erro ao consultar Mercado Livre.";
-
-      if (
-        erro.status === 403
-      ) {
-
-        mensagem =
-          "Mercado Livre bloqueou a consulta (403 Forbidden). Verifique as permissões da aplicação.";
-
-      } else if (
-        erro.status === 401
-      ) {
-
-        mensagem =
-          "Autorização do Mercado Livre expirada. Tente conectar a conta novamente.";
-
-      }
-
-      return res
+      res
         .status(
           erro.status ||
           500
         )
         .json({
 
-          success:
-            false,
+          success: false,
 
           message:
-            mensagem,
+            "Erro ao consultar Mercado Livre.",
 
           error:
             erro.message,
@@ -2058,15 +1771,11 @@ app.get(
 
       const resultado =
         await pool.query(
-
-          "SELECT " +
-          "link_mercadolivre, " +
-          "link_shopee, " +
-          "link_whatsapp " +
+          "SELECT link_mercadolivre, " +
+          "link_shopee, link_whatsapp " +
           "FROM configuracoes " +
           "WHERE id = 1 " +
           "LIMIT 1"
-
         );
 
       const config =
@@ -2075,8 +1784,7 @@ app.get(
 
       res.json({
 
-        success:
-          true,
+        success: true,
 
         mercadoLivre:
           config.link_mercadolivre ||
@@ -2094,23 +1802,19 @@ app.get(
 
     } catch (erro) {
 
-      console.error(
-        "ERRO AO BUSCAR LINKS:",
-        erro.message
-      );
+      res
+        .status(500)
+        .json({
 
-      res.status(500).json({
+          success: false,
 
-        success:
-          false,
+          message:
+            "Erro ao buscar links.",
 
-        message:
-          "Erro ao buscar links.",
+          error:
+            erro.message
 
-        error:
-          erro.message
-
-      });
+        });
     }
   }
 );
@@ -2127,23 +1831,17 @@ app.get(
 
       const resultado =
         await pool.query(
-
-          "SELECT * " +
-          "FROM configuracoes " +
+          "SELECT * FROM configuracoes " +
           "WHERE id = 1 " +
           "LIMIT 1"
-
         );
 
       res.json({
 
-        success:
-          true,
+        success: true,
 
         configuracoes:
-          resultado.rows[0] ||
-
-          {
+          resultado.rows[0] || {
 
             nome_loja:
               "Eletromax",
@@ -2163,23 +1861,19 @@ app.get(
 
     } catch (erro) {
 
-      console.error(
-        "ERRO CONFIGURAÇÕES:",
-        erro.message
-      );
+      res
+        .status(500)
+        .json({
 
-      res.status(500).json({
+          success: false,
 
-        success:
-          false,
+          message:
+            "Erro ao buscar configurações.",
 
-        message:
-          "Erro ao buscar configurações.",
+          error:
+            erro.message
 
-        error:
-          erro.message
-
-      });
+        });
     }
   }
 );
@@ -2203,19 +1897,16 @@ app.put(
 
       const resultado =
         await pool.query(
-
           "INSERT INTO configuracoes " +
           "(id, nome_loja, link_mercadolivre, link_shopee, link_whatsapp, atualizado_em) " +
           "VALUES (1, $1, $2, $3, $4, CURRENT_TIMESTAMP) " +
-          "ON CONFLICT (id) " +
-          "DO UPDATE SET " +
+          "ON CONFLICT (id) DO UPDATE SET " +
           "nome_loja = EXCLUDED.nome_loja, " +
           "link_mercadolivre = EXCLUDED.link_mercadolivre, " +
           "link_shopee = EXCLUDED.link_shopee, " +
           "link_whatsapp = EXCLUDED.link_whatsapp, " +
           "atualizado_em = CURRENT_TIMESTAMP " +
           "RETURNING *",
-
           [
 
             nomeLoja ||
@@ -2231,13 +1922,11 @@ app.put(
               LINK_WHATSAPP
 
           ]
-
         );
 
       res.json({
 
-        success:
-          true,
+        success: true,
 
         message:
           "Configurações salvas!",
@@ -2249,23 +1938,19 @@ app.put(
 
     } catch (erro) {
 
-      console.error(
-        "ERRO AO SALVAR CONFIGURAÇÕES:",
-        erro.message
-      );
+      res
+        .status(500)
+        .json({
 
-      res.status(500).json({
+          success: false,
 
-        success:
-          false,
+          message:
+            "Erro ao salvar configurações.",
 
-        message:
-          "Erro ao salvar configurações.",
+          error:
+            erro.message
 
-        error:
-          erro.message
-
-      });
+        });
     }
   }
 );
@@ -2296,8 +1981,7 @@ app.post(
           .status(400)
           .json({
 
-            success:
-              false,
+            success: false,
 
             message:
               "Nome do produto obrigatório."
@@ -2307,12 +1991,9 @@ app.post(
 
       const configResult =
         await pool.query(
-
-          "SELECT * " +
-          "FROM configuracoes " +
+          "SELECT * FROM configuracoes " +
           "WHERE id = 1 " +
           "LIMIT 1"
-
         );
 
       const config =
@@ -2381,8 +2062,7 @@ app.post(
 
       res.json({
 
-        success:
-          true,
+        success: true,
 
         texto
 
@@ -2390,23 +2070,19 @@ app.post(
 
     } catch (erro) {
 
-      console.error(
-        "ERRO AO GERAR POST:",
-        erro.message
-      );
+      res
+        .status(500)
+        .json({
 
-      res.status(500).json({
+          success: false,
 
-        success:
-          false,
+          message:
+            "Erro ao gerar post.",
 
-        message:
-          "Erro ao gerar post.",
+          error:
+            erro.message
 
-        error:
-          erro.message
-
-      });
+        });
     }
   }
 );
@@ -2471,35 +2147,29 @@ app.get(
           Number(
             tokens.rows[0].count
           ) > 0
-
             ? "Conta autorizada"
-
             : "Aguardando autorização"
 
       });
 
     } catch (erro) {
 
-      console.error(
-        "ERRO TESTE GERAL:",
-        erro.message
-      );
+      res
+        .status(500)
+        .json({
 
-      res.status(500).json({
+          success: false,
 
-        success:
-          false,
+          error:
+            erro.message
 
-        error:
-          erro.message
-
-      });
+        });
     }
   }
 );
 
 // ======================================================
-// ROTA 404 API
+// 404 API
 // ======================================================
 
 app.use(
@@ -2510,8 +2180,7 @@ app.use(
       .status(404)
       .json({
 
-        success:
-          false,
+        success: false,
 
         message:
           "Rota API não encontrada.",
@@ -2524,7 +2193,7 @@ app.use(
 );
 
 // ======================================================
-// TRATAMENTO DE ERROS
+// ERROS
 // ======================================================
 
 app.use(
@@ -2553,8 +2222,7 @@ app.use(
       .status(500)
       .json({
 
-        success:
-          false,
+        success: false,
 
         message:
           "Erro interno do servidor."
@@ -2574,7 +2242,7 @@ async function iniciarServidor() {
   );
 
   console.log(
-    "⚡ ELETROMAX V2"
+    "ELETROMAX V2"
   );
 
   console.log(
@@ -2585,11 +2253,8 @@ async function iniciarServidor() {
     await inicializarBanco();
 
   app.listen(
-
     PORT,
-
     "0.0.0.0",
-
     () => {
 
       console.log(
@@ -2618,7 +2283,6 @@ async function iniciarServidor() {
       console.log(
         "======================================"
       );
-
     }
   );
 }
