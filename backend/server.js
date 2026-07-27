@@ -1,6 +1,7 @@
 
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const { Pool } = require("pg");
 
 const app = express();
@@ -16,9 +17,38 @@ app.use(cors());
 
 app.use(express.json());
 
-app.use(express.urlencoded({
-  extended: true
-}));
+app.use(
+  express.urlencoded({
+    extended: true
+  })
+);
+
+// ==========================================
+// FRONTEND
+// ==========================================
+
+app.use(
+  express.static(
+    path.join(
+      __dirname,
+      "../frontend"
+    )
+  )
+);
+
+app.get(
+  "/",
+  (req, res) => {
+
+    res.sendFile(
+      path.join(
+        __dirname,
+        "../frontend/index.html"
+      )
+    );
+
+  }
+);
 
 // ==========================================
 // POSTGRESQL
@@ -332,15 +362,10 @@ app.post(
     try {
 
       const {
-
         nome,
-
         preco,
-
         link,
-
         plataforma
-
       } = req.body;
 
       if (
@@ -380,7 +405,6 @@ app.post(
           RETURNING *
           `,
           [
-
             nome.trim(),
 
             preco
@@ -390,7 +414,6 @@ app.post(
             link.trim(),
 
             plataforma.trim()
-
           ]
         );
 
@@ -640,15 +663,10 @@ app.put(
     try {
 
       const {
-
         nomeLoja,
-
         linkMercadoLivre,
-
         linkShopee,
-
         linkWhatsapp
-
       } = req.body;
 
       await pool.query(
@@ -684,7 +702,6 @@ app.put(
             CURRENT_TIMESTAMP
         `,
         [
-
           nomeLoja || "Eletromax",
 
           linkMercadoLivre || "",
@@ -692,7 +709,6 @@ app.put(
           linkShopee || "",
 
           linkWhatsapp || ""
-
         ]
       );
 
@@ -799,17 +815,11 @@ app.post(
     try {
 
       const {
-
         nome,
-
         preco,
-
         precoAnterior,
-
         plataforma,
-
         link
-
       } = req.body;
 
       if (!nome) {
@@ -864,6 +874,11 @@ ${
       });
 
     } catch (erro) {
+
+      console.error(
+        "ERRO AO GERAR POST:",
+        erro.message
+      );
 
       res.status(500).json({
 
@@ -977,16 +992,17 @@ app.get(
     }
 
     res.send(`
-      <html>
-        <head>
-          <meta charset="UTF-8">
-          <title>Eletromax</title>
-        </head>
-        <body>
-          <h2>Autorização recebida!</h2>
-          <p>O código OAuth foi recebido.</p>
-          <p>A integração completa do token será configurada na próxima etapa.</p>
-        </body>
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+      <head>
+        <meta charset="UTF-8">
+        <title>Eletromax</title>
+      </head>
+      <body>
+        <h2>Autorização recebida!</h2>
+        <p>O código OAuth foi recebido.</p>
+        <p>A integração completa do token será configurada na próxima etapa.</p>
+      </body>
       </html>
     `);
 
@@ -1008,8 +1024,11 @@ app.get(
 
     const limite =
       Math.min(
-        Number(
-          req.query.limit || 20
+        Math.max(
+          Number(
+            req.query.limit || 20
+          ),
+          1
         ),
         50
       );
@@ -1106,7 +1125,10 @@ app.get(
         success: false,
 
         message:
-          "Erro ao consultar Mercado Livre."
+          "Erro ao consultar Mercado Livre.",
+
+        error:
+          erro.message
 
       });
 
@@ -1130,8 +1152,11 @@ app.post(
 
     const limite =
       Math.min(
-        Number(
-          req.body.limit || 20
+        Math.max(
+          Number(
+            req.body.limit || 20
+          ),
+          1
         ),
         50
       );
@@ -1193,6 +1218,10 @@ app.post(
         const link =
           produto.permalink;
 
+        if (!link) {
+          continue;
+        }
+
         const existe =
           await pool.query(
             `
@@ -1236,8 +1265,7 @@ app.post(
           )
           `,
           [
-
-            produto.title,
+            produto.title || "Produto",
 
             String(
               produto.price || ""
@@ -1248,7 +1276,6 @@ app.post(
             "Mercado Livre",
 
             produto.thumbnail || ""
-
           ]
         );
 
@@ -1281,7 +1308,10 @@ app.post(
         success: false,
 
         message:
-          "Erro ao buscar e salvar ofertas."
+          "Erro ao buscar e salvar ofertas.",
+
+        error:
+          erro.message
 
       });
 
@@ -1291,7 +1321,7 @@ app.post(
 );
 
 // ==========================================
-// ROTA PRINCIPAL
+// ROTA API PRINCIPAL
 // ==========================================
 
 app.get(
@@ -1304,6 +1334,26 @@ app.get(
 
       message:
         "Eletromax V2 API funcionando!"
+
+    });
+
+  }
+);
+
+// ==========================================
+// ROTA 404 DA API
+// ==========================================
+
+app.use(
+  "/api",
+  (req, res) => {
+
+    res.status(404).json({
+
+      success: false,
+
+      message:
+        "Rota da API não encontrada."
 
     });
 
@@ -1350,6 +1400,11 @@ async function iniciarServidor() {
         bancoOK
           ? "CONECTADO"
           : "COM ERRO"
+      );
+
+      console.log(
+        "FRONTEND:",
+        "ATIVO"
       );
 
       console.log(
