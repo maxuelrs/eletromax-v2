@@ -85,7 +85,6 @@ const pool = new Pool({
 // ======================================================
 
 async function testarBanco() {
-
   try {
 
     await pool.query(
@@ -106,9 +105,7 @@ async function testarBanco() {
     );
 
     return false;
-
   }
-
 }
 
 // ======================================================
@@ -116,12 +113,11 @@ async function testarBanco() {
 // ======================================================
 
 async function inicializarBanco() {
-
   try {
 
-    // ==================================================
+    // --------------------------------------------------
     // TABELA PRODUTOS
-    // ==================================================
+    // --------------------------------------------------
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS produtos (
@@ -134,10 +130,9 @@ async function inicializarBanco() {
       )
     `);
 
-
-    // ==================================================
+    // --------------------------------------------------
     // TABELA OFERTAS
-    // ==================================================
+    // --------------------------------------------------
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS ofertas (
@@ -153,10 +148,9 @@ async function inicializarBanco() {
       )
     `);
 
-
-    // ==================================================
+    // --------------------------------------------------
     // TABELA CONFIGURAÇÕES
-    // ==================================================
+    // --------------------------------------------------
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS configuracoes (
@@ -169,10 +163,9 @@ async function inicializarBanco() {
       )
     `);
 
-
-    // ==================================================
+    // --------------------------------------------------
     // TABELA TOKENS MERCADO LIVRE
-    // ==================================================
+    // --------------------------------------------------
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS mercadolivre_tokens (
@@ -186,13 +179,11 @@ async function inicializarBanco() {
       )
     `);
 
-
-    // ==================================================
+    // --------------------------------------------------
     // CONFIGURAÇÃO PADRÃO
-    // ==================================================
+    // --------------------------------------------------
 
-    await pool.query(
-      `
+    await pool.query(`
       INSERT INTO configuracoes (
         id,
         nome_loja,
@@ -200,7 +191,6 @@ async function inicializarBanco() {
         link_shopee,
         link_whatsapp
       )
-
       VALUES (
         1,
         'Eletromax',
@@ -208,17 +198,13 @@ async function inicializarBanco() {
         $2,
         $3
       )
-
       ON CONFLICT (id)
       DO NOTHING
-      `,
-      [
-        LINK_MERCADO_LIVRE,
-        LINK_SHOPEE,
-        LINK_WHATSAPP
-      ]
-    );
-
+    `, [
+      LINK_MERCADO_LIVRE,
+      LINK_SHOPEE,
+      LINK_WHATSAPP
+    ]);
 
     console.log(
       "TABELAS DO ELETROMAX PRONTAS"
@@ -234,9 +220,7 @@ async function inicializarBanco() {
     );
 
     return false;
-
   }
-
 }
 
 // ======================================================
@@ -263,19 +247,14 @@ app.get(
 
           if (!res.headersSent) {
 
-            res
-              .status(500)
-              .send(
-                "Erro: frontend/index.html não foi encontrado."
-              );
+            res.status(500).send(
+              "Erro: frontend/index.html não foi encontrado."
+            );
 
           }
-
         }
-
       }
     );
-
   }
 );
 
@@ -300,18 +279,13 @@ app.get(
       );
 
       res.json({
-
         success: true,
-
         status: "online",
-
         database: "connected",
-
         mercadolivre:
           MERCADOLIVRE_CLIENT_ID
             ? "configured"
             : "not_configured"
-
       });
 
     } catch (erro) {
@@ -321,23 +295,13 @@ app.get(
         erro.message
       );
 
-      res
-        .status(500)
-        .json({
-
-          success: false,
-
-          status: "online",
-
-          database: "disconnected",
-
-          error:
-            erro.message
-
-        });
-
+      res.status(500).json({
+        success: false,
+        status: "online",
+        database: "disconnected",
+        error: erro.message
+      });
     }
-
   }
 );
 
@@ -378,7 +342,6 @@ app.get(
         `);
 
       res.json({
-
         success: true,
 
         totalProdutos:
@@ -400,7 +363,6 @@ app.get(
           Number(
             shopee.rows[0].count
           )
-
       });
 
     } catch (erro) {
@@ -410,22 +372,14 @@ app.get(
         erro.message
       );
 
-      res
-        .status(500)
-        .json({
-
-          success: false,
-
-          message:
-            "Erro ao carregar dashboard.",
-
-          error:
-            erro.message
-
-        });
-
+      res.status(500).json({
+        success: false,
+        message:
+          "Erro ao carregar dashboard.",
+        error:
+          erro.message
+      });
     }
-
   }
 );
 
@@ -447,12 +401,9 @@ app.get(
         `);
 
       res.json({
-
         success: true,
-
         produtos:
           resultado.rows
-
       });
 
     } catch (erro) {
@@ -462,22 +413,14 @@ app.get(
         erro.message
       );
 
-      res
-        .status(500)
-        .json({
-
-          success: false,
-
-          message:
-            "Erro ao buscar produtos.",
-
-          error:
-            erro.message
-
-        });
-
+      res.status(500).json({
+        success: false,
+        message:
+          "Erro ao buscar produtos.",
+        error:
+          erro.message
+      });
     }
-
   }
 );
 
@@ -507,14 +450,10 @@ app.post(
         return res
           .status(400)
           .json({
-
             success: false,
-
             message:
               "Nome, link e plataforma são obrigatórios."
-
           });
-
       }
 
       const resultado =
@@ -527,7 +466,6 @@ app.post(
             link,
             plataforma
           )
-
           VALUES
           (
             $1,
@@ -535,7 +473,6 @@ app.post(
             $3,
             $4
           )
-
           RETURNING *
           `,
           [
@@ -551,19 +488,13 @@ app.post(
           ]
         );
 
-      res
-        .status(201)
-        .json({
-
-          success: true,
-
-          message:
-            "Produto salvo com sucesso!",
-
-          produto:
-            resultado.rows[0]
-
-        });
+      res.status(201).json({
+        success: true,
+        message:
+          "Produto salvo com sucesso!",
+        produto:
+          resultado.rows[0]
+      });
 
     } catch (erro) {
 
@@ -572,22 +503,14 @@ app.post(
         erro.message
       );
 
-      res
-        .status(500)
-        .json({
-
-          success: false,
-
-          message:
-            "Erro ao salvar produto.",
-
-          error:
-            erro.message
-
-        });
-
+      res.status(500).json({
+        success: false,
+        message:
+          "Erro ao salvar produto.",
+        error:
+          erro.message
+      });
     }
-
   }
 );
 
@@ -613,14 +536,10 @@ app.delete(
         return res
           .status(400)
           .json({
-
             success: false,
-
             message:
               "ID inválido."
-
           });
-
       }
 
       const resultado =
@@ -640,26 +559,18 @@ app.delete(
         return res
           .status(404)
           .json({
-
             success: false,
-
             message:
               "Produto não encontrado."
-
           });
-
       }
 
       res.json({
-
         success: true,
-
         message:
           "Produto excluído!",
-
         produto:
           resultado.rows[0]
-
       });
 
     } catch (erro) {
@@ -669,22 +580,14 @@ app.delete(
         erro.message
       );
 
-      res
-        .status(500)
-        .json({
-
-          success: false,
-
-          message:
-            "Erro ao excluir produto.",
-
-          error:
-            erro.message
-
-        });
-
+      res.status(500).json({
+        success: false,
+        message:
+          "Erro ao excluir produto.",
+        error:
+          erro.message
+      });
     }
-
   }
 );
 
@@ -715,12 +618,9 @@ app.get(
         `);
 
       res.json({
-
         success: true,
-
         ofertas:
           resultado.rows
-
       });
 
     } catch (erro) {
@@ -730,27 +630,19 @@ app.get(
         erro.message
       );
 
-      res
-        .status(500)
-        .json({
-
-          success: false,
-
-          message:
-            "Erro ao buscar ofertas.",
-
-          error:
-            erro.message
-
-        });
-
+      res.status(500).json({
+        success: false,
+        message:
+          "Erro ao buscar ofertas.",
+        error:
+          erro.message
+      });
     }
-
   }
 );
 
 // ======================================================
-// OFERTAS - SALVAR
+// OFERTA - SALVAR
 // ======================================================
 
 app.post(
@@ -778,14 +670,10 @@ app.post(
         return res
           .status(400)
           .json({
-
             success: false,
-
             message:
               "Nome, link e plataforma são obrigatórios."
-
           });
-
       }
 
       const resultado =
@@ -801,7 +689,6 @@ app.post(
             imagem,
             descricao
           )
-
           VALUES
           (
             $1,
@@ -812,7 +699,6 @@ app.post(
             $6,
             $7
           )
-
           RETURNING *
           `,
           [
@@ -840,19 +726,13 @@ app.post(
           ]
         );
 
-      res
-        .status(201)
-        .json({
-
-          success: true,
-
-          message:
-            "Oferta salva com sucesso!",
-
-          oferta:
-            resultado.rows[0]
-
-        });
+      res.status(201).json({
+        success: true,
+        message:
+          "Oferta salva com sucesso!",
+        oferta:
+          resultado.rows[0]
+      });
 
     } catch (erro) {
 
@@ -861,22 +741,14 @@ app.post(
         erro.message
       );
 
-      res
-        .status(500)
-        .json({
-
-          success: false,
-
-          message:
-            "Erro ao salvar oferta.",
-
-          error:
-            erro.message
-
-        });
-
+      res.status(500).json({
+        success: false,
+        message:
+          "Erro ao salvar oferta.",
+        error:
+          erro.message
+      });
     }
-
   }
 );
 
@@ -907,7 +779,6 @@ app.get(
         `);
 
       res.json({
-
         success: true,
 
         total:
@@ -915,7 +786,6 @@ app.get(
 
         ofertas:
           resultado.rows
-
       });
 
     } catch (erro) {
@@ -925,27 +795,19 @@ app.get(
         erro.message
       );
 
-      res
-        .status(500)
-        .json({
-
-          success: false,
-
-          message:
-            "Erro ao carregar Central de Ofertas.",
-
-          error:
-            erro.message
-
-        });
-
+      res.status(500).json({
+        success: false,
+        message:
+          "Erro ao carregar Central de Ofertas.",
+        error:
+          erro.message
+      });
     }
-
   }
 );
 
 // ======================================================
-// MERCADO LIVRE - LOGIN
+// MERCADO LIVRE - URL DE LOGIN
 // ======================================================
 
 app.get(
@@ -961,7 +823,6 @@ app.get(
         .send(
           "MERCADOLIVRE_CLIENT_ID não configurado no Render."
         );
-
     }
 
     const url =
@@ -977,7 +838,6 @@ app.get(
       );
 
     res.redirect(url);
-
   }
 );
 
@@ -1001,7 +861,6 @@ app.get(
           .send(
             "Código de autorização não recebido."
           );
-
       }
 
       if (
@@ -1014,7 +873,6 @@ app.get(
           .send(
             "Credenciais do Mercado Livre não configuradas."
           );
-
       }
 
       const resposta =
@@ -1063,17 +921,12 @@ app.get(
         return res
           .status(500)
           .json({
-
             success: false,
-
             message:
               "Erro ao obter autorização do Mercado Livre.",
-
             detalhe:
               dados
-
           });
-
       }
 
       await pool.query(
@@ -1087,7 +940,6 @@ app.get(
           expires_in,
           atualizado_em
         )
-
         VALUES
         (
           1,
@@ -1097,21 +949,16 @@ app.get(
           $4,
           CURRENT_TIMESTAMP
         )
-
         ON CONFLICT (id)
         DO UPDATE SET
           access_token =
             EXCLUDED.access_token,
-
           refresh_token =
             EXCLUDED.refresh_token,
-
           user_id =
             EXCLUDED.user_id,
-
           expires_in =
             EXCLUDED.expires_in,
-
           atualizado_em =
             CURRENT_TIMESTAMP
         `,
@@ -1134,7 +981,6 @@ app.get(
 
       res.send(`
         <!DOCTYPE html>
-
         <html lang="pt-BR">
 
         <head>
@@ -1150,7 +996,6 @@ app.get(
           </title>
 
           <style>
-
             body {
               font-family: Arial, sans-serif;
               text-align: center;
@@ -1168,9 +1013,7 @@ app.get(
                 0 4px 20px
                 rgba(0,0,0,.1);
             }
-
           </style>
-
         </head>
 
         <body>
@@ -1209,14 +1052,12 @@ app.get(
           "Erro ao conectar Mercado Livre: " +
           erro.message
         );
-
     }
-
   }
 );
 
 // ======================================================
-// MERCADO LIVRE - STATUS
+// MERCADO LIVRE - STATUS DA CONEXÃO
 // ======================================================
 
 app.get(
@@ -1240,19 +1081,13 @@ app.get(
       ) {
 
         return res.json({
-
           success: true,
-
           conectado: false
-
         });
-
       }
 
       res.json({
-
         success: true,
-
         conectado: true,
 
         userId:
@@ -1260,7 +1095,6 @@ app.get(
 
         atualizadoEm:
           resultado.rows[0].atualizado_em
-
       });
 
     } catch (erro) {
@@ -1270,34 +1104,24 @@ app.get(
         erro.message
       );
 
-      res
-        .status(500)
-        .json({
-
-          success: false,
-
-          conectado: false,
-
-          error:
-            erro.message
-
-        });
-
+      res.status(500).json({
+        success: false,
+        conectado: false,
+        error:
+          erro.message
+      });
     }
-
   }
 );
 
 // ======================================================
-// FUNÇÃO AUXILIAR - LIMITE
+// FUNÇÃO AUXILIAR - NORMALIZAR LIMITE
 // ======================================================
 
 function normalizarLimite(valor) {
 
   let limite =
-    Number(
-      valor
-    );
+    Number(valor);
 
   if (
     !Number.isFinite(limite) ||
@@ -1305,16 +1129,12 @@ function normalizarLimite(valor) {
   ) {
 
     limite = 20;
-
   }
 
   return Math.min(
-    Math.floor(
-      limite
-    ),
+    Math.floor(limite),
     50
   );
-
 }
 
 // ======================================================
@@ -1338,9 +1158,7 @@ async function consultarMercadoLivre(
 
   url.searchParams.set(
     "limit",
-    String(
-      limite
-    )
+    String(limite)
   );
 
   console.log(
@@ -1355,7 +1173,7 @@ async function consultarMercadoLivre(
         method: "GET",
 
         headers: {
-          "Accept":
+          Accept:
             "application/json",
 
           "User-Agent":
@@ -1373,9 +1191,7 @@ async function consultarMercadoLivre(
 
     dados =
       texto
-        ? JSON.parse(
-            texto
-          )
+        ? JSON.parse(texto)
         : {};
 
   } catch (erroJSON) {
@@ -1400,7 +1216,6 @@ async function consultarMercadoLivre(
       );
 
     throw erro;
-
   }
 
   if (
@@ -1425,15 +1240,13 @@ async function consultarMercadoLivre(
       dados;
 
     throw erro;
-
   }
 
   return dados;
-
 }
 
 // ======================================================
-// MERCADO LIVRE - BUSCAR
+// MERCADO LIVRE - BUSCAR PRODUTOS
 // ======================================================
 
 app.get(
@@ -1463,8 +1276,7 @@ app.get(
         (
           dados.results ||
           []
-        )
-        .map(
+        ).map(
           produto => ({
 
             id:
@@ -1487,12 +1299,10 @@ app.get(
 
             plataforma:
               "Mercado Livre"
-
           })
         );
 
       return res.json({
-
         success: true,
 
         busca,
@@ -1501,7 +1311,6 @@ app.get(
           produtos.length,
 
         produtos
-
       });
 
     } catch (erro) {
@@ -1533,11 +1342,8 @@ app.get(
           detalhe:
             erro.detalhe ||
             null
-
         });
-
     }
-
   }
 );
 
@@ -1588,30 +1394,22 @@ app.post(
           !produto.title ||
           !produto.permalink
         ) {
-
           continue;
-
         }
 
         const preco =
           produto.price !== undefined &&
           produto.price !== null
-
-            ?
-
-            "R$ " +
-            Number(
-              produto.price
-            )
-            .toFixed(2)
-            .replace(
-              ".",
-              ","
-            )
-
-            :
-
-            "";
+            ? "R$ " +
+              Number(
+                produto.price
+              )
+                .toFixed(2)
+                .replace(
+                  ".",
+                  ","
+                )
+            : "";
 
         const imagem =
           produto.thumbnail ||
@@ -1642,7 +1440,6 @@ app.post(
           duplicados++;
 
           continue;
-
         }
 
         await pool.query(
@@ -1657,7 +1454,6 @@ app.post(
             imagem,
             descricao
           )
-
           VALUES
           (
             $1,
@@ -1687,25 +1483,20 @@ app.post(
         );
 
         salvos++;
-
       }
 
       console.log(
         "BUSCA DE OFERTAS CONCLUÍDA:",
         {
           busca,
-
           encontrados:
             produtos.length,
-
           salvos,
-
           duplicados
         }
       );
 
       return res.json({
-
         success: true,
 
         message:
@@ -1719,7 +1510,6 @@ app.post(
         salvos,
 
         duplicados
-
       });
 
     } catch (erro) {
@@ -1751,11 +1541,8 @@ app.post(
           detalhe:
             erro.detalhe ||
             null
-
         });
-
     }
-
   }
 );
 
@@ -1799,7 +1586,6 @@ app.get(
         whatsapp:
           config.link_whatsapp ||
           LINK_WHATSAPP
-
       });
 
     } catch (erro) {
@@ -1809,22 +1595,14 @@ app.get(
         erro.message
       );
 
-      res
-        .status(500)
-        .json({
-
-          success: false,
-
-          message:
-            "Erro ao buscar links.",
-
-          error:
-            erro.message
-
-        });
-
+      res.status(500).json({
+        success: false,
+        message:
+          "Erro ao buscar links.",
+        error:
+          erro.message
+      });
     }
-
   }
 );
 
@@ -1851,8 +1629,7 @@ app.get(
         success: true,
 
         configuracoes:
-          resultado.rows[0] ||
-          {
+          resultado.rows[0] || {
 
             nome_loja:
               "Eletromax",
@@ -1865,9 +1642,7 @@ app.get(
 
             link_whatsapp:
               LINK_WHATSAPP
-
           }
-
       });
 
     } catch (erro) {
@@ -1877,22 +1652,14 @@ app.get(
         erro.message
       );
 
-      res
-        .status(500)
-        .json({
-
-          success: false,
-
-          message:
-            "Erro ao buscar configurações.",
-
-          error:
-            erro.message
-
-        });
-
+      res.status(500).json({
+        success: false,
+        message:
+          "Erro ao buscar configurações.",
+        error:
+          erro.message
+      });
     }
-
   }
 );
 
@@ -1925,7 +1692,6 @@ app.put(
             link_whatsapp,
             atualizado_em
           )
-
           VALUES
           (
             1,
@@ -1935,10 +1701,8 @@ app.put(
             $4,
             CURRENT_TIMESTAMP
           )
-
           ON CONFLICT (id)
           DO UPDATE SET
-
             nome_loja =
               EXCLUDED.nome_loja,
 
@@ -1957,6 +1721,7 @@ app.put(
           RETURNING *
           `,
           [
+
             nomeLoja ||
               "Eletromax",
 
@@ -1980,7 +1745,6 @@ app.put(
 
         configuracoes:
           resultado.rows[0]
-
       });
 
     } catch (erro) {
@@ -1990,22 +1754,17 @@ app.put(
         erro.message
       );
 
-      res
-        .status(500)
-        .json({
+      res.status(500).json({
 
-          success: false,
+        success: false,
 
-          message:
-            "Erro ao salvar configurações.",
+        message:
+          "Erro ao salvar configurações.",
 
-          error:
-            erro.message
-
-        });
-
+        error:
+          erro.message
+      });
     }
-
   }
 );
 
@@ -2027,21 +1786,15 @@ app.post(
         link
       } = req.body;
 
-      if (
-        !nome
-      ) {
+      if (!nome) {
 
         return res
           .status(400)
           .json({
-
             success: false,
-
             message:
               "Nome do produto obrigatório."
-
           });
-
       }
 
       const configResult =
@@ -2070,26 +1823,20 @@ app.post(
         nome +
         "\n\n";
 
-      if (
-        precoAnterior
-      ) {
+      if (precoAnterior) {
 
         texto +=
           "❌ De: " +
           precoAnterior +
           "\n";
-
       }
 
-      if (
-        preco
-      ) {
+      if (preco) {
 
         texto +=
           "💰 Por apenas: " +
           preco +
           "\n\n";
-
       }
 
       texto +=
@@ -2100,15 +1847,12 @@ app.post(
         ) +
         "\n\n";
 
-      if (
-        link
-      ) {
+      if (link) {
 
         texto +=
           "🔗 COMPRE AQUI:\n" +
           link +
           "\n\n";
-
       }
 
       texto +=
@@ -2119,11 +1863,8 @@ app.post(
         whatsapp;
 
       res.json({
-
         success: true,
-
         texto
-
       });
 
     } catch (erro) {
@@ -2133,22 +1874,14 @@ app.post(
         erro.message
       );
 
-      res
-        .status(500)
-        .json({
-
-          success: false,
-
-          message:
-            "Erro ao gerar post.",
-
-          error:
-            erro.message
-
-        });
-
+      res.status(500).json({
+        success: false,
+        message:
+          "Erro ao gerar post.",
+        error:
+          erro.message
+      });
     }
-
   }
 );
 
@@ -2214,7 +1947,6 @@ app.get(
           ) > 0
             ? "Conta autorizada"
             : "Aguardando autorização"
-
       });
 
     } catch (erro) {
@@ -2224,19 +1956,12 @@ app.get(
         erro.message
       );
 
-      res
-        .status(500)
-        .json({
-
-          success: false,
-
-          error:
-            erro.message
-
-        });
-
+      res.status(500).json({
+        success: false,
+        error:
+          erro.message
+      });
     }
-
   }
 );
 
@@ -2259,9 +1984,7 @@ app.use(
 
         rota:
           req.originalUrl
-
       });
-
   }
 );
 
@@ -2289,7 +2012,6 @@ app.use(
       return next(
         err
       );
-
     }
 
     res
@@ -2300,9 +2022,7 @@ app.use(
 
         message:
           "Erro interno do servidor."
-
       });
-
   }
 );
 
@@ -2358,10 +2078,8 @@ async function iniciarServidor() {
       console.log(
         "======================================"
       );
-
     }
   );
-
 }
 
 iniciarServidor();
