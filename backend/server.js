@@ -1,3 +1,4 @@
+```js
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
@@ -432,12 +433,20 @@ app.get(
 
     } catch (erro) {
 
+      console.error(
+        "ERRO DASHBOARD:",
+        erro.message
+      );
+
       res.status(500).json({
 
         success: false,
 
         message:
-          "Erro ao carregar dashboard."
+          "Erro ao carregar dashboard.",
+
+        error:
+          erro.message
 
       });
 
@@ -474,12 +483,20 @@ app.get(
 
     } catch (erro) {
 
+      console.error(
+        "ERRO PRODUTOS:",
+        erro.message
+      );
+
       res.status(500).json({
 
         success: false,
 
         message:
-          "Erro ao buscar produtos."
+          "Erro ao buscar produtos.",
+
+        error:
+          erro.message
 
       });
 
@@ -582,6 +599,11 @@ app.post(
 
     } catch (erro) {
 
+      console.error(
+        "ERRO AO SALVAR PRODUTO:",
+        erro.message
+      );
+
       res.status(500).json({
 
         success: false,
@@ -677,12 +699,20 @@ app.delete(
 
     } catch (erro) {
 
+      console.error(
+        "ERRO AO EXCLUIR PRODUTO:",
+        erro.message
+      );
+
       res.status(500).json({
 
         success: false,
 
         message:
-          "Erro ao excluir produto."
+          "Erro ao excluir produto.",
+
+        error:
+          erro.message
 
       });
 
@@ -743,12 +773,20 @@ app.get(
 
     } catch (erro) {
 
+      console.error(
+        "ERRO AO LISTAR OFERTAS:",
+        erro.message
+      );
+
       res.status(500).json({
 
         success: false,
 
         message:
-          "Erro ao buscar ofertas."
+          "Erro ao buscar ofertas.",
+
+        error:
+          erro.message
 
       });
 
@@ -870,6 +908,11 @@ app.post(
 
     } catch (erro) {
 
+      console.error(
+        "ERRO AO SALVAR OFERTA:",
+        erro.message
+      );
+
       res.status(500).json({
 
         success: false,
@@ -942,12 +985,20 @@ app.get(
 
     } catch (erro) {
 
+      console.error(
+        "ERRO CENTRAL OFERTAS:",
+        erro.message
+      );
+
       res.status(500).json({
 
         success: false,
 
         message:
-          "Erro ao carregar Central de Ofertas."
+          "Erro ao carregar Central de Ofertas.",
+
+        error:
+          erro.message
 
       });
 
@@ -1313,11 +1364,19 @@ app.get(
 
     } catch (erro) {
 
+      console.error(
+        "ERRO STATUS ML:",
+        erro.message
+      );
+
       res.status(500).json({
 
         success: false,
 
-        conectado: false
+        conectado: false,
+
+        error:
+          erro.message
 
       });
 
@@ -1325,6 +1384,162 @@ app.get(
 
   }
 );
+
+// ======================================================
+// FUNÇÃO AUXILIAR - NORMALIZAR LIMITE
+// ======================================================
+
+function normalizarLimite(valor) {
+
+  let limite =
+    Number(
+      valor
+    );
+
+  if (
+    !Number.isFinite(limite) ||
+    limite < 1
+  ) {
+
+    limite = 20;
+
+  }
+
+  return Math.min(
+    Math.floor(
+      limite
+    ),
+    50
+  );
+
+}
+
+// ======================================================
+// FUNÇÃO AUXILIAR - CONSULTAR MERCADO LIVRE
+// ======================================================
+
+async function consultarMercadoLivre(
+  busca,
+  limite
+) {
+
+  const url =
+    new URL(
+      "https://api.mercadolibre.com/sites/MLB/search"
+    );
+
+  url.searchParams.set(
+    "q",
+    busca
+  );
+
+  url.searchParams.set(
+    "limit",
+    String(
+      limite
+    )
+  );
+
+
+  console.log(
+    "CONSULTANDO MERCADO LIVRE:",
+    url.toString()
+  );
+
+
+  const resposta =
+    await fetch(
+      url.toString(),
+      {
+
+        method:
+          "GET",
+
+        headers: {
+
+          "Accept":
+            "application/json",
+
+          "User-Agent":
+            "Eletromax-V2/1.0"
+
+        }
+
+      }
+    );
+
+
+  const texto =
+    await resposta.text();
+
+
+  let dados = {};
+
+
+  try {
+
+    dados =
+      texto
+        ? JSON.parse(
+            texto
+          )
+        : {};
+
+  } catch (erroJSON) {
+
+    console.error(
+      "RESPOSTA NÃO JSON DO MERCADO LIVRE:",
+      texto
+    );
+
+    const erro =
+      new Error(
+        "Mercado Livre retornou uma resposta inválida."
+      );
+
+    erro.status =
+      resposta.status;
+
+    erro.detalhe =
+      texto.substring(
+        0,
+        1000
+      );
+
+    throw erro;
+
+  }
+
+
+  if (
+    !resposta.ok
+  ) {
+
+    console.error(
+      "ERRO API MERCADO LIVRE:",
+      resposta.status,
+      dados
+    );
+
+    const erro =
+      new Error(
+        "Mercado Livre recusou a consulta."
+      );
+
+    erro.status =
+      resposta.status;
+
+    erro.detalhe =
+      dados;
+
+    throw erro;
+
+  }
+
+
+  return dados;
+
+}
 
 // ======================================================
 // MERCADO LIVRE - BUSCAR PRODUTOS
@@ -1337,60 +1552,23 @@ app.get(
     try {
 
       const busca =
-        req.query.q ||
-        "ofertas";
+        String(
+          req.query.q ||
+          "ofertas"
+        ).trim();
+
 
       const limite =
-        Math.min(
-          Number(
-            req.query.limit ||
-            20
-          ),
-          50
+        normalizarLimite(
+          req.query.limit
         );
-
-      const url =
-
-        "https://api.mercadolibre.com/sites/MLB/search" +
-
-        "?q=" +
-        encodeURIComponent(
-          busca
-        ) +
-
-        "&limit=" +
-        limite;
-
-
-      const resposta =
-        await fetch(url);
 
 
       const dados =
-        await resposta.json();
-
-
-      if (
-        !resposta.ok
-      ) {
-
-        return res
-          .status(
-            resposta.status
-          )
-          .json({
-
-            success: false,
-
-            message:
-              "Erro ao buscar produtos no Mercado Livre.",
-
-            detalhe:
-              dados
-
-          });
-
-      }
+        await consultarMercadoLivre(
+          busca,
+          limite
+        );
 
 
       const produtos =
@@ -1426,7 +1604,7 @@ app.get(
         );
 
 
-      res.json({
+      return res.json({
 
         success: true,
 
@@ -1439,24 +1617,39 @@ app.get(
 
       });
 
+
     } catch (erro) {
 
       console.error(
         "ERRO BUSCA ML:",
-        erro.message
+        erro
       );
 
-      res.status(500).json({
 
-        success: false,
+      return res
+        .status(
+          erro.status ||
+          500
+        )
+        .json({
 
-        message:
-          "Erro ao buscar Mercado Livre.",
+          success: false,
 
-        error:
-          erro.message
+          message:
+            "Erro ao buscar produtos no Mercado Livre.",
 
-      });
+          error:
+            erro.message,
+
+          status:
+            erro.status ||
+            500,
+
+          detalhe:
+            erro.detalhe ||
+            null
+
+        });
 
     }
 
@@ -1474,69 +1667,36 @@ app.post(
     try {
 
       const busca =
-        req.body.q ||
-        "ofertas";
+        String(
+          req.body.q ||
+          "ofertas"
+        ).trim();
+
 
       const limite =
-        Math.min(
-          Number(
-            req.body.limit ||
-            20
-          ),
-          50
+        normalizarLimite(
+          req.body.limit
         );
 
 
-      const url =
-
-        "https://api.mercadolibre.com/sites/MLB/search" +
-
-        "?q=" +
-        encodeURIComponent(
-          busca
-        ) +
-
-        "&limit=" +
-        limite;
-
-
-      const resposta =
-        await fetch(url);
-
-
       const dados =
-        await resposta.json();
-
-
-      if (
-        !resposta.ok
-      ) {
-
-        return res
-          .status(
-            resposta.status
-          )
-          .json({
-
-            success: false,
-
-            message:
-              "Erro ao consultar Mercado Livre.",
-
-            detalhe:
-              dados
-
-          });
-
-      }
+        await consultarMercadoLivre(
+          busca,
+          limite
+        );
 
 
       const produtos =
-        dados.results ||
-        [];
+        Array.isArray(
+          dados.results
+        )
+          ? dados.results
+          : [];
 
 
       let salvos = 0;
+
+      let duplicados = 0;
 
 
       for (
@@ -1554,12 +1714,80 @@ app.post(
         }
 
 
+        const preco =
+          produto.price !== undefined &&
+          produto.price !== null
+
+            ?
+
+            "R$ " +
+            Number(
+              produto.price
+            )
+            .toFixed(2)
+            .replace(
+              ".",
+              ","
+            )
+
+            :
+
+            "";
+
+
+        const imagem =
+          produto.thumbnail ||
+          (
+            produto.pictures &&
+            produto.pictures[0] &&
+            produto.pictures[0].url
+          ) ||
+          "";
+
+
+        const existente =
+          await pool.query(
+
+            `
+
+            SELECT id
+
+            FROM ofertas
+
+            WHERE link = $1
+
+            LIMIT 1
+
+            `,
+
+            [
+
+              produto.permalink
+
+            ]
+
+          );
+
+
+        if (
+          existente.rows.length > 0
+        ) {
+
+          duplicados++;
+
+          continue;
+
+        }
+
+
         await pool.query(
 
           `
+
           INSERT INTO ofertas
 
           (
+
             nome,
 
             preco,
@@ -1573,11 +1801,13 @@ app.post(
             imagem,
 
             descricao
+
           )
 
           VALUES
 
           (
+
             $1,
 
             $2,
@@ -1591,6 +1821,7 @@ app.post(
             $6,
 
             $7
+
           )
 
           `,
@@ -1599,17 +1830,7 @@ app.post(
 
             produto.title,
 
-            produto.price
-              ? "R$ " +
-                Number(
-                  produto.price
-                )
-                .toFixed(2)
-                .replace(
-                  ".",
-                  ","
-                )
-              : "",
+            preco,
 
             "",
 
@@ -1617,8 +1838,7 @@ app.post(
 
             "Mercado Livre",
 
-            produto.thumbnail ||
-              "",
+            imagem,
 
             "Oferta encontrada automaticamente pelo Eletromax."
 
@@ -1632,38 +1852,74 @@ app.post(
       }
 
 
-      res.json({
+      console.log(
+        "BUSCA DE OFERTAS CONCLUÍDA:",
+        {
+
+          busca,
+
+          encontrados:
+            produtos.length,
+
+          salvos,
+
+          duplicados
+
+        }
+      );
+
+
+      return res.json({
 
         success: true,
 
         message:
-          "Busca concluída!",
+          "Busca concluída com sucesso!",
+
+        busca,
 
         encontrados:
           produtos.length,
 
-        salvos
+        salvos,
+
+        duplicados
 
       });
+
 
     } catch (erro) {
 
       console.error(
         "ERRO BUSCAR E SALVAR ML:",
-        erro.message
+        erro
       );
 
-      res.status(500).json({
 
-        success: false,
+      return res
+        .status(
+          erro.status ||
+          500
+        )
+        .json({
 
-        message:
-          "Erro ao buscar e salvar ofertas.",
+          success: false,
 
-        error:
-          erro.message
+          message:
+            "Erro ao consultar Mercado Livre.",
 
-      });
+          error:
+            erro.message,
+
+          status:
+            erro.status ||
+            500,
+
+          detalhe:
+            erro.detalhe ||
+            null
+
+        });
 
     }
 
@@ -1723,12 +1979,20 @@ app.get(
 
     } catch (erro) {
 
+      console.error(
+        "ERRO AO BUSCAR LINKS:",
+        erro.message
+      );
+
       res.status(500).json({
 
         success: false,
 
         message:
-          "Erro ao buscar links."
+          "Erro ao buscar links.",
+
+        error:
+          erro.message
 
       });
 
@@ -1785,12 +2049,20 @@ app.get(
 
     } catch (erro) {
 
+      console.error(
+        "ERRO CONFIGURAÇÕES:",
+        erro.message
+      );
+
       res.status(500).json({
 
         success: false,
 
         message:
-          "Erro ao buscar configurações."
+          "Erro ao buscar configurações.",
+
+        error:
+          erro.message
 
       });
 
@@ -1919,12 +2191,20 @@ app.put(
 
     } catch (erro) {
 
+      console.error(
+        "ERRO AO SALVAR CONFIGURAÇÕES:",
+        erro.message
+      );
+
       res.status(500).json({
 
         success: false,
 
         message:
-          "Erro ao salvar configurações."
+          "Erro ao salvar configurações.",
+
+        error:
+          erro.message
 
       });
 
@@ -2077,12 +2357,20 @@ app.post(
 
     } catch (erro) {
 
+      console.error(
+        "ERRO AO GERAR POST:",
+        erro.message
+      );
+
       res.status(500).json({
 
         success: false,
 
         message:
-          "Erro ao gerar post."
+          "Erro ao gerar post.",
+
+        error:
+          erro.message
 
       });
 
@@ -2164,6 +2452,11 @@ app.get(
 
     } catch (erro) {
 
+      console.error(
+        "ERRO TESTE GERAL:",
+        erro.message
+      );
+
       res.status(500).json({
 
         success: false,
@@ -2174,6 +2467,31 @@ app.get(
       });
 
     }
+
+  }
+);
+
+// ======================================================
+// ROTA 404 PARA API
+// ======================================================
+
+app.use(
+  "/api",
+  (req, res) => {
+
+    res
+      .status(404)
+      .json({
+
+        success: false,
+
+        message:
+          "Rota API não encontrada.",
+
+        rota:
+          req.originalUrl
+
+      });
 
   }
 );
@@ -2194,6 +2512,16 @@ app.use(
       "ERRO INTERNO:",
       err
     );
+
+    if (
+      res.headersSent
+    ) {
+
+      return next(
+        err
+      );
+
+    }
 
     res
       .status(500)
@@ -2274,3 +2602,4 @@ async function iniciarServidor() {
 }
 
 iniciarServidor();
+```
