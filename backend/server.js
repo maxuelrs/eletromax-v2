@@ -63,15 +63,12 @@ app.use(
 // ======================================================
 
 if (!process.env.DATABASE_URL) {
-
   console.error(
     "ATENÇÃO: DATABASE_URL não configurada."
   );
-
 }
 
 const pool = new Pool({
-
   connectionString:
     process.env.DATABASE_URL,
 
@@ -81,7 +78,6 @@ const pool = new Pool({
           rejectUnauthorized: false
         }
       : false
-
 });
 
 // ======================================================
@@ -123,142 +119,106 @@ async function inicializarBanco() {
 
   try {
 
-    await pool.query(`
+    // ==================================================
+    // TABELA PRODUTOS
+    // ==================================================
 
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS produtos (
-
         id SERIAL PRIMARY KEY,
-
         nome TEXT NOT NULL,
-
         preco TEXT,
-
         link TEXT NOT NULL,
-
         plataforma TEXT NOT NULL,
-
-        criado_em TIMESTAMP
-          DEFAULT CURRENT_TIMESTAMP
-
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-
     `);
 
-    await pool.query(`
 
+    // ==================================================
+    // TABELA OFERTAS
+    // ==================================================
+
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS ofertas (
-
         id SERIAL PRIMARY KEY,
-
         nome TEXT NOT NULL,
-
         preco TEXT,
-
         preco_anterior TEXT,
-
         link TEXT NOT NULL,
-
         plataforma TEXT NOT NULL,
-
         imagem TEXT,
-
         descricao TEXT,
-
-        criado_em TIMESTAMP
-          DEFAULT CURRENT_TIMESTAMP
-
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-
     `);
 
-    await pool.query(`
 
+    // ==================================================
+    // TABELA CONFIGURAÇÕES
+    // ==================================================
+
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS configuracoes (
-
         id INTEGER PRIMARY KEY,
-
         nome_loja TEXT,
-
         link_mercadolivre TEXT,
-
         link_shopee TEXT,
-
         link_whatsapp TEXT,
-
-        atualizado_em TIMESTAMP
-          DEFAULT CURRENT_TIMESTAMP
-
+        atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-
     `);
 
-    await pool.query(`
 
+    // ==================================================
+    // TABELA TOKENS MERCADO LIVRE
+    // ==================================================
+
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS mercadolivre_tokens (
-
         id INTEGER PRIMARY KEY,
-
         access_token TEXT NOT NULL,
-
         refresh_token TEXT,
-
         user_id TEXT,
-
         expires_in INTEGER,
-
-        criado_em TIMESTAMP
-          DEFAULT CURRENT_TIMESTAMP,
-
-        atualizado_em TIMESTAMP
-          DEFAULT CURRENT_TIMESTAMP
-
+        criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
-
     `);
 
-    await pool.query(`
 
+    // ==================================================
+    // CONFIGURAÇÃO PADRÃO
+    // ==================================================
+
+    await pool.query(
+      `
       INSERT INTO configuracoes (
-
         id,
-
         nome_loja,
-
         link_mercadolivre,
-
         link_shopee,
-
         link_whatsapp
-
       )
 
       VALUES (
-
         1,
-
         'Eletromax',
-
         $1,
-
         $2,
-
         $3
-
       )
 
       ON CONFLICT (id)
-
       DO NOTHING
+      `,
+      [
+        LINK_MERCADO_LIVRE,
+        LINK_SHOPEE,
+        LINK_WHATSAPP
+      ]
+    );
 
-    `, [
-
-      LINK_MERCADO_LIVRE,
-
-      LINK_SHOPEE,
-
-      LINK_WHATSAPP
-
-    ]);
 
     console.log(
       "TABELAS DO ELETROMAX PRONTAS"
@@ -301,9 +261,15 @@ app.get(
             erro.message
           );
 
-          res.status(500).send(
-            "Erro: frontend/index.html não foi encontrado."
-          );
+          if (!res.headersSent) {
+
+            res
+              .status(500)
+              .send(
+                "Erro: frontend/index.html não foi encontrado."
+              );
+
+          }
 
         }
 
@@ -342,7 +308,6 @@ app.get(
         database: "connected",
 
         mercadolivre:
-
           MERCADOLIVRE_CLIENT_ID
             ? "configured"
             : "not_configured"
@@ -351,18 +316,25 @@ app.get(
 
     } catch (erro) {
 
-      res.status(500).json({
+      console.error(
+        "ERRO STATUS:",
+        erro.message
+      );
 
-        success: false,
+      res
+        .status(500)
+        .json({
 
-        status: "online",
+          success: false,
 
-        database: "disconnected",
+          status: "online",
 
-        error:
-          erro.message
+          database: "disconnected",
 
-      });
+          error:
+            erro.message
+
+        });
 
     }
 
@@ -438,17 +410,19 @@ app.get(
         erro.message
       );
 
-      res.status(500).json({
+      res
+        .status(500)
+        .json({
 
-        success: false,
+          success: false,
 
-        message:
-          "Erro ao carregar dashboard.",
+          message:
+            "Erro ao carregar dashboard.",
 
-        error:
-          erro.message
+          error:
+            erro.message
 
-      });
+        });
 
     }
 
@@ -488,17 +462,19 @@ app.get(
         erro.message
       );
 
-      res.status(500).json({
+      res
+        .status(500)
+        .json({
 
-        success: false,
+          success: false,
 
-        message:
-          "Erro ao buscar produtos.",
+          message:
+            "Erro ao buscar produtos.",
 
-        error:
-          erro.message
+          error:
+            erro.message
 
-      });
+        });
 
     }
 
@@ -516,15 +492,10 @@ app.post(
     try {
 
       const {
-
         nome,
-
         preco,
-
         link,
-
         plataforma
-
       } = req.body;
 
       if (
@@ -548,7 +519,6 @@ app.post(
 
       const resultado =
         await pool.query(
-
           `
           INSERT INTO produtos
           (
@@ -568,9 +538,7 @@ app.post(
 
           RETURNING *
           `,
-
           [
-
             String(nome).trim(),
 
             preco
@@ -580,22 +548,22 @@ app.post(
             String(link).trim(),
 
             String(plataforma).trim()
-
           ]
-
         );
 
-      res.status(201).json({
+      res
+        .status(201)
+        .json({
 
-        success: true,
+          success: true,
 
-        message:
-          "Produto salvo com sucesso!",
+          message:
+            "Produto salvo com sucesso!",
 
-        produto:
-          resultado.rows[0]
+          produto:
+            resultado.rows[0]
 
-      });
+        });
 
     } catch (erro) {
 
@@ -604,17 +572,19 @@ app.post(
         erro.message
       );
 
-      res.status(500).json({
+      res
+        .status(500)
+        .json({
 
-        success: false,
+          success: false,
 
-        message:
-          "Erro ao salvar produto.",
+          message:
+            "Erro ao salvar produto.",
 
-        error:
-          erro.message
+          error:
+            erro.message
 
-      });
+        });
 
     }
 
@@ -655,17 +625,12 @@ app.delete(
 
       const resultado =
         await pool.query(
-
           `
           DELETE FROM produtos
-
           WHERE id = $1
-
           RETURNING *
           `,
-
           [id]
-
         );
 
       if (
@@ -704,17 +669,19 @@ app.delete(
         erro.message
       );
 
-      res.status(500).json({
+      res
+        .status(500)
+        .json({
 
-        success: false,
+          success: false,
 
-        message:
-          "Erro ao excluir produto.",
+          message:
+            "Erro ao excluir produto.",
 
-        error:
-          erro.message
+          error:
+            erro.message
 
-      });
+        });
 
     }
 
@@ -733,33 +700,18 @@ app.get(
 
       const resultado =
         await pool.query(`
-
           SELECT
-
             id,
-
             nome,
-
             preco,
-
-            preco_anterior
-              AS "precoAnterior",
-
+            preco_anterior AS "precoAnterior",
             link,
-
             plataforma,
-
             imagem,
-
             descricao,
-
-            criado_em
-              AS "criadoEm"
-
+            criado_em AS "criadoEm"
           FROM ofertas
-
           ORDER BY id DESC
-
         `);
 
       res.json({
@@ -778,17 +730,19 @@ app.get(
         erro.message
       );
 
-      res.status(500).json({
+      res
+        .status(500)
+        .json({
 
-        success: false,
+          success: false,
 
-        message:
-          "Erro ao buscar ofertas.",
+          message:
+            "Erro ao buscar ofertas.",
 
-        error:
-          erro.message
+          error:
+            erro.message
 
-      });
+        });
 
     }
 
@@ -796,7 +750,7 @@ app.get(
 );
 
 // ======================================================
-// OFERTA - SALVAR
+// OFERTAS - SALVAR
 // ======================================================
 
 app.post(
@@ -806,21 +760,13 @@ app.post(
     try {
 
       const {
-
         nome,
-
         preco,
-
         precoAnterior,
-
         link,
-
         plataforma,
-
         imagem,
-
         descricao
-
       } = req.body;
 
       if (
@@ -844,10 +790,8 @@ app.post(
 
       const resultado =
         await pool.query(
-
           `
           INSERT INTO ofertas
-
           (
             nome,
             preco,
@@ -859,7 +803,6 @@ app.post(
           )
 
           VALUES
-
           (
             $1,
             $2,
@@ -871,40 +814,45 @@ app.post(
           )
 
           RETURNING *
-
           `,
-
           [
-
             String(nome).trim(),
 
-            preco || "",
+            preco
+              ? String(preco).trim()
+              : "",
 
-            precoAnterior || "",
+            precoAnterior
+              ? String(precoAnterior).trim()
+              : "",
 
             String(link).trim(),
 
             String(plataforma).trim(),
 
-            imagem || "",
+            imagem
+              ? String(imagem).trim()
+              : "",
 
-            descricao || ""
-
+            descricao
+              ? String(descricao).trim()
+              : ""
           ]
-
         );
 
-      res.status(201).json({
+      res
+        .status(201)
+        .json({
 
-        success: true,
+          success: true,
 
-        message:
-          "Oferta salva com sucesso!",
+          message:
+            "Oferta salva com sucesso!",
 
-        oferta:
-          resultado.rows[0]
+          oferta:
+            resultado.rows[0]
 
-      });
+        });
 
     } catch (erro) {
 
@@ -913,17 +861,19 @@ app.post(
         erro.message
       );
 
-      res.status(500).json({
+      res
+        .status(500)
+        .json({
 
-        success: false,
+          success: false,
 
-        message:
-          "Erro ao salvar oferta.",
+          message:
+            "Erro ao salvar oferta.",
 
-        error:
-          erro.message
+          error:
+            erro.message
 
-      });
+        });
 
     }
 
@@ -942,33 +892,18 @@ app.get(
 
       const resultado =
         await pool.query(`
-
           SELECT
-
             id,
-
             nome,
-
             preco,
-
-            preco_anterior
-              AS "precoAnterior",
-
+            preco_anterior AS "precoAnterior",
             link,
-
             plataforma,
-
             imagem,
-
             descricao,
-
-            criado_em
-              AS "criadoEm"
-
+            criado_em AS "criadoEm"
           FROM ofertas
-
           ORDER BY id DESC
-
         `);
 
       res.json({
@@ -990,17 +925,19 @@ app.get(
         erro.message
       );
 
-      res.status(500).json({
+      res
+        .status(500)
+        .json({
 
-        success: false,
+          success: false,
 
-        message:
-          "Erro ao carregar Central de Ofertas.",
+          message:
+            "Erro ao carregar Central de Ofertas.",
 
-        error:
-          erro.message
+          error:
+            erro.message
 
-      });
+        });
 
     }
 
@@ -1008,7 +945,7 @@ app.get(
 );
 
 // ======================================================
-// MERCADO LIVRE - URL DE LOGIN
+// MERCADO LIVRE - LOGIN
 // ======================================================
 
 app.get(
@@ -1028,16 +965,12 @@ app.get(
     }
 
     const url =
-
       "https://auth.mercadolivre.com.br/authorization" +
-
       "?response_type=code" +
-
       "&client_id=" +
       encodeURIComponent(
         MERCADOLIVRE_CLIENT_ID
       ) +
-
       "&redirect_uri=" +
       encodeURIComponent(
         MERCADOLIVRE_REDIRECT_URI
@@ -1088,20 +1021,15 @@ app.get(
         await fetch(
           "https://api.mercadolibre.com/oauth/token",
           {
-
             method: "POST",
 
             headers: {
-
               "Content-Type":
                 "application/x-www-form-urlencoded"
-
             },
 
             body:
-
               new URLSearchParams({
-
                 grant_type:
                   "authorization_code",
 
@@ -1116,9 +1044,7 @@ app.get(
 
                 redirect_uri:
                   MERCADOLIVRE_REDIRECT_URI
-
               })
-
           }
         );
 
@@ -1151,10 +1077,8 @@ app.get(
       }
 
       await pool.query(
-
         `
         INSERT INTO mercadolivre_tokens
-
         (
           id,
           access_token,
@@ -1175,9 +1099,7 @@ app.get(
         )
 
         ON CONFLICT (id)
-
         DO UPDATE SET
-
           access_token =
             EXCLUDED.access_token,
 
@@ -1192,11 +1114,8 @@ app.get(
 
           atualizado_em =
             CURRENT_TIMESTAMP
-
         `,
-
         [
-
           dados.access_token,
 
           dados.refresh_token ||
@@ -1210,54 +1129,44 @@ app.get(
 
           dados.expires_in ||
             0
-
         ]
-
       );
 
       res.send(`
-
         <!DOCTYPE html>
 
         <html lang="pt-BR">
 
         <head>
-
           <meta charset="UTF-8">
 
-          <title>Mercado Livre conectado</title>
+          <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0"
+          >
+
+          <title>
+            Mercado Livre conectado
+          </title>
 
           <style>
 
             body {
-
-              font-family: Arial;
-
+              font-family: Arial, sans-serif;
               text-align: center;
-
               padding: 50px;
-
-              background:
-                #f4f6f8;
-
+              background: #f4f6f8;
             }
 
             .box {
-
               background: white;
-
               padding: 30px;
-
               border-radius: 15px;
-
               max-width: 500px;
-
               margin: auto;
-
               box-shadow:
                 0 4px 20px
                 rgba(0,0,0,.1);
-
             }
 
           </style>
@@ -1285,7 +1194,6 @@ app.get(
         </body>
 
         </html>
-
       `);
 
     } catch (erro) {
@@ -1308,7 +1216,7 @@ app.get(
 );
 
 // ======================================================
-// MERCADO LIVRE - STATUS DA CONEXÃO
+// MERCADO LIVRE - STATUS
 // ======================================================
 
 app.get(
@@ -1319,19 +1227,12 @@ app.get(
 
       const resultado =
         await pool.query(`
-
           SELECT
-
             user_id,
-
             atualizado_em
-
           FROM mercadolivre_tokens
-
           WHERE id = 1
-
           LIMIT 1
-
         `);
 
       if (
@@ -1369,16 +1270,18 @@ app.get(
         erro.message
       );
 
-      res.status(500).json({
+      res
+        .status(500)
+        .json({
 
-        success: false,
+          success: false,
 
-        conectado: false,
+          conectado: false,
 
-        error:
-          erro.message
+          error:
+            erro.message
 
-      });
+        });
 
     }
 
@@ -1386,7 +1289,7 @@ app.get(
 );
 
 // ======================================================
-// FUNÇÃO AUXILIAR - NORMALIZAR LIMITE
+// FUNÇÃO AUXILIAR - LIMITE
 // ======================================================
 
 function normalizarLimite(valor) {
@@ -1440,41 +1343,31 @@ async function consultarMercadoLivre(
     )
   );
 
-
   console.log(
     "CONSULTANDO MERCADO LIVRE:",
     url.toString()
   );
 
-
   const resposta =
     await fetch(
       url.toString(),
       {
-
-        method:
-          "GET",
+        method: "GET",
 
         headers: {
-
           "Accept":
             "application/json",
 
           "User-Agent":
             "Eletromax-V2/1.0"
-
         }
-
       }
     );
-
 
   const texto =
     await resposta.text();
 
-
   let dados = {};
-
 
   try {
 
@@ -1510,7 +1403,6 @@ async function consultarMercadoLivre(
 
   }
 
-
   if (
     !resposta.ok
   ) {
@@ -1536,13 +1428,12 @@ async function consultarMercadoLivre(
 
   }
 
-
   return dados;
 
 }
 
 // ======================================================
-// MERCADO LIVRE - BUSCAR PRODUTOS
+// MERCADO LIVRE - BUSCAR
 // ======================================================
 
 app.get(
@@ -1557,19 +1448,16 @@ app.get(
           "ofertas"
         ).trim();
 
-
       const limite =
         normalizarLimite(
           req.query.limit
         );
-
 
       const dados =
         await consultarMercadoLivre(
           busca,
           limite
         );
-
 
       const produtos =
         (
@@ -1603,7 +1491,6 @@ app.get(
           })
         );
 
-
       return res.json({
 
         success: true,
@@ -1617,14 +1504,12 @@ app.get(
 
       });
 
-
     } catch (erro) {
 
       console.error(
         "ERRO BUSCA ML:",
         erro
       );
-
 
       return res
         .status(
@@ -1672,19 +1557,16 @@ app.post(
           "ofertas"
         ).trim();
 
-
       const limite =
         normalizarLimite(
           req.body.limit
         );
-
 
       const dados =
         await consultarMercadoLivre(
           busca,
           limite
         );
-
 
       const produtos =
         Array.isArray(
@@ -1693,11 +1575,9 @@ app.post(
           ? dados.results
           : [];
 
-
       let salvos = 0;
 
       let duplicados = 0;
-
 
       for (
         const produto
@@ -1712,7 +1592,6 @@ app.post(
           continue;
 
         }
-
 
         const preco =
           produto.price !== undefined &&
@@ -1734,7 +1613,6 @@ app.post(
 
             "";
 
-
         const imagem =
           produto.thumbnail ||
           (
@@ -1744,30 +1622,18 @@ app.post(
           ) ||
           "";
 
-
         const existente =
           await pool.query(
-
             `
-
             SELECT id
-
             FROM ofertas
-
             WHERE link = $1
-
             LIMIT 1
-
             `,
-
             [
-
               produto.permalink
-
             ]
-
           );
-
 
         if (
           existente.rows.length > 0
@@ -1779,55 +1645,31 @@ app.post(
 
         }
 
-
         await pool.query(
-
           `
-
           INSERT INTO ofertas
-
           (
-
             nome,
-
             preco,
-
             preco_anterior,
-
             link,
-
             plataforma,
-
             imagem,
-
             descricao
-
           )
 
           VALUES
-
           (
-
             $1,
-
             $2,
-
             $3,
-
             $4,
-
             $5,
-
             $6,
-
             $7
-
           )
-
           `,
-
           [
-
             produto.title,
 
             preco,
@@ -1841,21 +1683,16 @@ app.post(
             imagem,
 
             "Oferta encontrada automaticamente pelo Eletromax."
-
           ]
-
         );
-
 
         salvos++;
 
       }
 
-
       console.log(
         "BUSCA DE OFERTAS CONCLUÍDA:",
         {
-
           busca,
 
           encontrados:
@@ -1864,10 +1701,8 @@ app.post(
           salvos,
 
           duplicados
-
         }
       );
-
 
       return res.json({
 
@@ -1887,14 +1722,12 @@ app.post(
 
       });
 
-
     } catch (erro) {
 
       console.error(
         "ERRO BUSCAR E SALVAR ML:",
         erro
       );
-
 
       return res
         .status(
@@ -1938,21 +1771,13 @@ app.get(
 
       const resultado =
         await pool.query(`
-
           SELECT
-
             link_mercadolivre,
-
             link_shopee,
-
             link_whatsapp
-
           FROM configuracoes
-
           WHERE id = 1
-
           LIMIT 1
-
         `);
 
       const config =
@@ -1984,17 +1809,19 @@ app.get(
         erro.message
       );
 
-      res.status(500).json({
+      res
+        .status(500)
+        .json({
 
-        success: false,
+          success: false,
 
-        message:
-          "Erro ao buscar links.",
+          message:
+            "Erro ao buscar links.",
 
-        error:
-          erro.message
+          error:
+            erro.message
 
-      });
+        });
 
     }
 
@@ -2002,7 +1829,7 @@ app.get(
 );
 
 // ======================================================
-// CONFIGURAÇÕES
+// CONFIGURAÇÕES - LISTAR
 // ======================================================
 
 app.get(
@@ -2013,15 +1840,10 @@ app.get(
 
       const resultado =
         await pool.query(`
-
           SELECT *
-
           FROM configuracoes
-
           WHERE id = 1
-
           LIMIT 1
-
         `);
 
       res.json({
@@ -2029,7 +1851,8 @@ app.get(
         success: true,
 
         configuracoes:
-          resultado.rows[0] || {
+          resultado.rows[0] ||
+          {
 
             nome_loja:
               "Eletromax",
@@ -2054,17 +1877,19 @@ app.get(
         erro.message
       );
 
-      res.status(500).json({
+      res
+        .status(500)
+        .json({
 
-        success: false,
+          success: false,
 
-        message:
-          "Erro ao buscar configurações.",
+          message:
+            "Erro ao buscar configurações.",
 
-        error:
-          erro.message
+          error:
+            erro.message
 
-      });
+        });
 
     }
 
@@ -2072,7 +1897,7 @@ app.get(
 );
 
 // ======================================================
-// SALVAR CONFIGURAÇÕES
+// CONFIGURAÇÕES - SALVAR
 // ======================================================
 
 app.put(
@@ -2082,61 +1907,36 @@ app.put(
     try {
 
       const {
-
         nomeLoja,
-
         linkMercadoLivre,
-
         linkShopee,
-
         linkWhatsapp
-
       } = req.body;
-
 
       const resultado =
         await pool.query(
-
           `
-
           INSERT INTO configuracoes
-
           (
-
             id,
-
             nome_loja,
-
             link_mercadolivre,
-
             link_shopee,
-
             link_whatsapp,
-
             atualizado_em
-
           )
 
           VALUES
-
           (
-
             1,
-
             $1,
-
             $2,
-
             $3,
-
             $4,
-
             CURRENT_TIMESTAMP
-
           )
 
           ON CONFLICT (id)
-
           DO UPDATE SET
 
             nome_loja =
@@ -2155,11 +1955,8 @@ app.put(
               CURRENT_TIMESTAMP
 
           RETURNING *
-
           `,
-
           [
-
             nomeLoja ||
               "Eletromax",
 
@@ -2171,11 +1968,8 @@ app.put(
 
             linkWhatsapp ||
               LINK_WHATSAPP
-
           ]
-
         );
-
 
       res.json({
 
@@ -2196,17 +1990,19 @@ app.put(
         erro.message
       );
 
-      res.status(500).json({
+      res
+        .status(500)
+        .json({
 
-        success: false,
+          success: false,
 
-        message:
-          "Erro ao salvar configurações.",
+          message:
+            "Erro ao salvar configurações.",
 
-        error:
-          erro.message
+          error:
+            erro.message
 
-      });
+        });
 
     }
 
@@ -2224,19 +2020,12 @@ app.post(
     try {
 
       const {
-
         nome,
-
         preco,
-
         precoAnterior,
-
         plataforma,
-
         link
-
       } = req.body;
-
 
       if (
         !nome
@@ -2255,43 +2044,31 @@ app.post(
 
       }
 
-
       const configResult =
         await pool.query(`
-
           SELECT *
-
           FROM configuracoes
-
           WHERE id = 1
-
           LIMIT 1
-
         `);
-
 
       const config =
         configResult.rows[0] ||
         {};
 
-
       const whatsapp =
         config.link_whatsapp ||
         LINK_WHATSAPP;
 
-
       let texto = "";
-
 
       texto +=
         "🔥 OFERTA IMPERDÍVEL 🔥\n\n";
-
 
       texto +=
         "📦 " +
         nome +
         "\n\n";
-
 
       if (
         precoAnterior
@@ -2304,7 +2081,6 @@ app.post(
 
       }
 
-
       if (
         preco
       ) {
@@ -2316,7 +2092,6 @@ app.post(
 
       }
 
-
       texto +=
         "🛒 " +
         (
@@ -2324,7 +2099,6 @@ app.post(
           "Oferta"
         ) +
         "\n\n";
-
 
       if (
         link
@@ -2337,15 +2111,12 @@ app.post(
 
       }
 
-
       texto +=
         "⚡ Aproveite enquanto durar!\n\n";
-
 
       texto +=
         "📲 Entre no nosso grupo de ofertas:\n" +
         whatsapp;
-
 
       res.json({
 
@@ -2362,17 +2133,19 @@ app.post(
         erro.message
       );
 
-      res.status(500).json({
+      res
+        .status(500)
+        .json({
 
-        success: false,
+          success: false,
 
-        message:
-          "Erro ao gerar post.",
+          message:
+            "Erro ao gerar post.",
 
-        error:
-          erro.message
+          error:
+            erro.message
 
-      });
+        });
 
     }
 
@@ -2392,24 +2165,20 @@ app.get(
       const banco =
         await testarBanco();
 
-
       const produtos =
         await pool.query(
           "SELECT COUNT(*) FROM produtos"
         );
-
 
       const ofertas =
         await pool.query(
           "SELECT COUNT(*) FROM ofertas"
         );
 
-
       const tokens =
         await pool.query(
           "SELECT COUNT(*) FROM mercadolivre_tokens"
         );
-
 
       res.json({
 
@@ -2435,13 +2204,11 @@ app.get(
           ),
 
         mercadoLivre:
-
           MERCADOLIVRE_CLIENT_ID
             ? "Client ID configurado"
             : "Client ID não configurado",
 
         autorizacao:
-
           Number(
             tokens.rows[0].count
           ) > 0
@@ -2457,14 +2224,16 @@ app.get(
         erro.message
       );
 
-      res.status(500).json({
+      res
+        .status(500)
+        .json({
 
-        success: false,
+          success: false,
 
-        error:
-          erro.message
+          error:
+            erro.message
 
-      });
+        });
 
     }
 
@@ -2555,17 +2324,12 @@ async function iniciarServidor() {
     "======================================"
   );
 
-
   const bancoOK =
     await inicializarBanco();
 
-
   app.listen(
-
     PORT,
-
     "0.0.0.0",
-
     () => {
 
       console.log(
@@ -2596,7 +2360,6 @@ async function iniciarServidor() {
       );
 
     }
-
   );
 
 }
