@@ -12,33 +12,40 @@ app.use(express.json());
 
 
 // ==========================================
-// FRONTEND ELETROMAX V2
+// FRONTEND
 // ==========================================
 
 const frontendPath = path.join(__dirname, "../frontend");
 
 app.use(express.static(frontendPath));
 
-app.get("/", (req, res) => {
-  res.sendFile(
-    path.join(frontendPath, "index.html")
-  );
+
+app.get("/", (req,res)=>{
+
+res.sendFile(
+path.join(frontendPath,"index.html")
+);
+
 });
 
 
+
 // ==========================================
-// POSTGRESQL
+// BANCO POSTGRES
 // ==========================================
 
 const pool = new Pool({
 
-  connectionString: process.env.DATABASE_URL,
+connectionString:
+process.env.DATABASE_URL,
 
-  ssl: {
-    rejectUnauthorized:false
-  }
+ssl:{
+rejectUnauthorized:false
+}
 
 });
+
+
 
 
 // ==========================================
@@ -47,7 +54,7 @@ const pool = new Pool({
 
 async function inicializarBanco(){
 
-try {
+try{
 
 
 await pool.query(`
@@ -98,6 +105,7 @@ criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 
 
 
+
 await pool.query(`
 
 CREATE TABLE IF NOT EXISTS configuracoes(
@@ -110,11 +118,16 @@ link_mercadolivre TEXT,
 
 link_shopee TEXT,
 
-link_whatsapp TEXT
+link_whatsapp TEXT,
+
+ml_access_token TEXT,
+
+ml_refresh_token TEXT
 
 );
 
 `);
+
 
 
 
@@ -125,7 +138,7 @@ await pool.query(
 
 
 
-if(existe.rows.length === 0){
+if(existe.rows.length===0){
 
 await pool.query(`
 
@@ -136,7 +149,6 @@ VALUES('Eletromax')
 `);
 
 }
-
 
 
 console.log("✅ Banco inicializado");
@@ -154,58 +166,56 @@ erro.message
 
 }
 
+
+
 // ==========================================
 // STATUS API
 // ==========================================
 
-// ==========================================
-// STATUS DA API
-// ==========================================
-
-app.get("/api/status", async (req, res) => {
-
-  try {
-
-    await pool.query("SELECT NOW()");
+app.get("/api/status",async(req,res)=>{
 
 
-    const mlConfigurado =
-      !!(
-        process.env.ML_CLIENT_ID ||
-        process.env.MERCADO_LIVRE_CLIENT_ID ||
-        process.env.CLIENT_ID
-      );
+try{
 
 
-    res.json({
-
-      success: true,
-
-      status: "online",
-
-      database: "connected",
-
-      mercadolivre:
-        mlConfigurado
-        ? "configured"
-        : "not_configured"
-
-    });
+await pool.query(
+"SELECT NOW()"
+);
 
 
-  } catch (erro) {
 
-    res.status(500).json({
+res.json({
 
-      success: false,
+success:true,
 
-      database: "disconnected",
+status:"online",
 
-      message: erro.message
+database:"connected",
 
-    });
+mercadolivre:
+process.env.ML_CLIENT_ID
+?
+"configured"
+:
+"not_configured"
 
-  }
+});
+
+
+}catch(erro){
+
+
+res.status(500).json({
+
+success:false,
+
+message:erro.message
+
+});
+
+
+}
+
 
 });
 
@@ -215,32 +225,21 @@ app.get("/api/status", async (req, res) => {
 // DASHBOARD
 // ==========================================
 
-app.get("/api/dashboard", async(req,res)=>{
+app.get("/api/dashboard",async(req,res)=>{
+
 
 try{
 
 
 const produtos =
 await pool.query(
-"SELECT COUNT(*) total FROM produtos"
+"SELECT COUNT(*) FROM produtos"
 );
 
 
 const ofertas =
 await pool.query(
-"SELECT COUNT(*) total FROM ofertas"
-);
-
-
-const ml =
-await pool.query(
-"SELECT COUNT(*) total FROM produtos WHERE plataforma='Mercado Livre'"
-);
-
-
-const shopee =
-await pool.query(
-"SELECT COUNT(*) total FROM produtos WHERE plataforma='Shopee'"
+"SELECT COUNT(*) FROM ofertas"
 );
 
 
@@ -248,21 +247,16 @@ await pool.query(
 res.json({
 
 totalProdutos:
-Number(produtos.rows[0].total),
+Number(produtos.rows[0].count),
 
 totalOfertas:
-Number(ofertas.rows[0].total),
-
-totalMercadoLivre:
-Number(ml.rows[0].total),
-
-totalShopee:
-Number(shopee.rows[0].total)
+Number(ofertas.rows[0].count)
 
 });
 
 
 }catch(erro){
+
 
 res.status(500).json({
 
@@ -276,22 +270,21 @@ message:erro.message
 
 
 });
-
-
-
 // ==========================================
 // PRODUTOS
 // ==========================================
 
 
-app.get("/api/produtos", async(req,res)=>{
+app.get("/api/produtos",async(req,res)=>{
 
 try{
 
 
 const resultado =
 await pool.query(
+
 "SELECT * FROM produtos ORDER BY id DESC"
+
 );
 
 
@@ -299,8 +292,7 @@ res.json({
 
 success:true,
 
-produtos:
-resultado.rows
+produtos:resultado.rows
 
 });
 
@@ -317,21 +309,27 @@ message:erro.message
 
 }
 
+
 });
 
 
 
 
-app.post("/api/produtos", async(req,res)=>{
+
+app.post("/api/produtos",async(req,res)=>{
 
 
 try{
 
 
 const {
+
 nome,
+
 preco,
+
 link,
+
 plataforma
 
 }=req.body;
@@ -366,25 +364,28 @@ RETURNING *
 `,[
 
 nome,
+
 preco,
+
 link,
+
 plataforma
 
 ]);
 
 
 
-res.status(201).json({
+res.json({
 
 success:true,
 
-produto:
-resultado.rows[0]
+produto:resultado.rows[0]
 
 });
 
 
 }catch(erro){
+
 
 res.status(500).json({
 
@@ -393,6 +394,7 @@ success:false,
 message:erro.message
 
 });
+
 
 }
 
@@ -403,7 +405,8 @@ message:erro.message
 
 
 
-app.delete("/api/produtos/:id", async(req,res)=>{
+
+app.delete("/api/produtos/:id",async(req,res)=>{
 
 
 try{
@@ -423,7 +426,7 @@ res.json({
 
 success:true,
 
-message:"Produto excluído."
+message:"Produto removido."
 
 });
 
@@ -445,12 +448,14 @@ message:erro.message
 
 
 
+
 // ==========================================
 // OFERTAS
 // ==========================================
 
 
-app.get("/api/ofertas", async(req,res)=>{
+app.get("/api/ofertas",async(req,res)=>{
+
 
 try{
 
@@ -463,17 +468,18 @@ await pool.query(
 );
 
 
+
 res.json({
 
 success:true,
 
-ofertas:
-resultado.rows
+ofertas:resultado.rows
 
 });
 
 
 }catch(erro){
+
 
 res.status(500).json({
 
@@ -483,23 +489,34 @@ message:erro.message
 
 });
 
+
 }
 
 
 });
 
+
+
+
+
 // ==========================================
 // CONFIGURAÇÕES
 // ==========================================
 
-app.get("/api/configuracoes", async(req,res)=>{
+
+app.get("/api/configuracoes",async(req,res)=>{
+
 
 try{
 
+
 const resultado =
 await pool.query(
+
 "SELECT * FROM configuracoes LIMIT 1"
+
 );
+
 
 
 res.json({
@@ -514,6 +531,7 @@ resultado.rows[0] || {}
 
 }catch(erro){
 
+
 res.status(500).json({
 
 success:false,
@@ -522,56 +540,34 @@ message:erro.message
 
 });
 
+
 }
+
 
 });
 
 
 
-app.put("/api/configuracoes", async(req,res)=>{
+
+
+// ==========================================
+// MERCADO LIVRE OAUTH
+// ==========================================
+
+
+
+app.get("/api/mercadolivre/status",async(req,res)=>{
+
 
 try{
 
 
-const {
+const resultado =
+await pool.query(
 
-nomeLoja,
+"SELECT ml_access_token FROM configuracoes LIMIT 1"
 
-linkMercadoLivre,
-
-linkShopee,
-
-linkWhatsapp
-
-}=req.body;
-
-
-
-await pool.query(`
-
-UPDATE configuracoes
-
-SET nome_loja=$1,
-
-link_mercadolivre=$2,
-
-link_shopee=$3,
-
-link_whatsapp=$4
-
-WHERE id=1
-
-`,[
-
-nomeLoja,
-
-linkMercadoLivre,
-
-linkShopee,
-
-linkWhatsapp
-
-]);
+);
 
 
 
@@ -579,12 +575,14 @@ res.json({
 
 success:true,
 
-message:"Configurações salvas."
+conectado:
+!!resultado.rows[0]?.ml_access_token
 
 });
 
 
 }catch(erro){
+
 
 res.status(500).json({
 
@@ -594,48 +592,190 @@ message:erro.message
 
 });
 
+
 }
 
-});
-
-
-
-
-// ==========================================
-// MERCADO LIVRE
-// ==========================================
-
-
-app.get("/api/mercadolivre/status",(req,res)=>{
-
-
-res.json({
-
-conectado:
-!!process.env.ML_CLIENT_ID
-
-});
-
 
 });
 
 
 
-app.get("/api/mercadolivre/login",(req,res)=>{
 
 
-res.json({
+
+// ABRIR LOGIN MERCADO LIVRE
+
+
+app.get("/auth/mercadolivre",(req,res)=>{
+
+
+if(!process.env.ML_CLIENT_ID ||
+!process.env.ML_REDIRECT_URI){
+
+
+return res.json({
 
 success:false,
 
 message:
-"Configure o OAuth do Mercado Livre."
+"Configurar OAuth do Mercado Livre."
 
 });
 
 
+}
+
+
+
+const url =
+
+"https://auth.mercadolivre.com.br/authorization" +
+
+"?response_type=code" +
+
+"&client_id=" +
+
+process.env.ML_CLIENT_ID +
+
+"&redirect_uri=" +
+
+encodeURIComponent(
+process.env.ML_REDIRECT_URI
+);
+
+
+
+res.redirect(url);
+
+
 });
 
+
+
+
+
+
+// CALLBACK MERCADO LIVRE
+
+
+app.get("/auth/mercadolivre/callback",async(req,res)=>{
+
+
+const code =
+req.query.code;
+
+
+
+if(!code){
+
+return res.send(
+"Codigo não recebido."
+);
+
+}
+
+
+
+try{
+
+
+const resposta =
+await fetch(
+
+"https://api.mercadolibre.com/oauth/token",
+
+{
+
+method:"POST",
+
+headers:{
+
+"Content-Type":
+"application/x-www-form-urlencoded"
+
+},
+
+body:new URLSearchParams({
+
+grant_type:
+"authorization_code",
+
+client_id:
+process.env.ML_CLIENT_ID,
+
+client_secret:
+process.env.ML_CLIENT_SECRET,
+
+code:code,
+
+redirect_uri:
+process.env.ML_REDIRECT_URI
+
+})
+
+}
+
+);
+
+
+
+const dados =
+await resposta.json();
+
+
+
+await pool.query(`
+
+UPDATE configuracoes
+
+SET
+
+ml_access_token=$1,
+
+ml_refresh_token=$2
+
+WHERE id=1
+
+`,[
+
+dados.access_token,
+
+dados.refresh_token
+
+]);
+
+
+
+res.send(`
+
+<h2>✅ Mercado Livre conectado!</h2>
+
+<p>Eletromax V2 autorizado com sucesso.</p>
+
+`);
+
+
+
+
+}catch(erro){
+
+
+res.status(500).send(
+
+"Erro OAuth Mercado Livre: "
+
++ erro.message
+
+);
+
+
+}
+
+
+});
+// ==========================================
+// BUSCAR MERCADO LIVRE
+// ==========================================
 
 
 app.get("/api/mercadolivre/buscar",(req,res)=>{
@@ -651,6 +791,8 @@ produtos:[]
 
 
 });
+
+
 
 
 
@@ -671,6 +813,7 @@ duplicados:0
 
 
 });
+
 
 
 
@@ -711,7 +854,8 @@ ${precoAnterior ? "💸 De: "+precoAnterior+"\n" : ""}
 
 🛒 ${plataforma}
 
-🔗 ${link}
+🔗 Link:
+${link}
 
 ⚡ Eletromax`;
 
@@ -721,12 +865,14 @@ res.json({
 
 success:true,
 
-texto
+texto:texto
 
 });
 
 
 });
+
+
 
 
 
@@ -790,13 +936,58 @@ message:erro.message
 
 
 
+
+
 // ==========================================
 // INICIAR SERVIDOR
 // ==========================================
 
+
 console.log("VARIÁVEIS MERCADO LIVRE:");
-console.log("ML_CLIENT_ID:", process.env.ML_CLIENT_ID ? "OK" : "VAZIO");
-console.log("ML_CLIENT_SECRET:", process.env.ML_CLIENT_SECRET ? "OK" : "VAZIO");
+
+console.log(
+
+"ML_CLIENT_ID:",
+
+process.env.ML_CLIENT_ID
+?
+"OK"
+:
+"VAZIO"
+
+);
+
+
+console.log(
+
+"ML_CLIENT_SECRET:",
+
+process.env.ML_CLIENT_SECRET
+?
+"OK"
+:
+"VAZIO"
+
+);
+
+
+
+console.log(
+
+"ML_REDIRECT_URI:",
+
+process.env.ML_REDIRECT_URI
+?
+"OK"
+:
+"VAZIO"
+
+);
+
+
+
+
+
 async function iniciarServidor(){
 
 
@@ -815,7 +1006,7 @@ PORT,
 
 console.log("======================");
 
-console.log("⚡ ELETROMAX V2 ONLINE");
+console.log("⚡ ELETROMAX V2.1 ONLINE");
 
 console.log("PORTA:",PORT);
 
@@ -828,6 +1019,7 @@ console.log("======================");
 
 
 }
+
 
 
 
