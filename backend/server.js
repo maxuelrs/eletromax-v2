@@ -158,41 +158,54 @@ erro.message
 // STATUS API
 // ==========================================
 
-app.get("/api/status", async (req,res)=>{
+// ==========================================
+// STATUS DA API
+// ==========================================
 
-try{
+app.get("/api/status", async (req, res) => {
 
-await pool.query("SELECT NOW()");
+  try {
 
-res.json({
-
-success:true,
-
-status:"online",
-
-database:"connected",
-
-mercadolivre:
-process.env.ML_CLIENT_ID
-? "configured"
-: "not_configured"
-
-});
+    await pool.query("SELECT NOW()");
 
 
-}catch(erro){
+    const mlConfigurado =
+      !!(
+        process.env.ML_CLIENT_ID ||
+        process.env.MERCADO_LIVRE_CLIENT_ID ||
+        process.env.CLIENT_ID
+      );
 
-res.status(500).json({
 
-success:false,
+    res.json({
 
-database:"disconnected",
+      success: true,
 
-message:erro.message
+      status: "online",
 
-});
+      database: "connected",
 
-}
+      mercadolivre:
+        mlConfigurado
+        ? "configured"
+        : "not_configured"
+
+    });
+
+
+  } catch (erro) {
+
+    res.status(500).json({
+
+      success: false,
+
+      database: "disconnected",
+
+      message: erro.message
+
+    });
+
+  }
 
 });
 
