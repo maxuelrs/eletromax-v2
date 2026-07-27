@@ -554,7 +554,40 @@ message:erro.message
 // MERCADO LIVRE OAUTH
 // ==========================================
 
+app.get("/api/mercadolivre/login",(req,res)=>{
 
+if(!process.env.ML_CLIENT_ID ||
+!process.env.ML_REDIRECT_URI){
+
+return res.json({
+
+success:false,
+
+message:"Configurar OAuth do Mercado Livre."
+
+});
+
+}
+
+
+const url =
+
+"https://auth.mercadolivre.com.br/authorization" +
+
+"?response_type=code" +
+
+"&client_id=" +
+process.env.ML_CLIENT_ID +
+
+"&redirect_uri=" +
+encodeURIComponent(
+process.env.ML_REDIRECT_URI
+);
+
+
+res.redirect(url);
+
+});
 
 app.get("/api/mercadolivre/status",async(req,res)=>{
 
