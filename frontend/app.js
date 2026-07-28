@@ -6,41 +6,36 @@ let offers = [];
 // ELEMENTOS DO PAINEL
 // ==========================================
 
-const totalEl =
-document.getElementById('total');
-
-const mlEl =
-document.getElementById('ml');
-
-const shopeeEl =
-document.getElementById('shopee');
-
-const publishedEl =
-document.getElementById('published');
-
-const offersEl =
-document.getElementById('offers');
-
-const offerForm =
-document.getElementById('offerForm');
+const totalEl = document.getElementById('total');
+const mlEl = document.getElementById('ml');
+const shopeeEl = document.getElementById('shopee');
+const publishedEl = document.getElementById('published');
+const offersEl = document.getElementById('offers');
+const offerForm = document.getElementById('offerForm');
 
 // ==========================================
 // FORMATAR PREÇO
 // ==========================================
 
 function formatarPreco(valor) {
+  if (
+    valor === null ||
+    valor === undefined ||
+    valor === ''
+  ) {
+    return 'Preço não informado';
+  }
 
-const numero =
-Number(valor) || 0;
+  const numero = Number(valor);
 
-return numero.toLocaleString(
-'pt-BR',
-{
-style: 'currency',
-currency: 'BRL'
-}
-);
+  if (!Number.isFinite(numero)) {
+    return String(valor);
+  }
 
+  return numero.toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  });
 }
 
 // ==========================================
@@ -48,197 +43,169 @@ currency: 'BRL'
 // ==========================================
 
 function escaparHTML(valor) {
-
-return String(
-valor || ''
-)
-.replace(
-/&/g,
-'&'
-)
-.replace(
-/</g,
-'<'
-)
-.replace(
-/>/g,
-'>'
-)
-.replace(
-/"/g,
-'"'
-)
-.replace(
-/'/g,
-'''
-);
-
+  return String(valor ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 // ==========================================
 // RENDERIZAR DASHBOARD
 // ==========================================
 
-function renderDashboard(
-ofertas
-) {
+function renderDashboard(ofertas) {
+  offers = Array.isArray(ofertas)
+    ? ofertas
+    : [];
 
-offers =
-Array.isArray(
-ofertas
-)
-? ofertas
-: [];
+  const total = offers.length;
 
-const total =
-offers.length;
-
-const mercadoLivre =
-offers.filter(
-x =>
-x.plataforma ===
-'Mercado Livre'
-).length;
-
-const shopee =
-offers.filter(
-x =>
-x.plataforma ===
-'Shopee'
-).length;
-
-if (
-totalEl
-) {
-
-```
-totalEl.textContent =
-  total;
-```
-
-}
-
-if (
-mlEl
-) {
-
-```
-mlEl.textContent =
-  mercadoLivre;
-```
-
-}
-
-if (
-shopeeEl
-) {
-
-```
-shopeeEl.textContent =
-  shopee;
-```
-
-}
-
-if (
-publishedEl
-) {
-
-```
-publishedEl.textContent =
-  0;
-```
-
-}
-
-if (
-!offersEl
-) {
-
-```
-return;
-```
-
-}
-
-if (
-offers.length ===
-0
-) {
-
-```
-offersEl.innerHTML =
-  '<p>Nenhuma oferta cadastrada.</p>';
-
-return;
-```
-
-}
-
-offersEl.innerHTML =
-
-```
-offers
-  .map(
-
+  const mercadoLivre = offers.filter(
     oferta =>
+      String(oferta.plataforma || '').toLowerCase() ===
+      'mercado livre'
+  ).length;
 
-      `
-      <div class="offer">
+  const shopee = offers.filter(
+    oferta =>
+      String(oferta.plataforma || '').toLowerCase() ===
+      'shopee'
+  ).length;
 
-        <div>
+  if (totalEl) {
+    totalEl.textContent = total;
+  }
 
-          <b>
-            ${escaparHTML(
-              oferta.nome
-            )}
-          </b>
+  if (mlEl) {
+    mlEl.textContent = mercadoLivre;
+  }
 
-          <br>
+  if (shopeeEl) {
+    shopeeEl.textContent = shopee;
+  }
 
-          <small>
+  if (publishedEl) {
+    publishedEl.textContent = 0;
+  }
 
-            ${
-              escaparHTML(
-                oferta.plataforma
-              )
-            }
+  if (!offersEl) {
+    return;
+  }
 
-            • 
+  if (offers.length === 0) {
+    offersEl.innerHTML = `
+      <p>
+        Nenhuma oferta cadastrada.
+      </p>
+    `;
 
-            ${
-              formatarPreco(
-                oferta.preco
-              )
-            }
+    return;
+  }
 
-          </small>
-
-          <br>
-
-          <a
-            href="${
-              escaparHTML(
-                oferta.link
-              )
-            }"
-            target="_blank"
-            rel="noopener noreferrer"
+  offersEl.innerHTML = offers
+    .map(oferta => {
+      const imagem = oferta.imagem
+        ? `
+          <img
+            src="${escaparHTML(oferta.imagem)}"
+            alt="${escaparHTML(oferta.nome)}"
+            style="
+              width:80px;
+              height:80px;
+              object-fit:contain;
+              border-radius:8px;
+            "
+            onerror="this.style.display='none'"
           >
+        `
+        : '';
 
-            Ver produto
+      return `
+        <div class="offer">
 
-          </a>
+          ${imagem}
+
+          <div>
+
+            <b>
+              ${escaparHTML(
+                oferta.nome || 'Produto'
+              )}
+            </b>
+
+            <br>
+
+            <small>
+              ${escaparHTML(
+                oferta.plataforma || ''
+              )}
+              •
+              ${formatarPreco(
+                oferta.preco
+              )}
+            </small>
+
+            <br>
+
+            ${
+              oferta.categoria
+                ? `
+                  <small>
+                    🏷️ ${escaparHTML(
+                      oferta.categoria
+                    )}
+                  </small>
+                  <br>
+                `
+                : ''
+            }
+
+            ${
+              oferta.pontuacao !== undefined
+                ? `
+                  <small>
+                    ⭐ Pontuação:
+                    ${escaparHTML(
+                      oferta.pontuacao
+                    )}
+                  </small>
+                  <br>
+                `
+                : ''
+            }
+
+            ${
+              oferta.vendas !== undefined
+                ? `
+                  <small>
+                    🛒 Vendas:
+                    ${escaparHTML(
+                      oferta.vendas
+                    )}
+                  </small>
+                  <br>
+                `
+                : ''
+            }
+
+            <a
+              href="${escaparHTML(
+                oferta.link || '#'
+              )}"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Ver produto
+            </a>
+
+          </div>
 
         </div>
-
-      </div>
-      `
-
-  )
-  .join('');
-```
-
+      `;
+    })
+    .join('');
 }
 
 // ==========================================
@@ -246,237 +213,154 @@ offers
 // ==========================================
 
 async function carregarOfertas() {
+  try {
+    const resposta = await fetch(
+      `${API}/ofertas`
+    );
 
-try {
+    const dados = await resposta
+      .json()
+      .catch(() => ({}));
 
-```
-const resposta =
-  await fetch(
-    `${API}/ofertas`
-  );
+    if (
+      !resposta.ok ||
+      !dados.success
+    ) {
+      throw new Error(
+        dados.message ||
+        `Erro ao carregar ofertas. HTTP ${resposta.status}`
+      );
+    }
 
+    renderDashboard(
+      dados.ofertas
+    );
 
-const dados =
-  await resposta.json();
+    return dados.ofertas;
 
+  } catch (erro) {
+    console.error(
+      'ERRO AO CARREGAR OFERTAS:',
+      erro
+    );
 
-if (
-  !resposta.ok ||
-  !dados.success
-) {
+    if (offersEl) {
+      offersEl.innerHTML = `
+        <p>
+          ❌ Erro ao carregar ofertas:
+          ${escaparHTML(
+            erro.message
+          )}
+        </p>
+      `;
+    }
 
-  throw new Error(
-
-    dados.message ||
-
-    'Erro ao carregar ofertas.'
-
-  );
-
-}
-
-
-renderDashboard(
-  dados.ofertas
-);
-```
-
-} catch (
-erro
-) {
-
-```
-console.error(
-  'ERRO AO CARREGAR OFERTAS:',
-  erro
-);
-
-
-if (
-  offersEl
-) {
-
-  offersEl.innerHTML =
-
-    `
-    <p>
-
-      ❌ Erro ao carregar ofertas:
-      ${escaparHTML(
-        erro.message
-      )}
-
-    </p>
-    `;
-
-}
-```
-
-}
-
+    return [];
+  }
 }
 
 // ==========================================
 // CADASTRAR PRODUTO MANUALMENTE
 // ==========================================
 
-if (
-offerForm
-) {
+if (offerForm) {
+  offerForm.addEventListener(
+    'submit',
+    async event => {
+      event.preventDefault();
 
-offerForm.addEventListener(
+      const nome =
+        document.getElementById(
+          'title'
+        )?.value.trim();
 
-```
-'submit',
+      const link =
+        document.getElementById(
+          'url'
+        )?.value.trim();
 
-async (
-  e
-) => {
+      const preco =
+        document.getElementById(
+          'price'
+        )?.value.trim();
 
-  e.preventDefault();
+      const plataforma =
+        document.getElementById(
+          'source'
+        )?.value.trim();
 
+      if (
+        !nome ||
+        !link ||
+        !plataforma
+      ) {
+        alert(
+          'Preencha nome, link e plataforma.'
+        );
 
-  const nome =
-    document.getElementById(
-      'title'
-    )?.value.trim();
+        return;
+      }
 
+      try {
+        const resposta =
+          await fetch(
+            `${API}/produtos`,
+            {
+              method: 'POST',
 
-  const link =
-    document.getElementById(
-      'url'
-    )?.value.trim();
+              headers: {
+                'Content-Type':
+                  'application/json'
+              },
 
-
-  const preco =
-    document.getElementById(
-      'price'
-    )?.value.trim();
-
-
-  const plataforma =
-    document.getElementById(
-      'source'
-    )?.value.trim();
-
-
-  if (
-    !nome ||
-    !link ||
-    !plataforma
-  ) {
-
-    alert(
-      'Preencha nome, link e plataforma.'
-    );
-
-    return;
-
-  }
-
-
-  try {
-
-    const resposta =
-      await fetch(
-
-        `${API}/produtos`,
-
-        {
-
-          method:
-            'POST',
-
-          headers: {
-
-            'Content-Type':
-              'application/json'
-
-          },
-
-          body:
-            JSON.stringify({
-
-              nome:
+              body: JSON.stringify({
                 nome,
-
-              preco:
                 preco,
-
-              link:
                 link,
-
-              plataforma:
                 plataforma
+              })
+            }
+          );
 
-            })
+        const dados =
+          await resposta
+            .json()
+            .catch(() => ({}));
 
+        if (
+          !resposta.ok ||
+          !dados.success
+        ) {
+          throw new Error(
+            dados.message ||
+            `Erro ao salvar produto. HTTP ${resposta.status}`
+          );
         }
 
-      );
+        alert(
+          '✅ Produto salvo com sucesso!'
+        );
 
+        offerForm.reset();
 
-    const dados =
-      await resposta.json();
+        await carregarOfertas();
 
+      } catch (erro) {
+        console.error(
+          'ERRO AO CADASTRAR:',
+          erro
+        );
 
-    if (
-      !resposta.ok ||
-      !dados.success
-    ) {
-
-      throw new Error(
-
-        dados.message ||
-
-        'Erro ao salvar produto.'
-
-      );
-
+        alert(
+          '❌ ' +
+          (
+            erro.message ||
+            'Erro ao salvar produto.'
+          )
+        );
+      }
     }
-
-
-    alert(
-      '✅ Produto salvo com sucesso!'
-    );
-
-
-    offerForm.reset();
-
-
-    await carregarOfertas();
-
-
-  } catch (
-    erro
-  ) {
-
-    console.error(
-      'ERRO AO CADASTRAR:',
-      erro
-    );
-
-
-    alert(
-
-      '❌ ' +
-
-      (
-        erro.message ||
-
-        'Erro ao salvar produto.'
-
-      )
-
-    );
-
-  }
-
-}
-```
-
-);
-
+  );
 }
 
 // ==========================================
@@ -484,130 +368,99 @@ async (
 // ==========================================
 
 async function buscarMercadoLivre(
-busca
+  busca
 ) {
+  const termo =
+    String(
+      busca || ''
+    ).trim();
 
-if (
-!busca
-) {
+  if (!termo) {
+    alert(
+      'Digite o que deseja buscar.'
+    );
 
-```
-alert(
-  'Digite o que deseja buscar.'
-);
+    return;
+  }
 
-return;
-```
+  try {
+    console.log(
+      '🔎 Buscando Mercado Livre:',
+      termo
+    );
 
-}
+    const resposta =
+      await fetch(
+        `${API}/mercadolivre/buscar-salvar`,
+        {
+          method: 'POST',
 
-try {
+          headers: {
+            'Content-Type':
+              'application/json'
+          },
 
-```
-const resposta =
-  await fetch(
+          body: JSON.stringify({
+            q: termo,
+            limit: 20
+          })
+        }
+      );
 
-    `${API}/mercadolivre/buscar-salvar`,
+    const dados =
+      await resposta
+        .json()
+        .catch(() => ({}));
 
-    {
-
-      method:
-        'POST',
-
-      headers: {
-
-        'Content-Type':
-          'application/json'
-
-      },
-
-      body:
-        JSON.stringify({
-
-          q:
-            busca,
-
-          limit:
-            20
-
-        })
-
+    if (
+      !resposta.ok ||
+      !dados.success
+    ) {
+      throw new Error(
+        dados.message ||
+        `Erro ao buscar no Mercado Livre. HTTP ${resposta.status}`
+      );
     }
 
-  );
-
-
-const dados =
-  await resposta.json();
-
-
-if (
-  !resposta.ok ||
-  !dados.success
-) {
-
-  throw new Error(
-
-    dados.message ||
-
-    'Erro ao buscar no Mercado Livre.'
-
-  );
-
-}
-
-
-alert(
-
-  `✅ Busca concluída!
-```
+    alert(
+      `✅ Busca concluída!
 
 Encontrados: ${
-dados.encontrados || 0
-}
+        dados.encontrados || 0
+      }
 
 Novas ofertas: ${
-dados.salvos || 0
-}
+        dados.salvos || 0
+      }
 
 Atualizadas: ${
-dados.atualizados || 0
-}`
+        dados.atualizados || 0
+      }`
+    );
 
-```
-);
+    await carregarOfertas();
 
+    return dados;
 
-await carregarOfertas();
-```
+  } catch (erro) {
+    console.error(
+      'ERRO MERCADO LIVRE:',
+      erro
+    );
 
-} catch (
-erro
-) {
+    alert(
+      '❌ ' +
+      (
+        erro.message ||
+        'Erro ao consultar Mercado Livre.'
+      )
+    );
 
-```
-console.error(
-  'ERRO MERCADO LIVRE:',
-  erro
-);
-
-
-alert(
-
-  '❌ ' +
-
-  (
-    erro.message ||
-
-    'Erro ao consultar Mercado Livre.'
-
-  )
-
-);
-```
-
-}
-
+    return {
+      success: false,
+      message: erro.message
+    };
+  }
 }
 
 // ==========================================
@@ -615,166 +468,209 @@ alert(
 // ==========================================
 
 async function buscarOfertasAutomaticamente() {
+  try {
+    console.log(
+      '⚡ Iniciando busca automática...'
+    );
 
-try {
+    const resposta =
+      await fetch(
+        `${API}/ofertas/buscar-automaticamente`,
+        {
+          method: 'POST',
 
-```
-const resposta =
-  await fetch(
+          headers: {
+            'Content-Type':
+              'application/json'
+          }
+        }
+      );
 
-    `${API}/ofertas/buscar-automaticamente`,
+    const dados =
+      await resposta
+        .json()
+        .catch(() => ({}));
 
-    {
-
-      method:
-        'POST',
-
-      headers: {
-
-        'Content-Type':
-          'application/json'
-
-      }
-
+    if (
+      !resposta.ok ||
+      !dados.success
+    ) {
+      throw new Error(
+        dados.message ||
+        `Erro na busca automática. HTTP ${resposta.status}`
+      );
     }
 
-  );
-
-
-const dados =
-  await resposta.json();
-
-
-if (
-  !resposta.ok ||
-  !dados.success
-) {
-
-  throw new Error(
-
-    dados.message ||
-
-    'Erro na busca automática.'
-
-  );
-
-}
-
-
-alert(
-
-  `✅ Busca automática concluída!
-```
+    alert(
+      `✅ Busca automática concluída!
 
 Encontrados: ${
-dados.encontrados || 0
-}
+        dados.encontrados || 0
+      }
 
 Aprovados: ${
-dados.aprovados || 0
-}
+        dados.aprovados || 0
+      }
 
 Novas ofertas: ${
-dados.salvos || 0
-}
+        dados.salvos || 0
+      }
 
 Atualizadas: ${
-dados.atualizados || 0
-}`
+        dados.atualizados || 0
+      }`
+    );
 
-```
-);
+    await carregarOfertas();
 
+    return dados;
 
-await carregarOfertas();
-```
+  } catch (erro) {
+    console.error(
+      'ERRO BUSCA AUTOMÁTICA:',
+      erro
+    );
 
-} catch (
-erro
-) {
+    alert(
+      '❌ ' +
+      (
+        erro.message ||
+        'Erro ao executar busca automática.'
+      )
+    );
 
-```
-console.error(
-  'ERRO BUSCA AUTOMÁTICA:',
-  erro
-);
-
-
-alert(
-
-  '❌ ' +
-
-  (
-    erro.message ||
-
-    'Erro ao executar busca automática.'
-
-  )
-
-);
-```
-
-}
-
+    return {
+      success: false,
+      message: erro.message
+    };
+  }
 }
 
 // ==========================================
-// STATUS MERCADO LIVRE
+// VERIFICAR STATUS DO MERCADO LIVRE
 // ==========================================
 
 async function verificarMercadoLivre() {
+  try {
+    const resposta =
+      await fetch(
+        `${API}/mercadolivre/status`
+      );
 
-try {
+    const dados =
+      await resposta
+        .json()
+        .catch(() => ({}));
 
-```
-const resposta =
-  await fetch(
+    console.log(
+      'STATUS MERCADO LIVRE:',
+      dados
+    );
 
-    `${API}/mercadolivre/status`
+    return dados;
 
-  );
+  } catch (erro) {
+    console.error(
+      'ERRO STATUS MERCADO LIVRE:',
+      erro
+    );
 
-
-const dados =
-  await resposta.json();
-
-
-console.log(
-  'STATUS MERCADO LIVRE:',
-  dados
-);
-
-
-return dados;
-```
-
-} catch (
-erro
-) {
-
-```
-console.error(
-
-  'ERRO STATUS MERCADO LIVRE:',
-
-  erro
-
-);
-
-
-return {
-
-  success:
-    false,
-
-  conectado:
-    false
-
-};
-```
-
+    return {
+      success: false,
+      conectado: false,
+      message:
+        erro.message
+    };
+  }
 }
 
+// ==========================================
+// VERIFICAR STATUS GERAL DA API
+// ==========================================
+
+async function verificarAPI() {
+  try {
+    const resposta =
+      await fetch(
+        `${API}/status`
+      );
+
+    const dados =
+      await resposta
+        .json()
+        .catch(() => ({}));
+
+    console.log(
+      'STATUS API:',
+      dados
+    );
+
+    return dados;
+
+  } catch (erro) {
+    console.error(
+      'ERRO STATUS API:',
+      erro
+    );
+
+    return {
+      success: false,
+      status: 'offline'
+    };
+  }
+}
+
+// ==========================================
+// CARREGAR DASHBOARD REAL
+// ==========================================
+
+async function carregarDashboard() {
+  try {
+    const resposta =
+      await fetch(
+        `${API}/dashboard`
+      );
+
+    const dados =
+      await resposta
+        .json()
+        .catch(() => ({}));
+
+    if (
+      !resposta.ok ||
+      !dados.success
+    ) {
+      throw new Error(
+        dados.message ||
+        'Erro ao carregar dashboard.'
+      );
+    }
+
+    if (totalEl) {
+      totalEl.textContent =
+        dados.totalOfertas || 0;
+    }
+
+    if (mlEl) {
+      mlEl.textContent =
+        dados.totalMercadoLivre || 0;
+    }
+
+    if (shopeeEl) {
+      shopeeEl.textContent =
+        dados.totalShopee || 0;
+    }
+
+    return dados;
+
+  } catch (erro) {
+    console.error(
+      'ERRO DASHBOARD:',
+      erro
+    );
+
+    return null;
+  }
 }
 
 // ==========================================
@@ -782,41 +678,64 @@ return {
 // ==========================================
 
 async function iniciarPainel() {
+  console.log(
+    '================================='
+  );
 
-console.log(
-'⚡ Eletromax V2 iniciando...'
-);
+  console.log(
+    '⚡ ELETROMAX V2 INICIANDO...'
+  );
 
-const status =
-await verificarMercadoLivre();
+  console.log(
+    '================================='
+  );
 
-if (
-status.success &&
-status.conectado
-) {
+  const statusAPI =
+    await verificarAPI();
 
-```
-console.log(
-  '✅ Mercado Livre conectado.'
-);
-```
+  if (
+    statusAPI.success
+  ) {
+    console.log(
+      '✅ API Eletromax funcionando.'
+    );
+  } else {
+    console.warn(
+      '⚠️ API Eletromax não respondeu corretamente.'
+    );
+  }
 
-} else {
+  const statusML =
+    await verificarMercadoLivre();
 
-```
-console.warn(
-  '⚠️ Mercado Livre não conectado.'
-);
-```
+  if (
+    statusML.success &&
+    statusML.conectado
+  ) {
+    console.log(
+      '✅ Mercado Livre conectado.'
+    );
+  } else {
+    console.warn(
+      '⚠️ Mercado Livre não conectado.'
+    );
+  }
 
-}
+  await carregarDashboard();
 
-await carregarOfertas();
+  await carregarOfertas();
 
-console.log(
-'⚡ Eletromax V2 pronto.'
-);
+  console.log(
+    '================================='
+  );
 
+  console.log(
+    '⚡ ELETROMAX V2 PRONTO.'
+  );
+
+  console.log(
+    '================================='
+  );
 }
 
 // ==========================================
@@ -824,16 +743,35 @@ console.log(
 // ==========================================
 
 window.buscarMercadoLivre =
-buscarMercadoLivre;
+  buscarMercadoLivre;
 
 window.buscarOfertasAutomaticamente =
-buscarOfertasAutomaticamente;
+  buscarOfertasAutomaticamente;
 
 window.verificarMercadoLivre =
-verificarMercadoLivre;
+  verificarMercadoLivre;
+
+window.verificarAPI =
+  verificarAPI;
+
+window.carregarOfertas =
+  carregarOfertas;
+
+window.carregarDashboard =
+  carregarDashboard;
 
 // ==========================================
 // INICIAR
 // ==========================================
 
-iniciarPainel();
+if (
+  document.readyState ===
+  'loading'
+) {
+  document.addEventListener(
+    'DOMContentLoaded',
+    iniciarPainel
+  );
+} else {
+  iniciarPainel();
+}
