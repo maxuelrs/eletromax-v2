@@ -384,9 +384,7 @@ function calcularPontuacao(
 
 async function inicializarBanco() {
 
-  if (
-    !process.env.DATABASE_URL
-  ) {
+  if (!process.env.DATABASE_URL) {
 
     console.warn(
       "⚠️ DATABASE_URL não configurada."
@@ -398,9 +396,18 @@ async function inicializarBanco() {
 
   try {
 
+    // ========================================
+    // TESTAR CONEXÃO
+    // ========================================
+
     await pool.query(
       "SELECT 1"
     );
+
+
+    // ========================================
+    // TABELA PRODUTOS
+    // ========================================
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS produtos (
@@ -413,14 +420,19 @@ async function inicializarBanco() {
       )
     `);
 
+
+    // ========================================
+    // TABELA OFERTAS
+    // ========================================
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS ofertas (
         id SERIAL PRIMARY KEY,
-        nome TEXT NOT NULL,
+        nome TEXT,
         preco TEXT,
         preco_anterior TEXT,
-        link TEXT NOT NULL,
-        plataforma TEXT NOT NULL,
+        link TEXT,
+        plataforma TEXT,
         imagem TEXT,
         categoria TEXT,
         avaliacao NUMERIC DEFAULT 0,
@@ -430,9 +442,39 @@ async function inicializarBanco() {
       )
     `);
 
+
+    // ========================================
+    // MIGRAÇÃO AUTOMÁTICA DA TABELA OFERTAS
+    // ========================================
+
+    await pool.query(`
+      ALTER TABLE ofertas
+      ADD COLUMN IF NOT EXISTS nome TEXT
+    `);
+
+    await pool.query(`
+      ALTER TABLE ofertas
+      ADD COLUMN IF NOT EXISTS preco TEXT
+    `);
+
     await pool.query(`
       ALTER TABLE ofertas
       ADD COLUMN IF NOT EXISTS preco_anterior TEXT
+    `);
+
+    await pool.query(`
+      ALTER TABLE ofertas
+      ADD COLUMN IF NOT EXISTS link TEXT
+    `);
+
+    await pool.query(`
+      ALTER TABLE ofertas
+      ADD COLUMN IF NOT EXISTS plataforma TEXT
+    `);
+
+    await pool.query(`
+      ALTER TABLE ofertas
+      ADD COLUMN IF NOT EXISTS imagem TEXT
     `);
 
     await pool.query(`
@@ -456,9 +498,101 @@ async function inicializarBanco() {
     `);
 
     await pool.query(`
+      ALTER TABLE ofertas
+      ADD COLUMN IF NOT EXISTS criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    `);
+
+
+    // ========================================
+    // CORRIGIR VALORES NULOS
+    // ========================================
+
+    await pool.query(`
+      UPDATE ofertas
+      SET nome = 'Produto'
+      WHERE nome IS NULL
+    `);
+
+    await pool.query(`
+      UPDATE ofertas
+      SET preco = ''
+      WHERE preco IS NULL
+    `);
+
+    await pool.query(`
+      UPDATE ofertas
+      SET link = ''
+      WHERE link IS NULL
+    `);
+
+    await pool.query(`
+      UPDATE ofertas
+      SET plataforma = 'Mercado Livre'
+      WHERE plataforma IS NULL
+    `);
+
+    await pool.query(`
+      UPDATE ofertas
+      SET imagem = ''
+      WHERE imagem IS NULL
+    `);
+
+    await pool.query(`
+      UPDATE ofertas
+      SET categoria = ''
+      WHERE categoria IS NULL
+    `);
+
+    await pool.query(`
+      UPDATE ofertas
+      SET avaliacao = 0
+      WHERE avaliacao IS NULL
+    `);
+
+    await pool.query(`
+      UPDATE ofertas
+      SET vendas = 0
+      WHERE vendas IS NULL
+    `);
+
+    await pool.query(`
+      UPDATE ofertas
+      SET pontuacao = 0
+      WHERE pontuacao IS NULL
+    `);
+
+
+    // ========================================
+    // ÍNDICE ÚNICO DO LINK
+    // ========================================
+
+    // Criar índice somente se não houver
+    // links vazios duplicados.
+
+    await pool.query(`
+      DELETE FROM ofertas
+      WHERE id NOT IN (
+        SELECT MIN(id)
+        FROM ofertas
+        WHERE link IS NOT NULL
+          AND link <> ''
+        GROUP BY link
+      )
+      AND link IS NOT NULL
+      AND link <> ''
+    `);
+
+    await pool.query(`
       CREATE UNIQUE INDEX IF NOT EXISTS ofertas_link_unico
       ON ofertas(link)
+      WHERE link IS NOT NULL
+        AND link <> ''
     `);
+
+
+    // ========================================
+    // TABELA CONFIGURAÇÕES
+    // ========================================
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS configuracoes (
@@ -470,6 +604,7 @@ async function inicializarBanco() {
         atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
 
     await pool.query(`
       INSERT INTO configuracoes
@@ -486,6 +621,11 @@ async function inicializarBanco() {
       DO NOTHING
     `);
 
+
+    // ========================================
+    // TABELA FILTROS
+    // ========================================
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS filtros_ofertas (
         id INTEGER PRIMARY KEY,
@@ -498,6 +638,7 @@ async function inicializarBanco() {
         atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
 
     await pool.query(`
       INSERT INTO filtros_ofertas
@@ -512,6 +653,11 @@ async function inicializarBanco() {
       DO NOTHING
     `);
 
+
+    // ========================================
+    // TABELA TOKENS MERCADO LIVRE
+    // ========================================
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS mercadolivre_tokens (
         id INTEGER PRIMARY KEY,
@@ -522,6 +668,11 @@ async function inicializarBanco() {
         atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+
+    // ========================================
+    // GARANTIR COLUNAS DOS TOKENS
+    // ========================================
 
     await pool.query(`
       ALTER TABLE mercadolivre_tokens
@@ -538,23 +689,54 @@ async function inicializarBanco() {
       ADD COLUMN IF NOT EXISTS user_id TEXT
     `);
 
-    console.log(
-      "================================="
-    );
 
-    console.log(
-      "BANCO DE DADOS CONECTADO"
-    );
-
-    console.log(
-      "TABELAS DO ELETROMAX PRONTAS"
-    );
-
-    console.log(
-      "================================="
-    );
+    // ========================================
+    // CARREGAR TOKEN MERCADO LIVRE
+    // ========================================
 
     await carregarTokenMercadoLivre();
+
+
+    // ========================================
+    // CONFIRMAÇÃO
+    // ========================================
+
+    console.log(
+      "================================="
+    );
+
+    console.log(
+      "✅ BANCO DE DADOS CONECTADO"
+    );
+
+    console.log(
+      "✅ TABELA PRODUTOS PRONTA"
+    );
+
+    console.log(
+      "✅ TABELA OFERTAS MIGRADA"
+    );
+
+    console.log(
+      "✅ COLUNA 'nome' GARANTIDA"
+    );
+
+    console.log(
+      "✅ TABELA CONFIGURAÇÕES PRONTA"
+    );
+
+    console.log(
+      "✅ TABELA FILTROS PRONTA"
+    );
+
+    console.log(
+      "✅ TOKENS MERCADO LIVRE PRONTOS"
+    );
+
+    console.log(
+      "================================="
+    );
+
 
     return true;
 
@@ -563,8 +745,19 @@ async function inicializarBanco() {
   ) {
 
     console.error(
-      "ERRO AO INICIALIZAR BANCO:",
+      "================================="
+    );
+
+    console.error(
+      "❌ ERRO AO INICIALIZAR BANCO:"
+    );
+
+    console.error(
       erro.message
+    );
+
+    console.error(
+      "================================="
     );
 
     return false;
