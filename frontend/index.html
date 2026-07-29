@@ -31,13 +31,6 @@ body {
   color: #111827;
 }
 
-button,
-input,
-select,
-textarea {
-  font-family: inherit;
-}
-
 /* ======================================================
    SIDEBAR
 ====================================================== */
@@ -198,6 +191,7 @@ textarea {
   margin: 7px 0 12px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
+  font-family: inherit;
   font-size: 14px;
 }
 
@@ -216,6 +210,10 @@ textarea:focus {
 /* ======================================================
    BUTTONS
 ====================================================== */
+
+button {
+  font-family: inherit;
+}
 
 .primary {
   background: #2563eb;
@@ -249,11 +247,6 @@ textarea:focus {
 
 .success:hover {
   background: #15803d;
-}
-
-.success:disabled {
-  opacity: .6;
-  cursor: not-allowed;
 }
 
 .danger {
@@ -295,7 +288,7 @@ textarea:focus {
   border-radius: 8px;
   display: none;
   font-size: 14px;
-  line-height: 1.5;
+  white-space: pre-wrap;
 }
 
 .mensagem.show {
@@ -315,11 +308,6 @@ textarea:focus {
 .mensagem.info-msg {
   background: #dbeafe;
   color: #1e40af;
-}
-
-.mensagem.warning-msg {
-  background: #fef3c7;
-  color: #92400e;
 }
 
 /* ======================================================
@@ -350,8 +338,7 @@ textarea:focus {
 }
 
 .produto a,
-.oferta a,
-.ml-card a {
+.oferta a {
   color: #2563eb;
   word-break: break-all;
 }
@@ -399,7 +386,6 @@ textarea:focus {
   margin-bottom: 20px;
   background: #fef3c7;
   color: #92400e;
-  line-height: 1.5;
 }
 
 .ml-status.connected {
@@ -407,19 +393,9 @@ textarea:focus {
   color: #166534;
 }
 
-.ml-status.error {
-  background: #fee2e2;
-  color: #991b1b;
-}
-
-.ml-status.warning {
-  background: #fef3c7;
-  color: #92400e;
-}
-
 .ml-search {
   display: grid;
-  grid-template-columns: 1fr 120px auto;
+  grid-template-columns: 1fr 120px;
   gap: 10px;
   align-items: center;
 }
@@ -442,8 +418,6 @@ textarea:focus {
   width: 100%;
   height: 170px;
   object-fit: contain;
-  background: #fff;
-  border-radius: 8px;
 }
 
 .ml-card h3 {
@@ -451,22 +425,8 @@ textarea:focus {
   line-height: 1.4;
 }
 
-.ml-error-box {
-  grid-column: 1 / -1;
-  padding: 20px;
-  border-radius: 10px;
-  background: #fee2e2;
-  color: #991b1b;
-  line-height: 1.6;
-}
-
-.ml-info-box {
-  grid-column: 1 / -1;
-  padding: 20px;
-  border-radius: 10px;
-  background: #dbeafe;
-  color: #1e40af;
-  line-height: 1.6;
+.ml-card .acoes {
+  margin-top: 15px;
 }
 
 /* ======================================================
@@ -504,7 +464,6 @@ textarea:focus {
   display: none;
   z-index: 9999;
   max-width: 350px;
-  line-height: 1.5;
 }
 
 /* ======================================================
@@ -738,20 +697,6 @@ textarea:focus {
     </strong>
   </p>
 
-  <p>
-    Motor de ofertas:
-    <strong id="statusMotorOfertas">
-      Verificando...
-    </strong>
-  </p>
-
-  <p>
-    Gerador de posts:
-    <strong id="statusGeradorPosts">
-      Verificando...
-    </strong>
-  </p>
-
 </div>
 ```
 
@@ -877,18 +822,6 @@ textarea:focus {
     🔄 Atualizar Ofertas
   </button>
 
-  <button
-    class="success"
-    onclick="buscarOfertasAutomaticamente()"
-  >
-    🤖 Buscar Ofertas Automaticamente
-  </button>
-
-  <div
-    id="resultadoBuscaAutomatica"
-    class="mensagem"
-  ></div>
-
 </div>
 
 <div
@@ -949,24 +882,16 @@ textarea:focus {
       value="20"
     >
 
-    <button
-      id="btnBuscarML"
-      class="success"
-      onclick="buscarMercadoLivre()"
-    >
-      🔎 Buscar
-    </button>
-
   </div>
 
   <br>
 
   <button
     id="btnBuscarSalvarML"
-    class="primary"
+    class="success"
     onclick="buscarESalvarMercadoLivre()"
   >
-    💾 Buscar e Salvar Ofertas
+    🔎 Buscar e Salvar Ofertas
   </button>
 
   <div
@@ -1239,6 +1164,12 @@ textarea:focus {
 <script>
 
 /* ======================================================
+   API BASE
+====================================================== */
+
+const API_BASE = "";
+
+/* ======================================================
    FUNÇÕES GERAIS
 ====================================================== */
 
@@ -1275,27 +1206,18 @@ function mostrarMensagem(
     return;
   }
 
-  let classe =
-    "info-msg";
-
-  if (tipo === "success") {
-    classe = "success-msg";
-  }
-
-  if (tipo === "error") {
-    classe = "error-msg";
-  }
-
-  if (tipo === "warning") {
-    classe = "warning-msg";
-  }
-
   elemento.innerText =
     mensagem;
 
   elemento.className =
     "mensagem show " +
-    classe;
+    (
+      tipo === "success"
+        ? "success-msg"
+        : tipo === "error"
+          ? "error-msg"
+          : "info-msg"
+    );
 
 }
 
@@ -1317,18 +1239,78 @@ function escaparAtributo(texto) {
 }
 
 /* ======================================================
-   API
+   FORMATAR PREÇO
 ====================================================== */
 
-async function api(url, opcoes = {}) {
+function formatarPreco(valor) {
+
+  if (
+    valor === null ||
+    valor === undefined ||
+    valor === ""
+  ) {
+
+    return "Consultar preço";
+
+  }
+
+  if (
+    typeof valor === "string" &&
+    valor.includes("R$")
+  ) {
+
+    return valor;
+
+  }
+
+  const numero =
+    Number(
+      String(valor)
+        .replace("R$", "")
+        .replace(/\./g, "")
+        .replace(",", ".")
+        .trim()
+    );
+
+  if (
+    Number.isNaN(numero)
+  ) {
+
+    return String(valor);
+
+  }
+
+  return numero.toLocaleString(
+    "pt-BR",
+    {
+      style: "currency",
+      currency: "BRL"
+    }
+  );
+
+}
+
+/* ======================================================
+   API SEGURA
+====================================================== */
+
+async function api(
+  url,
+  opcoes = {}
+) {
 
   const resposta =
-    await fetch(url, {
-      ...opcoes,
-      headers: {
-        ...(opcoes.headers || {})
+    await fetch(
+      API_BASE + url,
+      {
+        ...opcoes,
+        headers: {
+          "Accept":
+            "application/json",
+          ...(opcoes.headers || {})
+        }
       }
-    });
+    );
 
   const texto =
     await resposta.text();
@@ -1345,6 +1327,7 @@ async function api(url, opcoes = {}) {
   } catch {
 
     dados = {
+      success: false,
       message:
         texto ||
         "Resposta inválida do servidor."
@@ -1352,13 +1335,38 @@ async function api(url, opcoes = {}) {
 
   }
 
-  if (!resposta.ok) {
+  if (
+    !resposta.ok
+  ) {
+
+    let mensagem =
+      dados.message ||
+      dados.error ||
+      `Erro HTTP ${resposta.status}`;
+
+    if (
+      resposta.status === 404
+    ) {
+
+      mensagem =
+        "Rota da API não encontrada.\n\n" +
+        "O servidor não possui a rota solicitada.";
+
+    }
+
+    if (
+      resposta.status === 403
+    ) {
+
+      mensagem =
+        "O Mercado Livre bloqueou esta consulta (403).\n\n" +
+        "Verifique a autorização da aplicação e as permissões da API.";
+
+    }
 
     const erro =
       new Error(
-        dados.message ||
-        dados.error ||
-        `Erro HTTP ${resposta.status}`
+        mensagem
       );
 
     erro.status =
@@ -1388,16 +1396,22 @@ function abrirPagina(
     .querySelectorAll(".page")
     .forEach(function(elemento) {
 
-      elemento.classList.remove("active");
+      elemento.classList.remove(
+        "active"
+      );
 
     });
 
   const paginaElemento =
     document.getElementById(pagina);
 
-  if (paginaElemento) {
+  if (
+    paginaElemento
+  ) {
 
-    paginaElemento.classList.add("active");
+    paginaElemento.classList.add(
+      "active"
+    );
 
   }
 
@@ -1405,13 +1419,19 @@ function abrirPagina(
     .querySelectorAll(".menu button")
     .forEach(function(elemento) {
 
-      elemento.classList.remove("active");
+      elemento.classList.remove(
+        "active"
+      );
 
     });
 
-  if (botao) {
+  if (
+    botao
+  ) {
 
-    botao.classList.add("active");
+    botao.classList.add(
+      "active"
+    );
 
   }
 
@@ -1446,25 +1466,33 @@ function abrirPagina(
       titulos[pagina] ||
       "Eletromax";
 
-  if (pagina === "produtos") {
+  if (
+    pagina === "produtos"
+  ) {
 
     carregarProdutos();
 
   }
 
-  if (pagina === "ofertas") {
+  if (
+    pagina === "ofertas"
+  ) {
 
     carregarOfertas();
 
   }
 
-  if (pagina === "mercadolivre") {
+  if (
+    pagina === "mercadolivre"
+  ) {
 
     verificarStatusMercadoLivre();
 
   }
 
-  if (pagina === "configuracoes") {
+  if (
+    pagina === "configuracoes"
+  ) {
 
     carregarConfiguracoes();
 
@@ -1486,61 +1514,47 @@ async function verificarSistema() {
   try {
 
     const dados =
-      await api("/api/status");
+      await api(
+        "/api/status"
+      );
 
-    const bancoOK =
+    const bancoConectado =
       dados.database === "connected";
 
-    const mlOK =
-      dados.mercadolivre === "connected" ||
-      dados.mercadolivre === "configured";
-
     status.innerText =
-      bancoOK
+      bancoConectado
         ? "● Sistema Online"
         : "⚠️ Banco desconectado";
 
     status.className =
-      bancoOK
+      bancoConectado
         ? "status"
         : "status offline";
 
     document
-      .getElementById("statusBanco")
+      .getElementById(
+        "statusBanco"
+      )
       .innerText =
-        bancoOK
+        bancoConectado
           ? "PostgreSQL conectado"
           : "PostgreSQL desconectado";
 
+    const mlConectado =
+      dados.mercadolivre === "connected" ||
+      dados.mercadolivre === "configured" ||
+      dados.mercadolivre === true;
+
     document
-      .getElementById("statusMLDashboard")
+      .getElementById(
+        "statusMLDashboard"
+      )
       .innerText =
-        mlOK
+        mlConectado
           ? "Conectado"
-          : "Não configurado";
-
-    document
-      .getElementById("statusMotorOfertas")
-      .innerText =
-        dados.motorOfertas === "active" ||
-        dados.motorOfertas === "ativo"
-          ? "Ativo"
-          : "Verificar";
-
-    document
-      .getElementById("statusGeradorPosts")
-      .innerText =
-        dados.geradorPosts === "active" ||
-        dados.geradorPosts === "ativo"
-          ? "Ativo"
-          : "Verificar";
+          : "Não conectado";
 
   } catch (erro) {
-
-    console.error(
-      "Erro ao verificar sistema:",
-      erro
-    );
 
     status.innerText =
       "🔴 Sistema indisponível";
@@ -1549,7 +1563,9 @@ async function verificarSistema() {
       "status offline";
 
     document
-      .getElementById("statusBanco")
+      .getElementById(
+        "statusBanco"
+      )
       .innerText =
         "Erro de conexão";
 
@@ -1571,22 +1587,30 @@ async function atualizarDashboard() {
       );
 
     document
-      .getElementById("totalProdutos")
+      .getElementById(
+        "totalProdutos"
+      )
       .innerText =
         dados.totalProdutos || 0;
 
     document
-      .getElementById("totalOfertas")
+      .getElementById(
+        "totalOfertas"
+      )
       .innerText =
         dados.totalOfertas || 0;
 
     document
-      .getElementById("totalMercadoLivre")
+      .getElementById(
+        "totalMercadoLivre"
+      )
       .innerText =
         dados.totalMercadoLivre || 0;
 
     document
-      .getElementById("totalShopee")
+      .getElementById(
+        "totalShopee"
+      )
       .innerText =
         dados.totalShopee || 0;
 
@@ -1636,7 +1660,11 @@ async function cadastrarProduto() {
         "btnCadastrarProduto"
       );
 
-  if (!nome || !link || !plataforma) {
+  if (
+    !nome ||
+    !link ||
+    !plataforma
+  ) {
 
     mostrarMensagem(
       "resultadoProduto",
@@ -1698,15 +1726,21 @@ async function cadastrarProduto() {
     );
 
     document
-      .getElementById("produtoNome")
+      .getElementById(
+        "produtoNome"
+      )
       .value = "";
 
     document
-      .getElementById("produtoPreco")
+      .getElementById(
+        "produtoPreco"
+      )
       .value = "";
 
     document
-      .getElementById("produtoLink")
+      .getElementById(
+        "produtoLink"
+      )
       .value = "";
 
     await carregarProdutos();
@@ -1718,10 +1752,7 @@ async function cadastrarProduto() {
     mostrarMensagem(
       "resultadoProduto",
       "❌ " +
-      (
-        erro.message ||
-        "Erro ao salvar produto."
-      ),
+      erro.message,
       "error"
     );
 
@@ -1762,7 +1793,9 @@ async function carregarProdutos() {
       dados.produtos ||
       [];
 
-    if (!produtos.length) {
+    if (
+      produtos.length === 0
+    ) {
 
       lista.innerHTML =
         "<p>📦 Nenhum produto cadastrado.</p>";
@@ -1780,7 +1813,9 @@ async function carregarProdutos() {
 <div class="produto">
 
 <h3>
-📦 ${escaparHTML(produto.nome)}
+📦 ${escaparHTML(
+  produto.nome
+)}
 </h3>
 
 <p>
@@ -1799,7 +1834,9 @@ async function carregarProdutos() {
 
 <p>
 <a
-href="${escaparAtributo(produto.link)}"
+href="${escaparAtributo(
+  produto.link
+)}"
 target="_blank"
 rel="noopener noreferrer"
 >
@@ -1811,7 +1848,9 @@ rel="noopener noreferrer"
 
 <button
 class="danger"
-onclick="excluirProduto(${Number(produto.id)})"
+onclick="excluirProduto(${Number(
+  produto.id
+)})"
 >
 🗑️ Excluir
 </button>
@@ -1829,7 +1868,9 @@ onclick="excluirProduto(${Number(produto.id)})"
 
     lista.innerHTML =
       `<p>❌ Erro ao carregar produtos: ${
-        escaparHTML(erro.message)
+        escaparHTML(
+          erro.message
+        )
       }</p>`;
 
   }
@@ -1840,11 +1881,15 @@ onclick="excluirProduto(${Number(produto.id)})"
    PRODUTOS - EXCLUIR
 ====================================================== */
 
-async function excluirProduto(id) {
+async function excluirProduto(
+  id
+) {
 
-  if (!confirm(
-    "Tem certeza que deseja excluir este produto?"
-  )) {
+  if (
+    !confirm(
+      "Tem certeza que deseja excluir este produto?"
+    )
+  ) {
 
     return;
 
@@ -1853,7 +1898,8 @@ async function excluirProduto(id) {
   try {
 
     await api(
-      "/api/produtos/" + id,
+      "/api/produtos/" +
+      id,
       {
         method:
           "DELETE"
@@ -1904,7 +1950,9 @@ async function carregarOfertas() {
       dados.ofertas ||
       [];
 
-    if (!ofertas.length) {
+    if (
+      ofertas.length === 0
+    ) {
 
       lista.innerHTML =
         "<p>🔥 Nenhuma oferta cadastrada ainda.</p>";
@@ -1929,8 +1977,12 @@ ${
   imagem
     ? `
 <img
-src="${escaparAtributo(imagem)}"
-alt="${escaparAtributo(oferta.nome)}"
+src="${escaparAtributo(
+  imagem
+)}"
+alt="${escaparAtributo(
+  oferta.nome
+)}"
 onerror="this.style.display='none'"
 >
 `
@@ -1938,14 +1990,20 @@ onerror="this.style.display='none'"
 }
 
 <h3>
-${escaparHTML(oferta.nome)}
+${escaparHTML(
+  oferta.nome
+)}
 </h3>
 
 ${
   oferta.precoAnterior
     ? `
 <p class="preco-anterior">
-De: ${escaparHTML(oferta.precoAnterior)}
+De: ${escaparHTML(
+  formatarPreco(
+    oferta.precoAnterior
+  )
+)}
 </p>
 `
     : ""
@@ -1953,8 +2011,9 @@ De: ${escaparHTML(oferta.precoAnterior)}
 
 <p class="preco">
 ${escaparHTML(
-  oferta.preco ||
-  "Consultar preço"
+  formatarPreco(
+    oferta.preco
+  )
 )}
 </p>
 
@@ -1968,7 +2027,9 @@ ${escaparHTML(
 <div class="acoes">
 
 <a
-href="${escaparAtributo(oferta.link)}"
+href="${escaparAtributo(
+  oferta.link
+)}"
 target="_blank"
 rel="noopener noreferrer"
 >
@@ -1979,7 +2040,9 @@ rel="noopener noreferrer"
 
 <button
 class="secondary"
-onclick="preencherPostOferta(${Number(oferta.id)})"
+onclick="preencherPostOferta(${Number(
+  oferta.id
+)})"
 >
 📱 Criar Post
 </button>
@@ -1997,80 +2060,10 @@ onclick="preencherPostOferta(${Number(oferta.id)})"
 
     lista.innerHTML =
       `<p>❌ Erro: ${
-        escaparHTML(erro.message)
+        escaparHTML(
+          erro.message
+        )
       }</p>`;
-
-  }
-
-}
-
-/* ======================================================
-   BUSCAR OFERTAS AUTOMATICAMENTE
-====================================================== */
-
-async function buscarOfertasAutomaticamente() {
-
-  const botao =
-    event &&
-    event.target;
-
-  if (botao) {
-
-    botao.disabled =
-      true;
-
-  }
-
-  mostrarMensagem(
-    "resultadoBuscaAutomatica",
-    "⏳ O motor de ofertas está procurando novas ofertas...",
-    "info"
-  );
-
-  try {
-
-    const dados =
-      await api(
-        "/api/ofertas/buscar-automaticamente",
-        {
-          method:
-            "POST"
-        }
-      );
-
-    mostrarMensagem(
-      "resultadoBuscaAutomatica",
-      `✅ Busca automática concluída. Encontrados: ${
-        dados.encontrados ||
-        0
-      } | Salvos: ${
-        dados.salvos ||
-        0
-      }`,
-      "success"
-    );
-
-    await carregarOfertas();
-
-    await atualizarDashboard();
-
-  } catch (erro) {
-
-    mostrarMensagem(
-      "resultadoBuscaAutomatica",
-      "❌ " +
-      erro.message,
-      "error"
-    );
-
-  } finally {
-
-    if (botao) {
-
-      botao.disabled =
-        false;
-
-    }
 
   }
 
@@ -2096,8 +2089,8 @@ async function verificarStatusMercadoLivre() {
 
     if (
       dados.conectado ||
-      dados.status === "connected" ||
-      dados.status === "conectado"
+      dados.connected ||
+      dados.status === "connected"
     ) {
 
       status.innerText =
@@ -2109,10 +2102,10 @@ async function verificarStatusMercadoLivre() {
     } else {
 
       status.innerText =
-        "🟡 Mercado Livre ainda não está autorizado. Clique em Conectar Mercado Livre.";
+        "🟡 Mercado Livre ainda não está conectado.";
 
       status.className =
-        "ml-status warning";
+        "ml-status";
 
     }
 
@@ -2122,7 +2115,7 @@ async function verificarStatusMercadoLivre() {
       "🔴 Não foi possível verificar a conexão com o Mercado Livre.";
 
     status.className =
-      "ml-status error";
+      "ml-status";
 
   }
 
@@ -2140,242 +2133,6 @@ function conectarMercadoLivre() {
 }
 
 /* ======================================================
-   MERCADO LIVRE - BUSCAR
-====================================================== */
-
-async function buscarMercadoLivre() {
-
-  const busca =
-    document
-      .getElementById("mlBusca")
-      .value
-      .trim();
-
-  const limite =
-    Number(
-      document
-        .getElementById("mlLimite")
-        .value
-    ) || 20;
-
-  const botao =
-    document
-      .getElementById("btnBuscarML");
-
-  const resultados =
-    document
-      .getElementById("resultadosML");
-
-  if (!busca) {
-
-    mostrarMensagem(
-      "resultadoML",
-      "❌ Digite o produto que deseja buscar.",
-      "error"
-    );
-
-    return;
-
-  }
-
-  botao.disabled =
-    true;
-
-  botao.innerText =
-    "⏳ Buscando...";
-
-  resultados.innerHTML =
-    '<div class="loading">🔎 Consultando Mercado Livre...</div>';
-
-  try {
-
-    const dados =
-      await api(
-        "/api/mercadolivre/buscar?q=" +
-        encodeURIComponent(busca) +
-        "&limit=" +
-        encodeURIComponent(limite)
-      );
-
-    const produtos =
-      dados.produtos ||
-      dados.results ||
-      [];
-
-    if (!produtos.length) {
-
-      resultados.innerHTML =
-        '<div class="ml-info-box">🔎 Nenhum produto encontrado para esta busca.</div>';
-
-      mostrarMensagem(
-        "resultadoML",
-        "ℹ️ Nenhum produto encontrado.",
-        "info"
-      );
-
-      return;
-
-    }
-
-    resultados.innerHTML =
-      produtos
-        .map(function(produto) {
-
-          const preco =
-            Number(
-              produto.preco ||
-              produto.price ||
-              0
-            );
-
-          return `
-
-<div class="ml-card">
-
-${
-  produto.imagem ||
-  produto.thumbnail
-    ? `
-<img
-src="${escaparAtributo(
-  produto.imagem ||
-  produto.thumbnail
-)}"
-alt="${escaparAtributo(
-  produto.nome ||
-  produto.title ||
-  ""
-)}"
-onerror="this.style.display='none'"
->
-`
-    : ""
-}
-
-<h3>
-${escaparHTML(
-  produto.nome ||
-  produto.title ||
-  "Produto"
-)}
-</h3>
-
-<p class="preco">
-${
-  preco > 0
-    ? "R$ " +
-      preco
-        .toFixed(2)
-        .replace(".", ",")
-    : "Preço não informado"
-}
-</p>
-
-<p>
-<a
-href="${escaparAtributo(
-  produto.link ||
-  produto.permalink ||
-  "#"
-)}"
-target="_blank"
-rel="noopener noreferrer"
->
-🔗 Ver no Mercado Livre
-</a>
-</p>
-
-</div>
-
-`;
-
-        })
-        .join("");
-
-    mostrarMensagem(
-      "resultadoML",
-      `✅ ${produtos.length} produtos encontrados.`,
-      "success"
-    );
-
-  } catch (erro) {
-
-    console.error(
-      "Erro Mercado Livre:",
-      erro
-    );
-
-    let mensagem =
-      erro.message ||
-      "Erro ao consultar Mercado Livre.";
-
-    if (erro.status === 401) {
-
-      mensagem =
-        "🔐 A autorização do Mercado Livre expirou ou não existe. Clique em Conectar Mercado Livre para autorizar novamente.";
-
-    }
-
-    if (erro.status === 403) {
-
-      mensagem =
-        "🚫 O Mercado Livre recusou esta consulta (403). O painel está funcionando, mas o servidor/API precisa ser ajustado para realizar a busca corretamente.";
-
-    }
-
-    if (erro.status === 429) {
-
-      mensagem =
-        "⏳ Muitas consultas foram realizadas. Aguarde alguns minutos e tente novamente.";
-
-    }
-
-    resultados.innerHTML =
-      `
-<div class="ml-error-box">
-
-<strong>
-❌ Não foi possível realizar a busca
-</strong>
-
-<br><br>
-
-${escaparHTML(mensagem)}
-
-<br><br>
-
-<strong>
-O que você pode fazer:
-</strong>
-
-<ul>
-<li>Verificar a conexão/autorização do Mercado Livre.</li>
-<li>Tentar novamente em alguns segundos.</li>
-<li>Se continuar aparecendo 403, corrigir a rota de busca no servidor.</li>
-</ul>
-
-</div>
-`;
-
-    mostrarMensagem(
-      "resultadoML",
-      mensagem,
-      "error"
-    );
-
-  } finally {
-
-    botao.disabled =
-      false;
-
-    botao.innerText =
-      "🔎 Buscar";
-
-  }
-
-}
-
-/* ======================================================
    MERCADO LIVRE - BUSCAR E SALVAR
 ====================================================== */
 
@@ -2383,14 +2140,18 @@ async function buscarESalvarMercadoLivre() {
 
   const busca =
     document
-      .getElementById("mlBusca")
+      .getElementById(
+        "mlBusca"
+      )
       .value
       .trim();
 
   const limite =
     Number(
       document
-        .getElementById("mlLimite")
+        .getElementById(
+          "mlLimite"
+        )
         .value
     ) || 20;
 
@@ -2400,7 +2161,15 @@ async function buscarESalvarMercadoLivre() {
         "btnBuscarSalvarML"
       );
 
-  if (!busca) {
+  const resultados =
+    document
+      .getElementById(
+        "resultadosML"
+      );
+
+  if (
+    !busca
+  ) {
 
     mostrarMensagem(
       "resultadoML",
@@ -2416,9 +2185,33 @@ async function buscarESalvarMercadoLivre() {
     true;
 
   botao.innerText =
-    "⏳ Buscando e salvando...";
+    "⏳ Buscando no Mercado Livre...";
+
+  resultados.innerHTML =
+    '<div class="loading">🔎 Consultando Mercado Livre...</div>';
+
+  mostrarMensagem(
+    "resultadoML",
+    "⏳ Buscando ofertas no Mercado Livre e salvando no banco...",
+    "info"
+  );
 
   try {
+
+    /*
+      IMPORTANTE:
+
+      O servidor atual possui a rota:
+
+      POST /api/mercadolivre/buscar-salvar
+
+      Portanto NÃO usamos:
+
+      GET /api/mercadolivre/buscar
+
+      Essa era a causa do erro:
+      "Rota da API não encontrada."
+    */
 
     const dados =
       await api(
@@ -2447,23 +2240,154 @@ async function buscarESalvarMercadoLivre() {
         }
       );
 
-    mostrarMensagem(
-      "resultadoML",
-      `✅ Busca concluída! Encontrados: ${
+    const produtos =
+      dados.produtos ||
+      dados.ofertas ||
+      dados.resultados ||
+      [];
+
+    const encontrados =
+      Number(
         dados.encontrados ||
+        produtos.length ||
         0
-      } | Salvos: ${
+      );
+
+    const salvos =
+      Number(
         dados.salvos ||
         0
-      } | Duplicados: ${
+      );
+
+    const duplicados =
+      Number(
         dados.duplicados ||
         0
-      }`,
+      );
+
+    /*
+      Se o servidor devolver os produtos,
+      mostramos os resultados.
+    */
+
+    if (
+      produtos.length > 0
+    ) {
+
+      resultados.innerHTML =
+        produtos
+          .map(function(produto) {
+
+            return `
+
+<div class="ml-card">
+
+${
+  produto.imagem
+    ? `
+<img
+src="${escaparAtributo(
+  produto.imagem
+)}"
+alt="${escaparAtributo(
+  produto.nome
+)}"
+onerror="this.style.display='none'"
+>
+`
+    : ""
+}
+
+<h3>
+${escaparHTML(
+  produto.nome ||
+  "Produto sem nome"
+)}
+</h3>
+
+<p class="preco">
+${escaparHTML(
+  formatarPreco(
+    produto.preco
+  )
+)}
+</p>
+
+${
+  produto.link
+    ? `
+<p>
+<a
+href="${escaparAtributo(
+  produto.link
+)}"
+target="_blank"
+rel="noopener noreferrer"
+>
+🔗 Ver no Mercado Livre
+</a>
+</p>
+`
+    : ""
+}
+
+</div>
+
+`;
+
+          })
+          .join("");
+
+    } else {
+
+      resultados.innerHTML = `
+
+<div class="produto">
+
+<h3>
+✅ Busca concluída
+</h3>
+
+<p>
+🔎 Pesquisa:
+<strong>${escaparHTML(
+  busca
+)}</strong>
+</p>
+
+<p>
+📦 Encontrados:
+<strong>${encontrados}</strong>
+</p>
+
+<p>
+💾 Salvos:
+<strong>${salvos}</strong>
+</p>
+
+<p>
+♻️ Duplicados:
+<strong>${duplicados}</strong>
+</p>
+
+<p>
+As ofertas processadas já foram enviadas para a Central de Ofertas.
+</p>
+
+</div>
+
+`;
+
+    }
+
+    mostrarMensagem(
+      "resultadoML",
+      `✅ Busca concluída!\nEncontrados: ${encontrados}\nSalvos: ${salvos}\nDuplicados: ${duplicados}`,
       "success"
     );
 
     mostrarToast(
-      "Ofertas processadas!"
+      "🔥 Ofertas processadas com sucesso!"
     );
 
     await carregarOfertas();
@@ -2472,21 +2396,43 @@ async function buscarESalvarMercadoLivre() {
 
   } catch (erro) {
 
+    console.error(
+      "Erro Mercado Livre:",
+      erro
+    );
+
     let mensagem =
       erro.message ||
-      "Erro ao buscar e salvar ofertas.";
+      "Não foi possível realizar a busca.";
 
-    if (erro.status === 403) {
+    if (
+      erro.status === 404
+    ) {
 
       mensagem =
-        "🚫 O Mercado Livre recusou a consulta (403). É necessário corrigir a comunicação da rota do servidor com o Mercado Livre.";
+        "❌ Rota da API não encontrada.\n\n" +
+        "O servidor precisa disponibilizar:\n" +
+        "POST /api/mercadolivre/buscar-salvar";
 
     }
 
-    if (erro.status === 401) {
+    if (
+      erro.status === 401
+    ) {
 
       mensagem =
-        "🔐 A autorização do Mercado Livre expirou ou não está disponível.";
+        "🔐 A autorização do Mercado Livre expirou ou não existe.\n\n" +
+        "Clique em Conectar Mercado Livre e autorize novamente.";
+
+    }
+
+    if (
+      erro.status === 403
+    ) {
+
+      mensagem =
+        "🚫 O Mercado Livre bloqueou a consulta (403).\n\n" +
+        "A rota do painel está correta, mas o servidor/API do Mercado Livre recusou a requisição.";
 
     }
 
@@ -2496,20 +2442,28 @@ async function buscarESalvarMercadoLivre() {
       "error"
     );
 
+    resultados.innerHTML =
+      `<div class="produto">
+        <h3>❌ Não foi possível realizar a busca</h3>
+        <p>${escaparHTML(
+          mensagem
+        )}</p>
+      </div>`;
+
   } finally {
 
     botao.disabled =
       false;
 
     botao.innerText =
-      "💾 Buscar e Salvar Ofertas";
+      "🔎 Buscar e Salvar Ofertas";
 
   }
 
 }
 
 /* ======================================================
-   CONFIGURAÇÕES - CARREGAR
+   CONFIGURAÇÕES
 ====================================================== */
 
 async function carregarConfiguracoes() {
@@ -2526,28 +2480,36 @@ async function carregarConfiguracoes() {
       {};
 
     document
-      .getElementById("configNomeLoja")
+      .getElementById(
+        "configNomeLoja"
+      )
       .value =
         config.nome_loja ||
         config.nomeLoja ||
         "Eletromax";
 
     document
-      .getElementById("configMercadoLivre")
+      .getElementById(
+        "configMercadoLivre"
+      )
       .value =
         config.link_mercadolivre ||
         config.linkMercadoLivre ||
         "";
 
     document
-      .getElementById("configShopee")
+      .getElementById(
+        "configShopee"
+      )
       .value =
         config.link_shopee ||
         config.linkShopee ||
         "";
 
     document
-      .getElementById("configWhatsapp")
+      .getElementById(
+        "configWhatsapp"
+      )
       .value =
         config.link_whatsapp ||
         config.linkWhatsapp ||
@@ -2558,23 +2520,23 @@ async function carregarConfiguracoes() {
         "linkShopee"
       );
 
-    const shopee =
+    const urlShopee =
       config.link_shopee ||
       config.linkShopee ||
       "";
 
     linkShopee.href =
-      shopee ||
+      urlShopee ||
       "#";
 
     linkShopee.innerText =
-      shopee ||
+      urlShopee ||
       "Link não configurado";
 
   } catch (erro) {
 
     console.error(
-      "Erro configurações:",
+      "Configurações:",
       erro
     );
 
@@ -2700,38 +2662,52 @@ async function gerarPost() {
 
   const nome =
     document
-      .getElementById("postNome")
+      .getElementById(
+        "postNome"
+      )
       .value
       .trim();
 
   const preco =
     document
-      .getElementById("postPreco")
+      .getElementById(
+        "postPreco"
+      )
       .value
       .trim();
 
   const precoAnterior =
     document
-      .getElementById("postPrecoAnterior")
+      .getElementById(
+        "postPrecoAnterior"
+      )
       .value
       .trim();
 
   const plataforma =
     document
-      .getElementById("postPlataforma")
+      .getElementById(
+        "postPlataforma"
+      )
       .value;
 
   const link =
     document
-      .getElementById("postLink")
+      .getElementById(
+        "postLink"
+      )
       .value
       .trim();
 
   const botao =
     document
-      .getElementById("btnGerarPost");
+      .getElementById(
+        "btnGerarPost"
+      );
 
-  if (!nome) {
+  if (
+    !nome
+  ) {
 
     mostrarMensagem(
       "resultadoPost",
@@ -2779,10 +2755,11 @@ async function gerarPost() {
       );
 
     document
-      .getElementById("postResultado")
+      .getElementById(
+        "postResultado"
+      )
       .value =
         dados.texto ||
-        dados.post ||
         "";
 
     mostrarMensagem(
@@ -2820,10 +2797,14 @@ async function copiarPost() {
 
   const texto =
     document
-      .getElementById("postResultado")
+      .getElementById(
+        "postResultado"
+      )
       .value;
 
-  if (!texto) {
+  if (
+    !texto
+  ) {
 
     mostrarToast(
       "Nenhum post para copiar."
@@ -2866,20 +2847,22 @@ async function abrirWhatsApp() {
         "/api/links"
       );
 
-    if (dados.whatsapp) {
+    if (
+      dados.whatsapp
+    ) {
 
       window.open(
         dados.whatsapp,
         "_blank"
       );
 
-      return;
+    } else {
+
+      mostrarToast(
+        "Link do WhatsApp não configurado."
+      );
 
     }
-
-    mostrarToast(
-      "Link do WhatsApp não configurado."
-    );
 
   } catch (erro) {
 
@@ -2896,7 +2879,9 @@ async function abrirWhatsApp() {
    LINKS
 ====================================================== */
 
-function abrirLink(id) {
+function abrirLink(
+  id
+) {
 
   const elemento =
     document.getElementById(id);
@@ -2905,7 +2890,8 @@ function abrirLink(id) {
     elemento &&
     elemento.href &&
     elemento.href !==
-      window.location.href + "#"
+      window.location.href +
+      "#"
   ) {
 
     window.open(
@@ -2927,7 +2913,9 @@ function abrirLink(id) {
    PREENCHER POST COM OFERTA
 ====================================================== */
 
-async function preencherPostOferta(id) {
+async function preencherPostOferta(
+  id
+) {
 
   try {
 
@@ -2937,15 +2925,24 @@ async function preencherPostOferta(id) {
       );
 
     const oferta =
-      (dados.ofertas || [])
+      (
+        dados.ofertas ||
+        []
+      )
         .find(function(item) {
 
-          return Number(item.id) ===
-            Number(id);
+          return Number(
+            item.id
+          ) ===
+          Number(
+            id
+          );
 
         });
 
-    if (!oferta) {
+    if (
+      !oferta
+    ) {
 
       mostrarToast(
         "Oferta não encontrada."
@@ -2956,42 +2953,49 @@ async function preencherPostOferta(id) {
     }
 
     document
-      .getElementById("postNome")
+      .getElementById(
+        "postNome"
+      )
       .value =
         oferta.nome ||
         "";
 
     document
-      .getElementById("postPreco")
+      .getElementById(
+        "postPreco"
+      )
       .value =
         oferta.preco ||
         "";
 
     document
-      .getElementById("postPrecoAnterior")
+      .getElementById(
+        "postPrecoAnterior"
+      )
       .value =
         oferta.precoAnterior ||
         "";
 
     document
-      .getElementById("postLink")
+      .getElementById(
+        "postLink"
+      )
       .value =
         oferta.link ||
         "";
 
     document
-      .getElementById("postPlataforma")
+      .getElementById(
+        "postPlataforma"
+      )
       .value =
         oferta.plataforma ||
         "Mercado Livre";
 
-    const botoesMenu =
-      document.querySelectorAll(
-        ".menu button"
-      );
-
     const botaoPosts =
-      botoesMenu[5];
+      document.querySelector(
+        ".menu button:nth-child(6)"
+      );
 
     abrirPagina(
       "posts",
