@@ -1,25 +1,12 @@
-
-
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
-
 <meta charset="UTF-8">
-
-<meta
-  name="viewport"
-  content="width=device-width, initial-scale=1.0"
->
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <title>Eletromax V2</title>
 
 <style>
-
-/* ======================================================
-   RESET
-====================================================== */
-
 * {
   box-sizing: border-box;
 }
@@ -31,9 +18,12 @@ body {
   color: #111827;
 }
 
-/* ======================================================
-   SIDEBAR
-====================================================== */
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
 
 .sidebar {
   position: fixed;
@@ -79,10 +69,6 @@ body {
   color: white;
 }
 
-/* ======================================================
-   MAIN
-====================================================== */
-
 .main {
   margin-left: 240px;
   padding: 25px;
@@ -116,10 +102,6 @@ body {
   color: #991b1b;
 }
 
-/* ======================================================
-   PAGES
-====================================================== */
-
 .page {
   display: none;
 }
@@ -127,10 +109,6 @@ body {
 .page.active {
   display: block;
 }
-
-/* ======================================================
-   CARDS
-====================================================== */
 
 .cards {
   display: grid;
@@ -156,10 +134,6 @@ body {
   font-size: 28px;
 }
 
-/* ======================================================
-   PANELS
-====================================================== */
-
 .panel {
   background: white;
   padding: 22px;
@@ -171,10 +145,6 @@ body {
 .panel h2 {
   margin-top: 0;
 }
-
-/* ======================================================
-   FORM
-====================================================== */
 
 label {
   display: block;
@@ -191,7 +161,6 @@ textarea {
   margin: 7px 0 12px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
-  font-family: inherit;
   font-size: 14px;
 }
 
@@ -205,14 +174,6 @@ textarea:focus {
   outline: none;
   border-color: #2563eb;
   box-shadow: 0 0 0 2px rgba(37,99,235,.1);
-}
-
-/* ======================================================
-   BUTTONS
-====================================================== */
-
-button {
-  font-family: inherit;
 }
 
 .primary {
@@ -278,10 +239,6 @@ button {
   font-weight: bold;
 }
 
-/* ======================================================
-   MENSAGENS
-====================================================== */
-
 .mensagem {
   margin-top: 15px;
   padding: 12px;
@@ -309,10 +266,6 @@ button {
   color: #1e40af;
 }
 
-/* ======================================================
-   PRODUTOS E OFERTAS
-====================================================== */
-
 .lista {
   display: grid;
   gap: 12px;
@@ -337,7 +290,8 @@ button {
 }
 
 .produto a,
-.oferta a {
+.oferta a,
+.ml-card a {
   color: #2563eb;
   word-break: break-all;
 }
@@ -375,10 +329,6 @@ button {
   margin-top: 12px;
 }
 
-/* ======================================================
-   MERCADO LIVRE
-====================================================== */
-
 .ml-status {
   padding: 15px;
   border-radius: 10px;
@@ -390,6 +340,11 @@ button {
 .ml-status.connected {
   background: #dcfce7;
   color: #166534;
+}
+
+.ml-status.error {
+  background: #fee2e2;
+  color: #991b1b;
 }
 
 .ml-search {
@@ -417,6 +372,7 @@ button {
   width: 100%;
   height: 170px;
   object-fit: contain;
+  background: white;
 }
 
 .ml-card h3 {
@@ -424,29 +380,17 @@ button {
   line-height: 1.4;
 }
 
-/* ======================================================
-   CONFIGURAÇÕES
-====================================================== */
-
 .config-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
 }
 
-/* ======================================================
-   LOADING
-====================================================== */
-
 .loading {
   padding: 20px;
   text-align: center;
   color: #6b7280;
 }
-
-/* ======================================================
-   TOAST
-====================================================== */
 
 #toast {
   position: fixed;
@@ -461,25 +405,18 @@ button {
   max-width: 350px;
 }
 
-/* ======================================================
-   RESPONSIVO
-====================================================== */
-
-@media(max-width: 1100px) {
-
+@media(max-width:1100px) {
   .cards {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2,1fr);
   }
 
   .oferta-grid,
   .ml-resultados {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2,1fr);
   }
-
 }
 
-@media(max-width: 800px) {
-
+@media(max-width:800px) {
   .sidebar {
     width: 70px;
     padding: 15px 8px;
@@ -488,7 +425,6 @@ button {
   .logo {
     font-size: 0;
     text-align: center;
-    padding: 10px 0;
   }
 
   .logo:first-letter {
@@ -514,19 +450,13 @@ button {
     flex-direction: column;
   }
 
-  .cards {
-    grid-template-columns: 1fr 1fr;
-  }
-
   .config-grid,
   .ml-search {
     grid-template-columns: 1fr;
   }
-
 }
 
-@media(max-width: 550px) {
-
+@media(max-width:550px) {
   .cards,
   .oferta-grid,
   .ml-resultados {
@@ -540,18 +470,11 @@ button {
   .panel {
     padding: 15px;
   }
-
 }
-
 </style>
-
 </head>
 
 <body>
-
-<!-- ======================================================
-     SIDEBAR
-====================================================== -->
 
 <div class="sidebar">
 
@@ -561,56 +484,37 @@ button {
 
   <div class="menu">
 
-    <button
-      class="active"
-      onclick="abrirPagina('dashboard', this)"
-    >
+    <button class="active"
+      onclick="abrirPagina('dashboard',this)">
       🏠 Dashboard
     </button>
 
-    <button
-      onclick="abrirPagina('produtos', this)"
-    >
+    <button onclick="abrirPagina('produtos',this)">
       📦 Produtos
     </button>
 
-    <button
-      onclick="abrirPagina('ofertas', this)"
-    >
+    <button onclick="abrirPagina('ofertas',this)">
       🔥 Central de Ofertas
     </button>
 
-    <button
-      onclick="abrirPagina('mercadolivre', this)"
-    >
+    <button onclick="abrirPagina('mercadolivre',this)">
       🛒 Mercado Livre
     </button>
 
-    <button
-      onclick="abrirPagina('shopee', this)"
-    >
+    <button onclick="abrirPagina('shopee',this)">
       🛍️ Shopee
     </button>
 
-    <button
-      onclick="abrirPagina('posts', this)"
-    >
+    <button onclick="abrirPagina('posts',this)">
       📱 Gerador de Posts
     </button>
 
-    <button
-      onclick="abrirPagina('configuracoes', this)"
-    >
+    <button onclick="abrirPagina('configuracoes',this)">
       ⚙️ Configurações
     </button>
 
   </div>
-
 </div>
-
-<!-- ======================================================
-     MAIN
-====================================================== -->
 
 <div class="main">
 
@@ -620,23 +524,17 @@ button {
       Dashboard
     </h1>
 
-    <div
-      id="statusSistema"
-      class="status"
-    >
+    <div id="statusSistema"
+      class="status">
       ⏳ Verificando sistema...
     </div>
 
   </div>
 
-  <!-- ====================================================
-       DASHBOARD
-  ===================================================== -->
+  <!-- DASHBOARD -->
 
-  <div
-    id="dashboard"
-    class="page active"
-  >
+  <div id="dashboard"
+    class="page active">
 
     <div class="cards">
 
@@ -664,9 +562,7 @@ button {
 
     <div class="panel">
 
-      <h2>
-        ⚡ Central Eletromax V2
-      </h2>
+      <h2>⚡ Central Eletromax V2</h2>
 
       <p>
         Painel central para gerenciamento de produtos,
@@ -691,51 +587,31 @@ button {
 
   </div>
 
-  <!-- ====================================================
-       PRODUTOS
-  ===================================================== -->
+  <!-- PRODUTOS -->
 
-  <div
-    id="produtos"
-    class="page"
-  >
+  <div id="produtos"
+    class="page">
 
     <div class="panel">
 
-      <h2>
-        📦 Cadastrar Produto
-      </h2>
+      <h2>📦 Cadastrar Produto</h2>
 
-      <label>
-        Nome do produto
-      </label>
+      <label>Nome do produto</label>
 
-      <input
-        id="produtoNome"
-        placeholder="Ex: Câmera Dome Hikvision"
-      >
+      <input id="produtoNome"
+        placeholder="Ex: Câmera Dome Hikvision">
 
-      <label>
-        Preço
-      </label>
+      <label>Preço</label>
 
-      <input
-        id="produtoPreco"
-        placeholder="Ex: R$ 85,49"
-      >
+      <input id="produtoPreco"
+        placeholder="Ex: R$ 85,49">
 
-      <label>
-        Link do produto
-      </label>
+      <label>Link do produto</label>
 
-      <input
-        id="produtoLink"
-        placeholder="Cole o link do produto"
-      >
+      <input id="produtoLink"
+        placeholder="Cole o link do produto">
 
-      <label>
-        Plataforma
-      </label>
+      <label>Plataforma</label>
 
       <select id="produtoPlataforma">
 
@@ -749,394 +625,317 @@ button {
 
       </select>
 
-      <button
-        id="btnCadastrarProduto"
+      <button id="btnCadastrarProduto"
         class="primary"
-        onclick="cadastrarProduto()"
-      >
+        onclick="cadastrarProduto()">
+
         💾 Cadastrar Produto
+
       </button>
 
-      <div
-        id="resultadoProduto"
-        class="mensagem"
-      ></div>
+      <div id="resultadoProduto"
+        class="mensagem">
+      </div>
 
     </div>
 
     <div class="panel">
 
-      <h2>
-        📋 Produtos cadastrados
-      </h2>
+      <h2>📋 Produtos cadastrados</h2>
 
-      <div
-        id="listaProdutos"
-        class="lista"
-      >
+      <div id="listaProdutos"
+        class="lista">
+
         Carregando...
+
       </div>
 
     </div>
 
   </div>
 
-  <!-- ====================================================
-       CENTRAL DE OFERTAS
-  ===================================================== -->
+  <!-- OFERTAS -->
 
-  <div
-    id="ofertas"
-    class="page"
-  >
+  <div id="ofertas"
+    class="page">
 
     <div class="panel">
 
-      <h2>
-        🔥 Central de Ofertas
-      </h2>
+      <h2>🔥 Central de Ofertas</h2>
 
       <p>
-        Aqui ficam as ofertas encontradas e salvas
+        Ofertas encontradas e salvas automaticamente
         pelo Eletromax.
       </p>
 
-      <button
-        class="primary"
-        onclick="carregarOfertas()"
-      >
+      <button class="primary"
+        onclick="carregarOfertas()">
+
         🔄 Atualizar Ofertas
+
       </button>
 
     </div>
 
-    <div
-      id="listaOfertas"
-      class="oferta-grid"
-    >
+    <div id="listaOfertas"
+      class="oferta-grid">
+
       Carregando...
+
     </div>
 
   </div>
 
-  <!-- ====================================================
-       MERCADO LIVRE
-  ===================================================== -->
+  <!-- MERCADO LIVRE -->
 
-  <div
-    id="mercadolivre"
-    class="page"
-  >
+  <div id="mercadolivre"
+    class="page">
 
     <div class="panel">
 
-      <h2>
-        🛒 Mercado Livre
-      </h2>
+      <h2>🛒 Mercado Livre</h2>
 
-      <div
-        id="mlStatus"
-        class="ml-status"
-      >
+      <div id="mlStatus"
+        class="ml-status">
+
         ⏳ Verificando conexão...
+
       </div>
 
-      <button
-        id="btnConectarML"
+      <button id="btnConectarML"
         class="primary"
-        onclick="conectarMercadoLivre()"
-      >
+        onclick="conectarMercadoLivre()">
+
         🔗 Conectar Mercado Livre
+
       </button>
 
       <br><br>
 
       <div class="ml-search">
 
-        <input
-          id="mlBusca"
-          placeholder="Ex: câmera, celular, TV..."
-        >
+        <input id="mlBusca"
+          placeholder="Ex: câmera, celular, TV...">
 
-        <input
-          id="mlLimite"
+        <input id="mlLimite"
           type="number"
           min="1"
           max="50"
-          value="20"
-        >
+          value="20">
 
-        <button
-          id="btnBuscarML"
+        <button id="btnBuscarML"
           class="success"
-          onclick="buscarMercadoLivre()"
-        >
+          onclick="buscarMercadoLivre()">
+
           🔎 Buscar
+
         </button>
 
       </div>
 
       <br>
 
-      <button
-        id="btnBuscarSalvarML"
+      <button id="btnBuscarSalvarML"
         class="primary"
-        onclick="buscarESalvarMercadoLivre()"
-      >
+        onclick="buscarESalvarMercadoLivre()">
+
         💾 Buscar e Salvar Ofertas
+
       </button>
 
-      <div
-        id="resultadoML"
-        class="mensagem"
-      ></div>
+      <div id="resultadoML"
+        class="mensagem">
+      </div>
 
     </div>
 
     <div class="panel">
 
-      <h2>
-        🔎 Resultados da busca
-      </h2>
+      <h2>🔎 Resultados da busca</h2>
 
-      <div
-        id="resultadosML"
-        class="ml-resultados"
-      >
+      <div id="resultadosML"
+        class="ml-resultados">
+
         Faça uma busca para começar.
+
       </div>
 
     </div>
 
   </div>
 
-  <!-- ====================================================
-       SHOPEE
-  ===================================================== -->
+  <!-- SHOPEE -->
 
-  <div
-    id="shopee"
-    class="page"
-  >
+  <div id="shopee"
+    class="page">
 
     <div class="panel">
 
-      <h2>
-        🛍️ Shopee
-      </h2>
+      <h2>🛍️ Shopee</h2>
 
       <p>
         Link configurado para divulgação:
       </p>
 
       <p>
-        <a
-          id="linkShopee"
+        <a id="linkShopee"
           href="#"
           target="_blank"
-          rel="noopener noreferrer"
-        >
+          rel="noopener noreferrer">
+
           Carregando...
+
         </a>
       </p>
 
-      <button
-        class="primary"
-        onclick="abrirLink('linkShopee')"
-      >
+      <button class="primary"
+        onclick="abrirLink('linkShopee')">
+
         🛍️ Abrir Shopee
+
       </button>
 
     </div>
 
   </div>
 
-  <!-- ====================================================
-       POSTS
-  ===================================================== -->
+  <!-- POSTS -->
 
-  <div
-    id="posts"
-    class="page"
-  >
+  <div id="posts"
+    class="page">
 
     <div class="panel">
 
-      <h2>
-        📱 Gerador de Posts
-      </h2>
+      <h2>📱 Gerador de Posts</h2>
 
-      <label>
-        Nome do produto
-      </label>
+      <label>Nome do produto</label>
 
-      <input
-        id="postNome"
-        placeholder="Nome do produto"
-      >
+      <input id="postNome"
+        placeholder="Nome do produto">
 
-      <label>
-        Preço anterior
-      </label>
+      <label>Preço anterior</label>
 
-      <input
-        id="postPrecoAnterior"
-        placeholder="Ex: R$ 159,90"
-      >
+      <input id="postPrecoAnterior"
+        placeholder="Ex: R$ 159,90">
 
-      <label>
-        Preço atual
-      </label>
+      <label>Preço atual</label>
 
-      <input
-        id="postPreco"
-        placeholder="Ex: R$ 85,49"
-      >
+      <input id="postPreco"
+        placeholder="Ex: R$ 85,49">
 
-      <label>
-        Plataforma
-      </label>
+      <label>Plataforma</label>
 
       <select id="postPlataforma">
 
-        <option>
+        <option value="Mercado Livre">
           Mercado Livre
         </option>
 
-        <option>
+        <option value="Shopee">
           Shopee
         </option>
 
       </select>
 
-      <label>
-        Link
-      </label>
+      <label>Link</label>
 
-      <input
-        id="postLink"
-        placeholder="Link do produto"
-      >
+      <input id="postLink"
+        placeholder="Link do produto">
 
-      <button
-        id="btnGerarPost"
+      <button id="btnGerarPost"
         class="primary"
-        onclick="gerarPost()"
-      >
+        onclick="gerarPost()">
+
         🤖 Gerar Post
+
       </button>
 
-      <div
-        id="resultadoPost"
-        class="mensagem"
-      ></div>
+      <div id="resultadoPost"
+        class="mensagem">
+      </div>
 
       <br>
 
-      <textarea
-        id="postResultado"
+      <textarea id="postResultado"
         rows="12"
-        placeholder="Seu post aparecerá aqui..."
-      ></textarea>
+        placeholder="Seu post aparecerá aqui...">
+      </textarea>
 
-      <button
-        class="secondary"
-        onclick="copiarPost()"
-      >
+      <button class="secondary"
+        onclick="copiarPost()">
+
         📋 Copiar Post
+
       </button>
 
-      <button
-        class="whatsapp"
-        onclick="abrirWhatsApp()"
-      >
+      <button class="whatsapp"
+        onclick="abrirWhatsApp()">
+
         📲 Abrir WhatsApp
+
       </button>
 
     </div>
 
   </div>
 
-  <!-- ====================================================
-       CONFIGURAÇÕES
-  ===================================================== -->
+  <!-- CONFIGURAÇÕES -->
 
-  <div
-    id="configuracoes"
-    class="page"
-  >
+  <div id="configuracoes"
+    class="page">
 
     <div class="panel">
 
-      <h2>
-        ⚙️ Configurações
-      </h2>
+      <h2>⚙️ Configurações</h2>
 
       <div class="config-grid">
 
         <div>
 
-          <label>
-            Nome da loja
-          </label>
+          <label>Nome da loja</label>
 
-          <input
-            id="configNomeLoja"
-            value="Eletromax"
-          >
+          <input id="configNomeLoja"
+            value="Eletromax">
 
         </div>
 
         <div>
 
-          <label>
-            Link Mercado Livre
-          </label>
+          <label>Link Mercado Livre</label>
 
-          <input
-            id="configMercadoLivre"
-          >
+          <input id="configMercadoLivre">
 
         </div>
 
         <div>
 
-          <label>
-            Link Shopee
-          </label>
+          <label>Link Shopee</label>
 
-          <input
-            id="configShopee"
-          >
+          <input id="configShopee">
 
         </div>
 
         <div>
 
-          <label>
-            Link WhatsApp
-          </label>
+          <label>Link WhatsApp</label>
 
-          <input
-            id="configWhatsapp"
-          >
+          <input id="configWhatsapp">
 
         </div>
 
       </div>
 
-      <button
-        id="btnSalvarConfig"
+      <button id="btnSalvarConfig"
         class="primary"
-        onclick="salvarConfiguracoes()"
-      >
+        onclick="salvarConfiguracoes()">
+
         💾 Salvar Configurações
+
       </button>
 
-      <div
-        id="resultadoConfig"
-        class="mensagem"
-      ></div>
+      <div id="resultadoConfig"
+        class="mensagem">
+      </div>
 
     </div>
 
@@ -1149,35 +948,40 @@ button {
 <script>
 
 /* ======================================================
-   FUNÇÕES GERAIS
+   CONFIGURAÇÃO
 ====================================================== */
 
-function mostrarToast(
-  mensagem
-) {
+const API_BASE = "";
+
+/* ======================================================
+   TOAST
+====================================================== */
+
+function mostrarToast(mensagem) {
 
   const toast =
-    document.getElementById(
-      "toast"
-    );
+    document.getElementById("toast");
 
-  toast.innerText =
-    mensagem;
+  toast.innerText = mensagem;
 
-  toast.style.display =
-    "block";
+  toast.style.display = "block";
 
-  setTimeout(
-    function() {
-
-      toast.style.display =
-        "none";
-
-    },
-    3500
+  clearTimeout(
+    window.__toastTimer
   );
 
+  window.__toastTimer =
+    setTimeout(() => {
+
+      toast.style.display = "none";
+
+    }, 3500);
+
 }
+
+/* ======================================================
+   MENSAGENS
+====================================================== */
 
 function mostrarMensagem(
   elementoId,
@@ -1186,16 +990,11 @@ function mostrarMensagem(
 ) {
 
   const elemento =
-    document.getElementById(
-      elementoId
-    );
+    document.getElementById(elementoId);
 
-  if (!elemento) {
-    return;
-  }
+  if (!elemento) return;
 
-  elemento.innerText =
-    mensagem;
+  elemento.innerText = mensagem;
 
   elemento.className =
     "mensagem show " +
@@ -1209,48 +1008,29 @@ function mostrarMensagem(
 
 }
 
-function escaparHTML(
-  texto
-) {
+/* ======================================================
+   SEGURANÇA HTML
+====================================================== */
 
-  return String(
-    texto ?? ""
-  )
-    .replace(
-      /&/g,
-      "&amp;"
-    )
-    .replace(
-      /</g,
-      "&lt;"
-    )
-    .replace(
-      />/g,
-      "&gt;"
-    )
-    .replace(
-      /"/g,
-      "&quot;"
-    )
-    .replace(
-      /'/g,
-      "&#039;"
-    );
+function escaparHTML(texto) {
+
+  return String(texto ?? "")
+    .replace(/&/g,"&amp;")
+    .replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;")
+    .replace(/"/g,"&quot;")
+    .replace(/'/g,"&#039;");
 
 }
 
-function escaparAtributo(
-  texto
-) {
+function escaparAtributo(texto) {
 
-  return escaparHTML(
-    texto
-  );
+  return escaparHTML(texto);
 
 }
 
 /* ======================================================
-   API SEGURA
+   API
 ====================================================== */
 
 async function api(
@@ -1258,70 +1038,59 @@ async function api(
   opcoes = {}
 ) {
 
-  try {
-
-    const resposta =
-      await fetch(
-        url,
-        opcoes
-      );
-
-    let dados = {};
-
-    const texto =
-      await resposta.text();
-
-    try {
-
-      dados =
-        texto
-          ? JSON.parse(
-              texto
-            )
-          : {};
-
-    } catch {
-
-      dados = {
-        message:
-          texto ||
-          "Resposta inválida do servidor."
-      };
-
-    }
-
-    if (
-      !resposta.ok
-    ) {
-
-      const erro =
-        new Error(
-          dados.message ||
-          dados.error ||
-          Erro HTTP ${resposta.status}
-        );
-
-      erro.status =
-        resposta.status;
-
-      erro.dados =
-        dados;
-
-      throw erro;
-    }
-
-    return dados;
-
-  } catch (erro) {
-
-    console.error(
-      "Erro API:",
-      url,
-      erro
+  const resposta =
+    await fetch(
+      API_BASE + url,
+      {
+        ...opcoes,
+        headers: {
+          ...(opcoes.headers || {})
+        }
+      }
     );
 
-    throw erro;
+  const texto =
+    await resposta.text();
+
+  let dados = {};
+
+  try {
+
+    dados =
+      texto
+        ? JSON.parse(texto)
+        : {};
+
+  } catch {
+
+    dados = {
+      message:
+        texto ||
+        "Resposta inválida do servidor."
+    };
+
   }
+
+  if (!resposta.ok) {
+
+    const erro =
+      new Error(
+        dados.message ||
+        dados.error ||
+        `Erro HTTP ${resposta.status}`
+      );
+
+    erro.status =
+      resposta.status;
+
+    erro.dados =
+      dados;
+
+    throw erro;
+
+  }
+
+  return dados;
 
 }
 
@@ -1335,122 +1104,77 @@ function abrirPagina(
 ) {
 
   document
-    .querySelectorAll(
-      ".page"
-    )
+    .querySelectorAll(".page")
     .forEach(
-      function(
-        elemento
-      ) {
-
-        elemento.classList.remove(
-          "active"
-        );
-
-      }
+      elemento =>
+        elemento.classList.remove("active")
     );
 
   const paginaElemento =
-    document.getElementById(
-      pagina
-    );
+    document.getElementById(pagina);
 
-  if (
-    paginaElemento
-  ) {
+  if (paginaElemento) {
 
-    paginaElemento.classList.add(
-      "active"
-    );
+    paginaElemento.classList.add("active");
 
   }
 
   document
-    .querySelectorAll(
-      ".menu button"
-    )
+    .querySelectorAll(".menu button")
     .forEach(
-      function(
-        elemento
-      ) {
-
-        elemento.classList.remove(
-          "active"
-        );
-
-      }
+      elemento =>
+        elemento.classList.remove("active")
     );
 
-  if (
-    botao
-  ) {
+  if (botao) {
 
-    botao.classList.add(
-      "active"
-    );
+    botao.classList.add("active");
 
   }
 
   const titulos = {
 
-    dashboard:
-      "Dashboard",
+    dashboard: "Dashboard",
 
-    produtos:
-      "Produtos",
+    produtos: "Produtos",
 
-    ofertas:
-      "Central de Ofertas",
+    ofertas: "Central de Ofertas",
 
-    mercadolivre:
-      "Mercado Livre",
+    mercadolivre: "Mercado Livre",
 
-    shopee:
-      "Shopee",
+    shopee: "Shopee",
 
-    posts:
-      "Gerador de Posts",
+    posts: "Gerador de Posts",
 
-    configuracoes:
-      "Configurações"
+    configuracoes: "Configurações"
 
   };
 
   document
-    .getElementById(
-      "titulo"
-    )
+    .getElementById("titulo")
     .innerText =
       titulos[pagina] ||
       "Eletromax";
 
-  if (
-    pagina === "produtos"
-  ) {
+  if (pagina === "produtos") {
 
     carregarProdutos();
 
   }
 
-  if (
-    pagina === "ofertas"
-  ) {
+  if (pagina === "ofertas") {
 
     carregarOfertas();
 
   }
 
-  if (
-    pagina === "mercadolivre"
-  ) {
+  if (pagina === "mercadolivre") {
 
     verificarStatusMercadoLivre();
 
   }
 
-  if (
-    pagina === "configuracoes"
-  ) {
+  if (pagina === "configuracoes") {
 
     carregarConfiguracoes();
 
@@ -1459,7 +1183,7 @@ function abrirPagina(
 }
 
 /* ======================================================
-   STATUS DO SISTEMA
+   STATUS
 ====================================================== */
 
 async function verificarSistema() {
@@ -1476,13 +1200,16 @@ async function verificarSistema() {
         "/api/status"
       );
 
+    const bancoOK =
+      dados.database === "connected";
+
     status.innerText =
-      dados.database === "connected"
+      bancoOK
         ? "● Sistema Online"
         : "⚠️ Banco desconectado";
 
     status.className =
-      dados.database === "connected"
+      bancoOK
         ? "status"
         : "status offline";
 
@@ -1491,17 +1218,22 @@ async function verificarSistema() {
         "statusBanco"
       )
       .innerText =
-        dados.database === "connected"
+        bancoOK
           ? "PostgreSQL conectado"
           : "PostgreSQL desconectado";
+
+    const mlConectado =
+      dados.mercadolivre === "connected" ||
+      dados.mercadolivre === "configured" ||
+      dados.mercadolivre === true;
 
     document
       .getElementById(
         "statusMLDashboard"
       )
       .innerText =
-        dados.mercadolivre === "configured"
-          ? "Client ID configurado"
+        mlConectado
+          ? "Conectado"
           : "Não configurado";
 
   } catch (erro) {
@@ -1567,7 +1299,7 @@ async function atualizarDashboard() {
   } catch (erro) {
 
     console.error(
-      "Dashboard:",
+      "Erro dashboard:",
       erro
     );
 
@@ -1576,40 +1308,32 @@ async function atualizarDashboard() {
 }
 
 /* ======================================================
-   PRODUTOS - CADASTRAR
+   PRODUTOS
 ====================================================== */
 
 async function cadastrarProduto() {
 
   const nome =
     document
-      .getElementById(
-        "produtoNome"
-      )
+      .getElementById("produtoNome")
       .value
       .trim();
 
   const preco =
     document
-      .getElementById(
-        "produtoPreco"
-      )
+      .getElementById("produtoPreco")
       .value
       .trim();
 
   const link =
     document
-      .getElementById(
-        "produtoLink"
-      )
+      .getElementById("produtoLink")
       .value
       .trim();
 
   const plataforma =
     document
-      .getElementById(
-        "produtoPlataforma"
-      )
+      .getElementById("produtoPlataforma")
       .value;
 
   const botao =
@@ -1618,67 +1342,52 @@ async function cadastrarProduto() {
         "btnCadastrarProduto"
       );
 
-  if (
-    !nome ||
-    !link ||
-    !plataforma
-  ) {
+  if (!nome || !link) {
 
     mostrarMensagem(
       "resultadoProduto",
-      "❌ Preencha nome, link e plataforma.",
+      "❌ Preencha nome e link.",
       "error"
     );
 
     return;
+
   }
 
-  botao.disabled =
-    true;
+  botao.disabled = true;
 
   botao.innerText =
     "⏳ Salvando...";
 
-  mostrarMensagem(
-    "resultadoProduto",
-    "⏳ Salvando no PostgreSQL...",
-    "info"
-  );
-
   try {
 
-    const dados =
-      await api(
-        "/api/produtos",
-        {
+    await api(
+      "/api/produtos",
+      {
 
-          method:
-            "POST",
+        method: "POST",
 
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
 
-          body:
-            JSON.stringify({
+        body:
+          JSON.stringify({
 
-              nome,
+            nome,
+            preco,
+            link,
+            plataforma
 
-              preco,
+          })
 
-              link,
-
-              plataforma
-
-            })
-
-        }
-      );
+      }
+    );
 
     mostrarMensagem(
       "resultadoProduto",
-      "✅ Produto salvo com sucesso no banco de dados!",
+      "✅ Produto salvo com sucesso!",
       "success"
     );
 
@@ -1687,21 +1396,15 @@ async function cadastrarProduto() {
     );
 
     document
-      .getElementById(
-        "produtoNome"
-      )
+      .getElementById("produtoNome")
       .value = "";
 
     document
-      .getElementById(
-        "produtoPreco"
-      )
+      .getElementById("produtoPreco")
       .value = "";
 
     document
-      .getElementById(
-        "produtoLink"
-      )
+      .getElementById("produtoLink")
       .value = "";
 
     await carregarProdutos();
@@ -1712,18 +1415,13 @@ async function cadastrarProduto() {
 
     mostrarMensagem(
       "resultadoProduto",
-      "❌ " +
-      (
-        erro.message ||
-        "Erro ao salvar produto."
-      ),
+      "❌ " + erro.message,
       "error"
     );
 
   } finally {
 
-    botao.disabled =
-      false;
+    botao.disabled = false;
 
     botao.innerText =
       "💾 Cadastrar Produto";
@@ -1731,10 +1429,6 @@ async function cadastrarProduto() {
   }
 
 }
-
-/* ======================================================
-   PRODUTOS - LISTAR
-====================================================== */
 
 async function carregarProdutos() {
 
@@ -1754,27 +1448,21 @@ async function carregarProdutos() {
       );
 
     const produtos =
-      dados.produtos ||
-      [];
+      dados.produtos || [];
 
-    if (
-      produtos.length === 0
-    ) {
+    if (!produtos.length) {
 
       lista.innerHTML =
         "<p>📦 Nenhum produto cadastrado.</p>";
 
       return;
+
     }
 
     lista.innerHTML =
       produtos
         .map(
-          function(
-            produto
-          ) {
-
-            return 
+          produto => `
 
 <div class="produto">
 
@@ -1793,7 +1481,8 @@ async function carregarProdutos() {
 
 <p>
 🏷️ ${escaparHTML(
-  produto.plataforma
+  produto.plataforma ||
+  ""
 )}
 </p>
 
@@ -1803,9 +1492,10 @@ href="${escaparAtributo(
   produto.link
 )}"
 target="_blank"
-rel="noopener noreferrer"
->
+rel="noopener noreferrer">
+
 🔗 Abrir produto
+
 </a>
 </p>
 
@@ -1815,41 +1505,34 @@ rel="noopener noreferrer"
 class="danger"
 onclick="excluirProduto(${Number(
   produto.id
-)})"
->
+)})">
+
 🗑️ Excluir
+
 </button>
 
 </div>
 
 </div>
 
-;
-
-          }
+`
         )
         .join("");
 
   } catch (erro) {
 
     lista.innerHTML =
-      <p>❌ Erro ao carregar produtos: ${
+      `<p>❌ Erro ao carregar produtos: ${
         escaparHTML(
           erro.message
         )
-      }</p>;
+      }</p>`;
 
   }
 
 }
 
-/* ======================================================
-   PRODUTOS - EXCLUIR
-====================================================== */
-
-async function excluirProduto(
-  id
-) {
+async function excluirProduto(id) {
 
   if (
     !confirm(
@@ -1858,16 +1541,15 @@ async function excluirProduto(
   ) {
 
     return;
+
   }
 
   try {
 
     await api(
-      "/api/produtos/" +
-      id,
+      "/api/produtos/" + id,
       {
-        method:
-          "DELETE"
+        method: "DELETE"
       }
     );
 
@@ -1912,37 +1594,34 @@ async function carregarOfertas() {
       );
 
     const ofertas =
-      dados.ofertas ||
-      [];
+      dados.ofertas || [];
 
-    if (
-      ofertas.length === 0
-    ) {
+    if (!ofertas.length) {
 
       lista.innerHTML =
         "<p>🔥 Nenhuma oferta cadastrada ainda.</p>";
 
       return;
+
     }
 
     lista.innerHTML =
       ofertas
         .map(
-          function(
-            oferta
-          ) {
+          oferta => {
 
             const imagem =
               oferta.imagem ||
+              oferta.thumbnail ||
               "";
 
-            return 
+            return `
 
 <div class="oferta">
 
 ${
   imagem
-    ? 
+    ? `
 <img
 src="${escaparAtributo(
   imagem
@@ -1952,7 +1631,7 @@ alt="${escaparAtributo(
 )}"
 onerror="this.style.display='none'"
 >
-
+`
     : ""
 }
 
@@ -1964,28 +1643,27 @@ ${escaparHTML(
 
 ${
   oferta.precoAnterior
-    ? 
+    ? `
 <p class="preco-anterior">
 De: ${escaparHTML(
   oferta.precoAnterior
 )}
 </p>
-
+`
     : ""
 }
 
 <p class="preco">
-${
-  escaparHTML(
-    oferta.preco ||
-    "Consultar preço"
-  )
-}
+${escaparHTML(
+  oferta.preco ||
+  "Consultar preço"
+)}
 </p>
 
 <p>
 🏷️ ${escaparHTML(
-  oferta.plataforma
+  oferta.plataforma ||
+  ""
 )}
 </p>
 
@@ -1996,27 +1674,29 @@ href="${escaparAtributo(
   oferta.link
 )}"
 target="_blank"
-rel="noopener noreferrer"
->
+rel="noopener noreferrer">
+
 <button class="primary">
 🛒 Ver produto
 </button>
+
 </a>
 
 <button
 class="secondary"
 onclick="preencherPostOferta(${Number(
   oferta.id
-)})"
->
+)})">
+
 📱 Criar Post
+
 </button>
 
 </div>
 
 </div>
 
-;
+`;
 
           }
         )
@@ -2025,18 +1705,18 @@ onclick="preencherPostOferta(${Number(
   } catch (erro) {
 
     lista.innerHTML =
-      <p>❌ Erro: ${
+      `<p>❌ Erro: ${
         escaparHTML(
           erro.message
         )
-      }</p>;
+      }</p>`;
 
   }
 
 }
 
 /* ======================================================
-   MERCADO LIVRE - STATUS
+   MERCADO LIVRE STATUS
 ====================================================== */
 
 async function verificarStatusMercadoLivre() {
@@ -2046,6 +1726,12 @@ async function verificarStatusMercadoLivre() {
       "mlStatus"
     );
 
+  status.className =
+    "ml-status";
+
+  status.innerText =
+    "⏳ Verificando conexão...";
+
   try {
 
     const dados =
@@ -2053,9 +1739,13 @@ async function verificarStatusMercadoLivre() {
         "/api/mercadolivre/status"
       );
 
-    if (
-      dados.conectado
-    ) {
+    const conectado =
+      dados.conectado === true ||
+      dados.status === "connected" ||
+      dados.status === "conectado" ||
+      dados.mercadolivre === "connected";
+
+    if (conectado) {
 
       status.innerText =
         "🟢 Mercado Livre conectado com sucesso.";
@@ -2066,7 +1756,7 @@ async function verificarStatusMercadoLivre() {
     } else {
 
       status.innerText =
-        "🟡 Mercado Livre ainda não está conectado. Clique em Conectar Mercado Livre.";
+        "🟡 Mercado Livre ainda não está conectado.";
 
       status.className =
         "ml-status";
@@ -2076,17 +1766,17 @@ async function verificarStatusMercadoLivre() {
   } catch (erro) {
 
     status.innerText =
-      "🔴 Não foi possível verificar a conexão com o Mercado Livre.";
+      "🔴 Não foi possível verificar a conexão.";
 
     status.className =
-      "ml-status";
+      "ml-status error";
 
   }
 
 }
 
 /* ======================================================
-   MERCADO LIVRE - CONECTAR
+   CONECTAR MERCADO LIVRE
 ====================================================== */
 
 function conectarMercadoLivre() {
@@ -2097,25 +1787,23 @@ function conectarMercadoLivre() {
 }
 
 /* ======================================================
-   MERCADO LIVRE - BUSCAR
+   BUSCAR MERCADO LIVRE
 ====================================================== */
 
 async function buscarMercadoLivre() {
 
   const busca =
     document
-      .getElementById(
-        "mlBusca"
-      )
+      .getElementById("mlBusca")
       .value
       .trim();
 
   const limite =
-    document
-      .getElementById(
-        "mlLimite"
-      )
-      .value;
+    Number(
+      document
+        .getElementById("mlLimite")
+        .value
+    ) || 20;
 
   const botao =
     document
@@ -2123,120 +1811,150 @@ async function buscarMercadoLivre() {
         "btnBuscarML"
       );
 
-  if (
-    !busca
-  ) {
-
-    mostrarMensagem(
-      "resultadoML",
-      "❌ Digite o que deseja buscar.",
-      "error"
-    );
-
-    return;
-  }
-
-  botao.disabled =
-    true;
-
-  botao.innerText =
-    "⏳ Buscando...";
-
   const resultados =
     document.getElementById(
       "resultadosML"
     );
 
+  if (!busca) {
+
+    mostrarMensagem(
+      "resultadoML",
+      "❌ Digite o produto que deseja buscar.",
+      "error"
+    );
+
+    return;
+
+  }
+
+  botao.disabled = true;
+
+  botao.innerText =
+    "⏳ Buscando...";
+
   resultados.innerHTML =
     '<div class="loading">🔎 Consultando Mercado Livre...</div>';
+
+  mostrarMensagem(
+    "resultadoML",
+    "⏳ Realizando busca...",
+    "info"
+  );
 
   try {
 
     const dados =
       await api(
         "/api/mercadolivre/buscar?q=" +
-        encodeURIComponent(
-          busca
-        ) +
+        encodeURIComponent(busca) +
         "&limit=" +
-        encodeURIComponent(
-          limite
-        )
+        encodeURIComponent(limite)
       );
 
     const produtos =
       dados.produtos ||
+      dados.results ||
+      dados.items ||
       [];
 
-    if (
-      produtos.length === 0
-    ) {
+    if (!produtos.length) {
 
       resultados.innerHTML =
         "<p>Nenhum produto encontrado.</p>";
 
+      mostrarMensagem(
+        "resultadoML",
+        "⚠️ Nenhum produto foi encontrado.",
+        "info"
+      );
+
       return;
+
     }
 
     resultados.innerHTML =
       produtos
         .map(
-          function(
-            produto
-          ) {
+          produto => {
 
-            return 
+            const preco =
+              Number(
+                produto.preco ||
+                produto.price ||
+                0
+              );
+
+            const imagem =
+              produto.imagem ||
+              produto.thumbnail ||
+              produto.picture ||
+              "";
+
+            const link =
+              produto.link ||
+              produto.permalink ||
+              "#";
+
+            const nome =
+              produto.nome ||
+              produto.title ||
+              "Produto";
+
+            return `
 
 <div class="ml-card">
 
+${
+  imagem
+    ? `
 <img
 src="${escaparAtributo(
-  produto.imagem ||
-  ""
+  imagem
 )}"
 alt="${escaparAtributo(
-  produto.nome
+  nome
 )}"
 onerror="this.style.display='none'"
 >
+`
+    : ""
+}
 
 <h3>
 ${escaparHTML(
-  produto.nome
+  nome
 )}
 </h3>
 
 <p class="preco">
+
 R$ ${
-  Number(
-    produto.preco ||
-    0
-  )
-    .toFixed(
-      2
-    )
-    .replace(
-      ".",
-      ","
-    )
+  preco
+    .toFixed(2)
+    .replace(".",",")
 }
+
 </p>
 
 <p>
+
 <a
 href="${escaparAtributo(
-  produto.link
+  link
 )}"
 target="_blank"
-rel="noopener noreferrer"
->
+rel="noopener noreferrer">
+
 🔗 Ver no Mercado Livre
+
 </a>
+
 </p>
 
 </div>
 
-;
+`;
 
           }
         )
@@ -2244,47 +1962,75 @@ rel="noopener noreferrer"
 
     mostrarMensagem(
       "resultadoML",
-      ✅ ${produtos.length} produtos encontrados.,
+      `✅ ${produtos.length} produtos encontrados.`,
       "success"
     );
 
   } catch (erro) {
 
-    let mensagem =
-      erro.message;
+    console.error(
+      "Erro na busca Mercado Livre:",
+      erro
+    );
 
-    if (
-      erro.status === 401
-    ) {
+    let mensagem =
+      erro.message ||
+      "Não foi possível realizar a busca.";
+
+    if (erro.status === 403) {
 
       mensagem =
-        "🔐 A autorização do Mercado Livre expirou ou não existe.";
+        "🚫 O Mercado Livre bloqueou a consulta (403). A conexão do painel está funcionando, mas o servidor foi recusado pela API do Mercado Livre.";
 
     }
 
-    if (
-      erro.status === 403
-    ) {
+    if (erro.status === 401) {
 
       mensagem =
-        "🚫 O Mercado Livre bloqueou esta consulta (403).";
+        "🔐 A autorização do Mercado Livre expirou ou não existe. Conecte novamente.";
+
+    }
+
+    if (erro.status === 404) {
+
+      mensagem =
+        "❌ Rota da API não encontrada. Verifique se o servidor possui /api/mercadolivre/buscar.";
 
     }
 
     mostrarMensagem(
       "resultadoML",
-      "❌ " +
       mensagem,
       "error"
     );
 
-    resultados.innerHTML =
-      "<p>Não foi possível carregar os resultados.</p>";
+    resultados.innerHTML = `
+
+<div class="panel">
+
+<h3>
+❌ Não foi possível realizar a busca
+</h3>
+
+<p>
+${escaparHTML(
+  mensagem
+)}
+</p>
+
+<p>
+O painel está online. Verifique a autorização
+do Mercado Livre e a rota de busca configurada
+no servidor.
+</p>
+
+</div>
+
+`;
 
   } finally {
 
-    botao.disabled =
-      false;
+    botao.disabled = false;
 
     botao.innerText =
       "🔎 Buscar";
@@ -2294,25 +2040,23 @@ rel="noopener noreferrer"
 }
 
 /* ======================================================
-   MERCADO LIVRE - BUSCAR E SALVAR
+   BUSCAR E SALVAR
 ====================================================== */
 
 async function buscarESalvarMercadoLivre() {
 
   const busca =
     document
-      .getElementById(
-        "mlBusca"
-      )
+      .getElementById("mlBusca")
       .value
       .trim();
 
   const limite =
-    document
-      .getElementById(
-        "mlLimite"
-      )
-      .value;
+    Number(
+      document
+        .getElementById("mlLimite")
+        .value
+    ) || 20;
 
   const botao =
     document
@@ -2320,9 +2064,7 @@ async function buscarESalvarMercadoLivre() {
         "btnBuscarSalvarML"
       );
 
-  if (
-    !busca
-  ) {
+  if (!busca) {
 
     mostrarMensagem(
       "resultadoML",
@@ -2331,13 +2073,19 @@ async function buscarESalvarMercadoLivre() {
     );
 
     return;
+
   }
 
-  botao.disabled =
-    true;
+  botao.disabled = true;
 
   botao.innerText =
     "⏳ Buscando e salvando...";
+
+  mostrarMensagem(
+    "resultadoML",
+    "⏳ Buscando produtos no Mercado Livre e salvando ofertas...",
+    "info"
+  );
 
   try {
 
@@ -2346,8 +2094,7 @@ async function buscarESalvarMercadoLivre() {
         "/api/mercadolivre/buscar-salvar",
         {
 
-          method:
-            "POST",
+          method: "POST",
 
           headers: {
             "Content-Type":
@@ -2357,11 +2104,9 @@ async function buscarESalvarMercadoLivre() {
           body:
             JSON.stringify({
 
-              q:
-                busca,
+              q: busca,
 
-              limit:
-                limite
+              limit: limite
 
             })
 
@@ -2370,29 +2115,65 @@ async function buscarESalvarMercadoLivre() {
 
     mostrarMensagem(
       "resultadoML",
-      ✅ Busca concluída! Encontrados: ${dados.encontrados || 0} | Salvos: ${dados.salvos || 0} | Duplicados: ${dados.duplicados || 0},
+      `✅ Busca concluída! Encontrados: ${
+        dados.encontrados || 0
+      } | Salvos: ${
+        dados.salvos || 0
+      } | Duplicados: ${
+        dados.duplicados || 0
+      }`,
       "success"
     );
 
     mostrarToast(
-      "Ofertas processadas!"
+      "🔥 Ofertas processadas!"
     );
+
+    await carregarOfertas();
 
     await atualizarDashboard();
 
   } catch (erro) {
 
+    console.error(
+      "Erro ao buscar e salvar:",
+      erro
+    );
+
+    let mensagem =
+      erro.message ||
+      "Não foi possível realizar a busca.";
+
+    if (erro.status === 403) {
+
+      mensagem =
+        "🚫 O Mercado Livre bloqueou a consulta (403). O problema está na comunicação do servidor com a API do Mercado Livre.";
+
+    }
+
+    if (erro.status === 401) {
+
+      mensagem =
+        "🔐 A autorização do Mercado Livre expirou ou não existe. Faça a conexão novamente.";
+
+    }
+
+    if (erro.status === 404) {
+
+      mensagem =
+        "❌ Rota da API não encontrada. O servidor não encontrou /api/mercadolivre/buscar-salvar.";
+
+    }
+
     mostrarMensagem(
       "resultadoML",
-      "❌ " +
-      erro.message,
+      mensagem,
       "error"
     );
 
   } finally {
 
-    botao.disabled =
-      false;
+    botao.disabled = false;
 
     botao.innerText =
       "💾 Buscar e Salvar Ofertas";
@@ -2416,6 +2197,7 @@ async function carregarConfiguracoes() {
 
     const config =
       dados.configuracoes ||
+      dados ||
       {};
 
     document
@@ -2424,6 +2206,7 @@ async function carregarConfiguracoes() {
       )
       .value =
         config.nome_loja ||
+        config.nomeLoja ||
         "Eletromax";
 
     document
@@ -2432,6 +2215,7 @@ async function carregarConfiguracoes() {
       )
       .value =
         config.link_mercadolivre ||
+        config.linkMercadoLivre ||
         "";
 
     document
@@ -2440,6 +2224,7 @@ async function carregarConfiguracoes() {
       )
       .value =
         config.link_shopee ||
+        config.linkShopee ||
         "";
 
     document
@@ -2448,39 +2233,36 @@ async function carregarConfiguracoes() {
       )
       .value =
         config.link_whatsapp ||
+        config.linkWhatsapp ||
         "";
 
-    document
-      .getElementById(
+    const linkShopee =
+      document.getElementById(
         "linkShopee"
-      )
-      .href =
-        config.link_shopee ||
-        "#";
+      );
 
-    document
-      .getElementById(
-        "linkShopee"
-      )
-      .innerText =
-        config.link_shopee ||
-        "Link não configurado";
+    const link =
+      config.link_shopee ||
+      config.linkShopee ||
+      "";
+
+    linkShopee.href =
+      link || "#";
+
+    linkShopee.innerText =
+      link ||
+      "Link não configurado";
 
   } catch (erro) {
 
-    mostrarMensagem(
-      "resultadoConfig",
-      "❌ Erro ao carregar configurações.",
-      "error"
+    console.error(
+      "Configurações:",
+      erro
     );
 
   }
 
 }
-
-/* ======================================================
-   CONFIGURAÇÕES - SALVAR
-====================================================== */
 
 async function salvarConfiguracoes() {
 
@@ -2525,8 +2307,7 @@ async function salvarConfiguracoes() {
 
   };
 
-  botao.disabled =
-    true;
+  botao.disabled = true;
 
   botao.innerText =
     "⏳ Salvando...";
@@ -2537,8 +2318,7 @@ async function salvarConfiguracoes() {
       "/api/configuracoes",
       {
 
-        method:
-          "PUT",
+        method: "PUT",
 
         headers: {
           "Content-Type":
@@ -2565,15 +2345,13 @@ async function salvarConfiguracoes() {
 
     mostrarMensagem(
       "resultadoConfig",
-      "❌ " +
-      erro.message,
+      "❌ " + erro.message,
       "error"
     );
 
   } finally {
 
-    botao.disabled =
-      false;
+    botao.disabled = false;
 
     botao.innerText =
       "💾 Salvar Configurações";
@@ -2633,9 +2411,7 @@ async function gerarPost() {
         "btnGerarPost"
       );
 
-  if (
-    !nome
-  ) {
+  if (!nome) {
 
     mostrarMensagem(
       "resultadoPost",
@@ -2644,10 +2420,10 @@ async function gerarPost() {
     );
 
     return;
+
   }
 
-  botao.disabled =
-    true;
+  botao.disabled = true;
 
   botao.innerText =
     "⏳ Gerando...";
@@ -2659,8 +2435,7 @@ async function gerarPost() {
         "/api/ofertas/gerar-post",
         {
 
-          method:
-            "POST",
+          method: "POST",
 
           headers: {
             "Content-Type":
@@ -2691,6 +2466,7 @@ async function gerarPost() {
       )
       .value =
         dados.texto ||
+        dados.post ||
         "";
 
     mostrarMensagem(
@@ -2703,15 +2479,13 @@ async function gerarPost() {
 
     mostrarMensagem(
       "resultadoPost",
-      "❌ " +
-      erro.message,
+      "❌ " + erro.message,
       "error"
     );
 
   } finally {
 
-    botao.disabled =
-      false;
+    botao.disabled = false;
 
     botao.innerText =
       "🤖 Gerar Post";
@@ -2733,15 +2507,14 @@ async function copiarPost() {
       )
       .value;
 
-  if (
-    !texto
-  ) {
+  if (!texto) {
 
     mostrarToast(
       "Nenhum post para copiar."
     );
 
     return;
+
   }
 
   try {
@@ -2777,13 +2550,22 @@ async function abrirWhatsApp() {
         "/api/links"
       );
 
-    if (
-      dados.whatsapp
-    ) {
+    const whatsapp =
+      dados.whatsapp ||
+      dados.link_whatsapp ||
+      dados.linkWhatsapp;
+
+    if (whatsapp) {
 
       window.open(
-        dados.whatsapp,
+        whatsapp,
         "_blank"
+      );
+
+    } else {
+
+      mostrarToast(
+        "⚠️ Link do WhatsApp não configurado."
       );
 
     }
@@ -2800,29 +2582,30 @@ async function abrirWhatsApp() {
 }
 
 /* ======================================================
-   LINKS
+   ABRIR LINK
 ====================================================== */
 
-function abrirLink(
-  id
-) {
+function abrirLink(id) {
 
   const elemento =
-    document.getElementById(
-      id
-    );
+    document.getElementById(id);
 
   if (
     elemento &&
     elemento.href &&
     elemento.href !==
-      window.location.href +
-      "#"
+      window.location.href + "#"
   ) {
 
     window.open(
       elemento.href,
       "_blank"
+    );
+
+  } else {
+
+    mostrarToast(
+      "⚠️ Link não configurado."
     );
 
   }
@@ -2833,9 +2616,7 @@ function abrirLink(
    PREENCHER POST COM OFERTA
 ====================================================== */
 
-async function preencherPostOferta(
-  id
-) {
+async function preencherPostOferta(id) {
 
   try {
 
@@ -2848,31 +2629,20 @@ async function preencherPostOferta(
       (
         dados.ofertas ||
         []
-      )
-        .find(
-          function(
-            item
-          ) {
+      ).find(
+        item =>
+          Number(item.id) ===
+          Number(id)
+      );
 
-            return Number(
-              item.id
-            ) ===
-            Number(
-              id
-            );
-
-          }
-        );
-
-    if (
-      !oferta
-    ) {
+    if (!oferta) {
 
       mostrarToast(
         "Oferta não encontrada."
       );
 
       return;
+
     }
 
     document
@@ -2880,32 +2650,28 @@ async function preencherPostOferta(
         "postNome"
       )
       .value =
-        oferta.nome ||
-        "";
+        oferta.nome || "";
 
     document
       .getElementById(
         "postPreco"
       )
       .value =
-        oferta.preco ||
-        "";
+        oferta.preco || "";
 
     document
       .getElementById(
         "postPrecoAnterior"
       )
       .value =
-        oferta.precoAnterior ||
-        "";
+        oferta.precoAnterior || "";
 
     document
       .getElementById(
         "postLink"
       )
       .value =
-        oferta.link ||
-        "";
+        oferta.link || "";
 
     document
       .getElementById(
@@ -2915,10 +2681,13 @@ async function preencherPostOferta(
         oferta.plataforma ||
         "Mercado Livre";
 
-    const botaoPosts =
-      document.querySelector(
-        ".menu button:nth-child(6)"
+    const botoes =
+      document.querySelectorAll(
+        ".menu button"
       );
+
+    const botaoPosts =
+      botoes[5];
 
     abrirPagina(
       "posts",
@@ -2959,5 +2728,4 @@ window.addEventListener(
 </script>
 
 </body>
-
 </html>
