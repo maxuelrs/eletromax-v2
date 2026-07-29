@@ -3,12 +3,22 @@
 <html lang="pt-BR">
 
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta
+name="viewport"
+content="width=device-width, initial-scale=1.0"
+
+>
 
 <title>Eletromax V2</title>
 
 <style>
+
+/* ======================================================
+   RESET
+====================================================== */
 
 * {
   box-sizing: border-box;
@@ -19,6 +29,13 @@ body {
   font-family: Arial, Helvetica, sans-serif;
   background: #f3f4f6;
   color: #111827;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
 }
 
 /* ======================================================
@@ -181,7 +198,6 @@ textarea {
   margin: 7px 0 12px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
-  font-family: inherit;
   font-size: 14px;
 }
 
@@ -200,10 +216,6 @@ textarea:focus {
 /* ======================================================
    BUTTONS
 ====================================================== */
-
-button {
-  font-family: inherit;
-}
 
 .primary {
   background: #2563eb;
@@ -237,6 +249,11 @@ button {
 
 .success:hover {
   background: #15803d;
+}
+
+.success:disabled {
+  opacity: .6;
+  cursor: not-allowed;
 }
 
 .danger {
@@ -278,6 +295,7 @@ button {
   border-radius: 8px;
   display: none;
   font-size: 14px;
+  line-height: 1.5;
 }
 
 .mensagem.show {
@@ -297,6 +315,11 @@ button {
 .mensagem.info-msg {
   background: #dbeafe;
   color: #1e40af;
+}
+
+.mensagem.warning-msg {
+  background: #fef3c7;
+  color: #92400e;
 }
 
 /* ======================================================
@@ -327,7 +350,8 @@ button {
 }
 
 .produto a,
-.oferta a {
+.oferta a,
+.ml-card a {
   color: #2563eb;
   word-break: break-all;
 }
@@ -375,11 +399,22 @@ button {
   margin-bottom: 20px;
   background: #fef3c7;
   color: #92400e;
+  line-height: 1.5;
 }
 
 .ml-status.connected {
   background: #dcfce7;
   color: #166534;
+}
+
+.ml-status.error {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.ml-status.warning {
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .ml-search {
@@ -407,11 +442,31 @@ button {
   width: 100%;
   height: 170px;
   object-fit: contain;
+  background: #fff;
+  border-radius: 8px;
 }
 
 .ml-card h3 {
   font-size: 15px;
   line-height: 1.4;
+}
+
+.ml-error-box {
+  grid-column: 1 / -1;
+  padding: 20px;
+  border-radius: 10px;
+  background: #fee2e2;
+  color: #991b1b;
+  line-height: 1.6;
+}
+
+.ml-info-box {
+  grid-column: 1 / -1;
+  padding: 20px;
+  border-radius: 10px;
+  background: #dbeafe;
+  color: #1e40af;
+  line-height: 1.6;
 }
 
 /* ======================================================
@@ -449,6 +504,7 @@ button {
   display: none;
   z-index: 9999;
   max-width: 350px;
+  line-height: 1.5;
 }
 
 /* ======================================================
@@ -552,31 +608,46 @@ button {
   <div class="menu">
 
 ```
-<button class="active" onclick="abrirPagina('dashboard', this)">
+<button
+  class="active"
+  onclick="abrirPagina('dashboard', this)"
+>
   🏠 Dashboard
 </button>
 
-<button onclick="abrirPagina('produtos', this)">
+<button
+  onclick="abrirPagina('produtos', this)"
+>
   📦 Produtos
 </button>
 
-<button onclick="abrirPagina('ofertas', this)">
+<button
+  onclick="abrirPagina('ofertas', this)"
+>
   🔥 Central de Ofertas
 </button>
 
-<button onclick="abrirPagina('mercadolivre', this)">
+<button
+  onclick="abrirPagina('mercadolivre', this)"
+>
   🛒 Mercado Livre
 </button>
 
-<button onclick="abrirPagina('shopee', this)">
+<button
+  onclick="abrirPagina('shopee', this)"
+>
   🛍️ Shopee
 </button>
 
-<button onclick="abrirPagina('posts', this)">
+<button
+  onclick="abrirPagina('posts', this)"
+>
   📱 Gerador de Posts
 </button>
 
-<button onclick="abrirPagina('configuracoes', this)">
+<button
+  onclick="abrirPagina('configuracoes', this)"
+>
   ⚙️ Configurações
 </button>
 ```
@@ -598,7 +669,10 @@ button {
   Dashboard
 </h1>
 
-<div id="statusSistema" class="status">
+<div
+  id="statusSistema"
+  class="status"
+>
   ⏳ Verificando sistema...
 </div>
 ```
@@ -609,7 +683,10 @@ button {
        DASHBOARD
   ===================================================== -->
 
-  <div id="dashboard" class="page active">
+  <div
+    id="dashboard"
+    class="page active"
+  >
 
 ```
 <div class="cards">
@@ -638,7 +715,9 @@ button {
 
 <div class="panel">
 
-  <h2>⚡ Central Eletromax V2</h2>
+  <h2>
+    ⚡ Central Eletromax V2
+  </h2>
 
   <p>
     Painel central para gerenciamento de produtos,
@@ -647,22 +726,30 @@ button {
 
   <p>
     Banco de dados:
-    <strong id="statusBanco">Verificando...</strong>
+    <strong id="statusBanco">
+      Verificando...
+    </strong>
   </p>
 
   <p>
     Mercado Livre:
-    <strong id="statusMLDashboard">Verificando...</strong>
+    <strong id="statusMLDashboard">
+      Verificando...
+    </strong>
   </p>
 
   <p>
     Motor de ofertas:
-    <strong id="statusMotorOfertas">Verificando...</strong>
+    <strong id="statusMotorOfertas">
+      Verificando...
+    </strong>
   </p>
 
   <p>
     Gerador de posts:
-    <strong id="statusGeradorPosts">Verificando...</strong>
+    <strong id="statusGeradorPosts">
+      Verificando...
+    </strong>
   </p>
 
 </div>
@@ -674,35 +761,48 @@ button {
        PRODUTOS
   ===================================================== -->
 
-  <div id="produtos" class="page">
+  <div
+    id="produtos"
+    class="page"
+  >
 
 ```
 <div class="panel">
 
-  <h2>📦 Cadastrar Produto</h2>
+  <h2>
+    📦 Cadastrar Produto
+  </h2>
 
-  <label>Nome do produto</label>
+  <label>
+    Nome do produto
+  </label>
 
   <input
     id="produtoNome"
     placeholder="Ex: Câmera Dome Hikvision"
   >
 
-  <label>Preço</label>
+  <label>
+    Preço
+  </label>
 
   <input
     id="produtoPreco"
     placeholder="Ex: R$ 85,49"
   >
 
-  <label>Link do produto</label>
+  <label>
+    Link do produto
+  </label>
 
   <input
     id="produtoLink"
     placeholder="Cole o link do produto"
   >
 
-  <label>Plataforma</label>
+  <label>
+    Plataforma
+  </label>
 
   <select id="produtoPlataforma">
 
@@ -724,15 +824,23 @@ button {
     💾 Cadastrar Produto
   </button>
 
-  <div id="resultadoProduto" class="mensagem"></div>
+  <div
+    id="resultadoProduto"
+    class="mensagem"
+  ></div>
 
 </div>
 
 <div class="panel">
 
-  <h2>📋 Produtos cadastrados</h2>
+  <h2>
+    📋 Produtos cadastrados
+  </h2>
 
-  <div id="listaProdutos" class="lista">
+  <div
+    id="listaProdutos"
+    class="lista"
+  >
     Carregando...
   </div>
 
@@ -745,37 +853,41 @@ button {
        CENTRAL DE OFERTAS
   ===================================================== -->
 
-  <div id="ofertas" class="page">
+  <div
+    id="ofertas"
+    class="page"
+  >
 
 ```
 <div class="panel">
 
-  <h2>🔥 Central de Ofertas</h2>
+  <h2>
+    🔥 Central de Ofertas
+  </h2>
 
   <p>
     Aqui ficam as ofertas encontradas e salvas
     pelo Eletromax.
   </p>
 
-  <div class="acoes">
+  <button
+    class="primary"
+    onclick="carregarOfertas()"
+  >
+    🔄 Atualizar Ofertas
+  </button>
 
-    <button
-      class="primary"
-      onclick="carregarOfertas()"
-    >
-      🔄 Atualizar Ofertas
-    </button>
+  <button
+    class="success"
+    onclick="buscarOfertasAutomaticamente()"
+  >
+    🤖 Buscar Ofertas Automaticamente
+  </button>
 
-    <button
-      class="success"
-      onclick="buscarOfertasAutomaticamente()"
-    >
-      🤖 Buscar Ofertas Automaticamente
-    </button>
-
-  </div>
-
-  <div id="resultadoOfertas" class="mensagem"></div>
+  <div
+    id="resultadoBuscaAutomatica"
+    class="mensagem"
+  ></div>
 
 </div>
 
@@ -793,14 +905,22 @@ button {
        MERCADO LIVRE
   ===================================================== -->
 
-  <div id="mercadolivre" class="page">
+  <div
+    id="mercadolivre"
+    class="page"
+  >
 
 ```
 <div class="panel">
 
-  <h2>🛒 Mercado Livre</h2>
+  <h2>
+    🛒 Mercado Livre
+  </h2>
 
-  <div id="mlStatus" class="ml-status">
+  <div
+    id="mlStatus"
+    class="ml-status"
+  >
     ⏳ Verificando conexão...
   </div>
 
@@ -830,24 +950,42 @@ button {
     >
 
     <button
-      id="btnBuscarSalvarML"
+      id="btnBuscarML"
       class="success"
-      onclick="buscarESalvarMercadoLivre()"
+      onclick="buscarMercadoLivre()"
     >
-      🔎 Buscar e Salvar
+      🔎 Buscar
     </button>
 
   </div>
 
-  <div id="resultadoML" class="mensagem"></div>
+  <br>
+
+  <button
+    id="btnBuscarSalvarML"
+    class="primary"
+    onclick="buscarESalvarMercadoLivre()"
+  >
+    💾 Buscar e Salvar Ofertas
+  </button>
+
+  <div
+    id="resultadoML"
+    class="mensagem"
+  ></div>
 
 </div>
 
 <div class="panel">
 
-  <h2>🔎 Resultados da busca</h2>
+  <h2>
+    🔎 Resultados da busca
+  </h2>
 
-  <div id="resultadosML" class="ml-resultados">
+  <div
+    id="resultadosML"
+    class="ml-resultados"
+  >
     Faça uma busca para começar.
   </div>
 
@@ -860,12 +998,17 @@ button {
        SHOPEE
   ===================================================== -->
 
-  <div id="shopee" class="page">
+  <div
+    id="shopee"
+    class="page"
+  >
 
 ```
 <div class="panel">
 
-  <h2>🛍️ Shopee</h2>
+  <h2>
+    🛍️ Shopee
+  </h2>
 
   <p>
     Link configurado para divulgação:
@@ -898,35 +1041,48 @@ button {
        POSTS
   ===================================================== -->
 
-  <div id="posts" class="page">
+  <div
+    id="posts"
+    class="page"
+  >
 
 ```
 <div class="panel">
 
-  <h2>📱 Gerador de Posts</h2>
+  <h2>
+    📱 Gerador de Posts
+  </h2>
 
-  <label>Nome do produto</label>
+  <label>
+    Nome do produto
+  </label>
 
   <input
     id="postNome"
     placeholder="Nome do produto"
   >
 
-  <label>Preço anterior</label>
+  <label>
+    Preço anterior
+  </label>
 
   <input
     id="postPrecoAnterior"
     placeholder="Ex: R$ 159,90"
   >
 
-  <label>Preço atual</label>
+  <label>
+    Preço atual
+  </label>
 
   <input
     id="postPreco"
     placeholder="Ex: R$ 85,49"
   >
 
-  <label>Plataforma</label>
+  <label>
+    Plataforma
+  </label>
 
   <select id="postPlataforma">
 
@@ -940,7 +1096,9 @@ button {
 
   </select>
 
-  <label>Link</label>
+  <label>
+    Link
+  </label>
 
   <input
     id="postLink"
@@ -955,7 +1113,10 @@ button {
     🤖 Gerar Post
   </button>
 
-  <div id="resultadoPost" class="mensagem"></div>
+  <div
+    id="resultadoPost"
+    class="mensagem"
+  ></div>
 
   <br>
 
@@ -988,18 +1149,25 @@ button {
        CONFIGURAÇÕES
   ===================================================== -->
 
-  <div id="configuracoes" class="page">
+  <div
+    id="configuracoes"
+    class="page"
+  >
 
 ```
 <div class="panel">
 
-  <h2>⚙️ Configurações</h2>
+  <h2>
+    ⚙️ Configurações
+  </h2>
 
   <div class="config-grid">
 
     <div>
 
-      <label>Nome da loja</label>
+      <label>
+        Nome da loja
+      </label>
 
       <input
         id="configNomeLoja"
@@ -1010,25 +1178,37 @@ button {
 
     <div>
 
-      <label>Link Mercado Livre</label>
+      <label>
+        Link Mercado Livre
+      </label>
 
-      <input id="configMercadoLivre">
-
-    </div>
-
-    <div>
-
-      <label>Link Shopee</label>
-
-      <input id="configShopee">
+      <input
+        id="configMercadoLivre"
+      >
 
     </div>
 
     <div>
 
-      <label>Link WhatsApp</label>
+      <label>
+        Link Shopee
+      </label>
 
-      <input id="configWhatsapp">
+      <input
+        id="configShopee"
+      >
+
+    </div>
+
+    <div>
+
+      <label>
+        Link WhatsApp
+      </label>
+
+      <input
+        id="configWhatsapp"
+      >
 
     </div>
 
@@ -1042,7 +1222,10 @@ button {
     💾 Salvar Configurações
   </button>
 
-  <div id="resultadoConfig" class="mensagem"></div>
+  <div
+    id="resultadoConfig"
+    class="mensagem"
+  ></div>
 
 </div>
 ```
@@ -1056,12 +1239,6 @@ button {
 <script>
 
 /* ======================================================
-   API BASE
-====================================================== */
-
-const API_BASE = "";
-
-/* ======================================================
    FUNÇÕES GERAIS
 ====================================================== */
 
@@ -1070,35 +1247,55 @@ function mostrarToast(mensagem) {
   const toast =
     document.getElementById("toast");
 
-  toast.innerText = mensagem;
-  toast.style.display = "block";
+  toast.innerText =
+    mensagem;
+
+  toast.style.display =
+    "block";
 
   setTimeout(function() {
 
-    toast.style.display = "none";
+    toast.style.display =
+      "none";
 
   }, 3500);
 
 }
 
-function mostrarMensagem(elementoId, mensagem, tipo) {
+function mostrarMensagem(
+  elementoId,
+  mensagem,
+  tipo
+) {
 
   const elemento =
     document.getElementById(elementoId);
 
-  if (!elemento) return;
+  if (!elemento) {
+    return;
+  }
 
-  elemento.innerText = mensagem;
+  let classe =
+    "info-msg";
+
+  if (tipo === "success") {
+    classe = "success-msg";
+  }
+
+  if (tipo === "error") {
+    classe = "error-msg";
+  }
+
+  if (tipo === "warning") {
+    classe = "warning-msg";
+  }
+
+  elemento.innerText =
+    mensagem;
 
   elemento.className =
     "mensagem show " +
-    (
-      tipo === "success"
-        ? "success-msg"
-        : tipo === "error"
-          ? "error-msg"
-          : "info-msg"
-    );
+    classe;
 
 }
 
@@ -1125,65 +1322,56 @@ function escaparAtributo(texto) {
 
 async function api(url, opcoes = {}) {
 
+  const resposta =
+    await fetch(url, {
+      ...opcoes,
+      headers: {
+        ...(opcoes.headers || {})
+      }
+    });
+
+  const texto =
+    await resposta.text();
+
+  let dados = {};
+
   try {
 
-    const resposta =
-      await fetch(
-        API_BASE + url,
-        opcoes
+    dados =
+      texto
+        ? JSON.parse(texto)
+        : {};
+
+  } catch {
+
+    dados = {
+      message:
+        texto ||
+        "Resposta inválida do servidor."
+    };
+
+  }
+
+  if (!resposta.ok) {
+
+    const erro =
+      new Error(
+        dados.message ||
+        dados.error ||
+        `Erro HTTP ${resposta.status}`
       );
 
-    const texto =
-      await resposta.text();
+    erro.status =
+      resposta.status;
 
-    let dados = {};
-
-    try {
-
-      dados =
-        texto
-          ? JSON.parse(texto)
-          : {};
-
-    } catch {
-
-      dados = {
-        message:
-          texto ||
-          "Resposta inválida do servidor."
-      };
-
-    }
-
-    if (!resposta.ok) {
-
-      const erro =
-        new Error(
-          dados.message ||
-          dados.error ||
-          `Erro HTTP ${resposta.status}`
-        );
-
-      erro.status = resposta.status;
-      erro.dados = dados;
-
-      throw erro;
-
-    }
-
-    return dados;
-
-  } catch (erro) {
-
-    console.error(
-      "Erro API:",
-      url,
-      erro
-    );
+    erro.dados =
+      dados;
 
     throw erro;
 
   }
+
+  return dados;
 
 }
 
@@ -1191,7 +1379,10 @@ async function api(url, opcoes = {}) {
    NAVEGAÇÃO
 ====================================================== */
 
-function abrirPagina(pagina, botao) {
+function abrirPagina(
+  pagina,
+  botao
+) {
 
   document
     .querySelectorAll(".page")
@@ -1226,13 +1417,26 @@ function abrirPagina(pagina, botao) {
 
   const titulos = {
 
-    dashboard: "Dashboard",
-    produtos: "Produtos",
-    ofertas: "Central de Ofertas",
-    mercadolivre: "Mercado Livre",
-    shopee: "Shopee",
-    posts: "Gerador de Posts",
-    configuracoes: "Configurações"
+    dashboard:
+      "Dashboard",
+
+    produtos:
+      "Produtos",
+
+    ofertas:
+      "Central de Ofertas",
+
+    mercadolivre:
+      "Mercado Livre",
+
+    shopee:
+      "Shopee",
+
+    posts:
+      "Gerador de Posts",
+
+    configuracoes:
+      "Configurações"
 
   };
 
@@ -1275,7 +1479,9 @@ function abrirPagina(pagina, botao) {
 async function verificarSistema() {
 
   const status =
-    document.getElementById("statusSistema");
+    document.getElementById(
+      "statusSistema"
+    );
 
   try {
 
@@ -1311,7 +1517,7 @@ async function verificarSistema() {
       .innerText =
         mlOK
           ? "Conectado"
-          : "Não conectado";
+          : "Não configurado";
 
     document
       .getElementById("statusMotorOfertas")
@@ -1319,7 +1525,7 @@ async function verificarSistema() {
         dados.motorOfertas === "active" ||
         dados.motorOfertas === "ativo"
           ? "Ativo"
-          : "Inativo";
+          : "Verificar";
 
     document
       .getElementById("statusGeradorPosts")
@@ -1327,9 +1533,14 @@ async function verificarSistema() {
         dados.geradorPosts === "active" ||
         dados.geradorPosts === "ativo"
           ? "Ativo"
-          : "Inativo";
+          : "Verificar";
 
   } catch (erro) {
+
+    console.error(
+      "Erro ao verificar sistema:",
+      erro
+    );
 
     status.innerText =
       "🔴 Sistema indisponível";
@@ -1355,35 +1566,29 @@ async function atualizarDashboard() {
   try {
 
     const dados =
-      await api("/api/dashboard");
+      await api(
+        "/api/dashboard"
+      );
 
     document
       .getElementById("totalProdutos")
       .innerText =
-        dados.totalProdutos ||
-        dados.produtos ||
-        0;
+        dados.totalProdutos || 0;
 
     document
       .getElementById("totalOfertas")
       .innerText =
-        dados.totalOfertas ||
-        dados.ofertas ||
-        0;
+        dados.totalOfertas || 0;
 
     document
       .getElementById("totalMercadoLivre")
       .innerText =
-        dados.totalMercadoLivre ||
-        dados.mercadolivre ||
-        0;
+        dados.totalMercadoLivre || 0;
 
     document
       .getElementById("totalShopee")
       .innerText =
-        dados.totalShopee ||
-        dados.shopee ||
-        0;
+        dados.totalShopee || 0;
 
   } catch (erro) {
 
@@ -1427,7 +1632,9 @@ async function cadastrarProduto() {
 
   const botao =
     document
-      .getElementById("btnCadastrarProduto");
+      .getElementById(
+        "btnCadastrarProduto"
+      );
 
   if (!nome || !link || !plataforma) {
 
@@ -1441,8 +1648,11 @@ async function cadastrarProduto() {
 
   }
 
-  botao.disabled = true;
-  botao.innerText = "⏳ Salvando...";
+  botao.disabled =
+    true;
+
+  botao.innerText =
+    "⏳ Salvando...";
 
   mostrarMensagem(
     "resultadoProduto",
@@ -1452,39 +1662,40 @@ async function cadastrarProduto() {
 
   try {
 
-    const dados =
-      await api(
-        "/api/produtos",
-        {
+    await api(
+      "/api/produtos",
+      {
 
-          method: "POST",
+        method:
+          "POST",
 
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
+        headers: {
+          "Content-Type":
+            "application/json"
+        },
 
-          body:
-            JSON.stringify({
+        body:
+          JSON.stringify({
 
-              nome,
-              preco,
-              link,
-              plataforma
+            nome,
+            preco,
+            link,
+            plataforma
 
-            })
+          })
 
-        }
-      );
+      }
+    );
 
     mostrarMensagem(
       "resultadoProduto",
-      dados.message ||
       "✅ Produto salvo com sucesso no banco de dados!",
       "success"
     );
 
-    mostrarToast("Produto salvo!");
+    mostrarToast(
+      "Produto salvo!"
+    );
 
     document
       .getElementById("produtoNome")
@@ -1499,6 +1710,7 @@ async function cadastrarProduto() {
       .value = "";
 
     await carregarProdutos();
+
     await atualizarDashboard();
 
   } catch (erro) {
@@ -1515,7 +1727,9 @@ async function cadastrarProduto() {
 
   } finally {
 
-    botao.disabled = false;
+    botao.disabled =
+      false;
+
     botao.innerText =
       "💾 Cadastrar Produto";
 
@@ -1530,7 +1744,9 @@ async function cadastrarProduto() {
 async function carregarProdutos() {
 
   const lista =
-    document.getElementById("listaProdutos");
+    document.getElementById(
+      "listaProdutos"
+    );
 
   lista.innerHTML =
     '<div class="loading">⏳ Carregando produtos...</div>';
@@ -1538,13 +1754,15 @@ async function carregarProdutos() {
   try {
 
     const dados =
-      await api("/api/produtos");
+      await api(
+        "/api/produtos"
+      );
 
     const produtos =
       dados.produtos ||
       [];
 
-    if (produtos.length === 0) {
+    if (!produtos.length) {
 
       lista.innerHTML =
         "<p>📦 Nenhum produto cadastrado.</p>";
@@ -1624,11 +1842,9 @@ onclick="excluirProduto(${Number(produto.id)})"
 
 async function excluirProduto(id) {
 
-  if (
-    !confirm(
-      "Tem certeza que deseja excluir este produto?"
-    )
-  ) {
+  if (!confirm(
+    "Tem certeza que deseja excluir este produto?"
+  )) {
 
     return;
 
@@ -1639,7 +1855,8 @@ async function excluirProduto(id) {
     await api(
       "/api/produtos/" + id,
       {
-        method: "DELETE"
+        method:
+          "DELETE"
       }
     );
 
@@ -1648,6 +1865,7 @@ async function excluirProduto(id) {
     );
 
     await carregarProdutos();
+
     await atualizarDashboard();
 
   } catch (erro) {
@@ -1662,13 +1880,15 @@ async function excluirProduto(id) {
 }
 
 /* ======================================================
-   OFERTAS - LISTAR
+   OFERTAS
 ====================================================== */
 
 async function carregarOfertas() {
 
   const lista =
-    document.getElementById("listaOfertas");
+    document.getElementById(
+      "listaOfertas"
+    );
 
   lista.innerHTML =
     '<div class="loading">⏳ Carregando ofertas...</div>';
@@ -1676,13 +1896,15 @@ async function carregarOfertas() {
   try {
 
     const dados =
-      await api("/api/ofertas");
+      await api(
+        "/api/ofertas"
+      );
 
     const ofertas =
       dados.ofertas ||
       [];
 
-    if (ofertas.length === 0) {
+    if (!ofertas.length) {
 
       lista.innerHTML =
         "<p>🔥 Nenhuma oferta cadastrada ainda.</p>";
@@ -1697,7 +1919,6 @@ async function carregarOfertas() {
 
           const imagem =
             oferta.imagem ||
-            oferta.image ||
             "";
 
           return `
@@ -1784,17 +2005,25 @@ onclick="preencherPostOferta(${Number(oferta.id)})"
 }
 
 /* ======================================================
-   OFERTAS - BUSCA AUTOMÁTICA
+   BUSCAR OFERTAS AUTOMATICAMENTE
 ====================================================== */
 
 async function buscarOfertasAutomaticamente() {
 
-  const resultado =
-    "resultadoOfertas";
+  const botao =
+    event &&
+    event.target;
+
+  if (botao) {
+
+    botao.disabled =
+      true;
+
+  }
 
   mostrarMensagem(
-    resultado,
-    "🤖 O motor de ofertas está buscando automaticamente...",
+    "resultadoBuscaAutomatica",
+    "⏳ O motor de ofertas está procurando novas ofertas...",
     "info"
   );
 
@@ -1804,35 +2033,44 @@ async function buscarOfertasAutomaticamente() {
       await api(
         "/api/ofertas/buscar-automaticamente",
         {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json"
-          },
-
-          body:
-            JSON.stringify({})
+          method:
+            "POST"
         }
       );
 
     mostrarMensagem(
-      resultado,
-      dados.message ||
-      `✅ Busca automática concluída. ${dados.salvos || 0} ofertas salvas.`,
+      "resultadoBuscaAutomatica",
+      `✅ Busca automática concluída. Encontrados: ${
+        dados.encontrados ||
+        0
+      } | Salvos: ${
+        dados.salvos ||
+        0
+      }`,
       "success"
     );
 
     await carregarOfertas();
+
     await atualizarDashboard();
 
   } catch (erro) {
 
     mostrarMensagem(
-      resultado,
-      "❌ " + erro.message,
+      "resultadoBuscaAutomatica",
+      "❌ " +
+      erro.message,
       "error"
     );
+
+  } finally {
+
+    if (botao) {
+
+      botao.disabled =
+        false;
+
+    }
 
   }
 
@@ -1845,7 +2083,9 @@ async function buscarOfertasAutomaticamente() {
 async function verificarStatusMercadoLivre() {
 
   const status =
-    document.getElementById("mlStatus");
+    document.getElementById(
+      "mlStatus"
+    );
 
   try {
 
@@ -1854,12 +2094,11 @@ async function verificarStatusMercadoLivre() {
         "/api/mercadolivre/status"
       );
 
-    const conectado =
-      dados.conectado === true ||
+    if (
+      dados.conectado ||
       dados.status === "connected" ||
-      dados.mercadolivre === "connected";
-
-    if (conectado) {
+      dados.status === "conectado"
+    ) {
 
       status.innerText =
         "🟢 Mercado Livre conectado com sucesso.";
@@ -1870,10 +2109,10 @@ async function verificarStatusMercadoLivre() {
     } else {
 
       status.innerText =
-        "🟡 Mercado Livre ainda não está conectado.";
+        "🟡 Mercado Livre ainda não está autorizado. Clique em Conectar Mercado Livre.";
 
       status.className =
-        "ml-status";
+        "ml-status warning";
 
     }
 
@@ -1883,20 +2122,256 @@ async function verificarStatusMercadoLivre() {
       "🔴 Não foi possível verificar a conexão com o Mercado Livre.";
 
     status.className =
-      "ml-status";
+      "ml-status error";
 
   }
 
 }
 
 /* ======================================================
-   MERCADO LIVRE - LOGIN
+   MERCADO LIVRE - CONECTAR
 ====================================================== */
 
 function conectarMercadoLivre() {
 
   window.location.href =
     "/api/mercadolivre/login";
+
+}
+
+/* ======================================================
+   MERCADO LIVRE - BUSCAR
+====================================================== */
+
+async function buscarMercadoLivre() {
+
+  const busca =
+    document
+      .getElementById("mlBusca")
+      .value
+      .trim();
+
+  const limite =
+    Number(
+      document
+        .getElementById("mlLimite")
+        .value
+    ) || 20;
+
+  const botao =
+    document
+      .getElementById("btnBuscarML");
+
+  const resultados =
+    document
+      .getElementById("resultadosML");
+
+  if (!busca) {
+
+    mostrarMensagem(
+      "resultadoML",
+      "❌ Digite o produto que deseja buscar.",
+      "error"
+    );
+
+    return;
+
+  }
+
+  botao.disabled =
+    true;
+
+  botao.innerText =
+    "⏳ Buscando...";
+
+  resultados.innerHTML =
+    '<div class="loading">🔎 Consultando Mercado Livre...</div>';
+
+  try {
+
+    const dados =
+      await api(
+        "/api/mercadolivre/buscar?q=" +
+        encodeURIComponent(busca) +
+        "&limit=" +
+        encodeURIComponent(limite)
+      );
+
+    const produtos =
+      dados.produtos ||
+      dados.results ||
+      [];
+
+    if (!produtos.length) {
+
+      resultados.innerHTML =
+        '<div class="ml-info-box">🔎 Nenhum produto encontrado para esta busca.</div>';
+
+      mostrarMensagem(
+        "resultadoML",
+        "ℹ️ Nenhum produto encontrado.",
+        "info"
+      );
+
+      return;
+
+    }
+
+    resultados.innerHTML =
+      produtos
+        .map(function(produto) {
+
+          const preco =
+            Number(
+              produto.preco ||
+              produto.price ||
+              0
+            );
+
+          return `
+
+<div class="ml-card">
+
+${
+  produto.imagem ||
+  produto.thumbnail
+    ? `
+<img
+src="${escaparAtributo(
+  produto.imagem ||
+  produto.thumbnail
+)}"
+alt="${escaparAtributo(
+  produto.nome ||
+  produto.title ||
+  ""
+)}"
+onerror="this.style.display='none'"
+>
+`
+    : ""
+}
+
+<h3>
+${escaparHTML(
+  produto.nome ||
+  produto.title ||
+  "Produto"
+)}
+</h3>
+
+<p class="preco">
+${
+  preco > 0
+    ? "R$ " +
+      preco
+        .toFixed(2)
+        .replace(".", ",")
+    : "Preço não informado"
+}
+</p>
+
+<p>
+<a
+href="${escaparAtributo(
+  produto.link ||
+  produto.permalink ||
+  "#"
+)}"
+target="_blank"
+rel="noopener noreferrer"
+>
+🔗 Ver no Mercado Livre
+</a>
+</p>
+
+</div>
+
+`;
+
+        })
+        .join("");
+
+    mostrarMensagem(
+      "resultadoML",
+      `✅ ${produtos.length} produtos encontrados.`,
+      "success"
+    );
+
+  } catch (erro) {
+
+    console.error(
+      "Erro Mercado Livre:",
+      erro
+    );
+
+    let mensagem =
+      erro.message ||
+      "Erro ao consultar Mercado Livre.";
+
+    if (erro.status === 401) {
+
+      mensagem =
+        "🔐 A autorização do Mercado Livre expirou ou não existe. Clique em Conectar Mercado Livre para autorizar novamente.";
+
+    }
+
+    if (erro.status === 403) {
+
+      mensagem =
+        "🚫 O Mercado Livre recusou esta consulta (403). O painel está funcionando, mas o servidor/API precisa ser ajustado para realizar a busca corretamente.";
+
+    }
+
+    if (erro.status === 429) {
+
+      mensagem =
+        "⏳ Muitas consultas foram realizadas. Aguarde alguns minutos e tente novamente.";
+
+    }
+
+    resultados.innerHTML =
+      `
+<div class="ml-error-box">
+
+<strong>
+❌ Não foi possível realizar a busca
+</strong>
+
+<br><br>
+
+${escaparHTML(mensagem)}
+
+<br><br>
+
+<strong>
+O que você pode fazer:
+</strong>
+
+<ul>
+<li>Verificar a conexão/autorização do Mercado Livre.</li>
+<li>Tentar novamente em alguns segundos.</li>
+<li>Se continuar aparecendo 403, corrigir a rota de busca no servidor.</li>
+</ul>
+
+</div>
+`;
+
+    mostrarMensagem(
+      "resultadoML",
+      mensagem,
+      "error"
+    );
+
+  } finally {
+
+    botao.disabled =
+      false;
+
+    botao.innerText =
+      "🔎 Buscar";
+
+  }
 
 }
 
@@ -1913,13 +2388,17 @@ async function buscarESalvarMercadoLivre() {
       .trim();
 
   const limite =
-    document
-      .getElementById("mlLimite")
-      .value;
+    Number(
+      document
+        .getElementById("mlLimite")
+        .value
+    ) || 20;
 
   const botao =
     document
-      .getElementById("btnBuscarSalvarML");
+      .getElementById(
+        "btnBuscarSalvarML"
+      );
 
   if (!busca) {
 
@@ -1933,17 +2412,11 @@ async function buscarESalvarMercadoLivre() {
 
   }
 
-  botao.disabled = true;
+  botao.disabled =
+    true;
+
   botao.innerText =
     "⏳ Buscando e salvando...";
-
-  const resultados =
-    document.getElementById(
-      "resultadosML"
-    );
-
-  resultados.innerHTML =
-    '<div class="loading">🔎 Consultando Mercado Livre...</div>';
 
   try {
 
@@ -1952,7 +2425,8 @@ async function buscarESalvarMercadoLivre() {
         "/api/mercadolivre/buscar-salvar",
         {
 
-          method: "POST",
+          method:
+            "POST",
 
           headers: {
             "Content-Type":
@@ -1962,42 +2436,28 @@ async function buscarESalvarMercadoLivre() {
           body:
             JSON.stringify({
 
-              q: busca,
+              q:
+                busca,
 
               limit:
-                Number(limite)
+                limite
 
             })
 
         }
       );
 
-    const produtos =
-      dados.produtos ||
-      dados.resultados ||
-      [];
-
-    if (produtos.length > 0) {
-
-      renderizarResultadosML(
-        produtos
-      );
-
-    } else {
-
-      resultados.innerHTML =
-        "<p>✅ Busca concluída. As ofertas foram processadas e salvas.</p>";
-
-    }
-
     mostrarMensagem(
       "resultadoML",
       `✅ Busca concluída! Encontrados: ${
-        dados.encontrados || produtos.length || 0
+        dados.encontrados ||
+        0
       } | Salvos: ${
-        dados.salvos || 0
+        dados.salvos ||
+        0
       } | Duplicados: ${
-        dados.duplicados || 0
+        dados.duplicados ||
+        0
       }`,
       "success"
     );
@@ -2007,106 +2467,44 @@ async function buscarESalvarMercadoLivre() {
     );
 
     await carregarOfertas();
+
     await atualizarDashboard();
 
   } catch (erro) {
 
     let mensagem =
-      erro.message;
-
-    if (erro.status === 401) {
-
-      mensagem =
-        "🔐 A autorização do Mercado Livre expirou ou não existe.";
-
-    }
+      erro.message ||
+      "Erro ao buscar e salvar ofertas.";
 
     if (erro.status === 403) {
 
       mensagem =
-        "🚫 O Mercado Livre bloqueou esta consulta (403).";
+        "🚫 O Mercado Livre recusou a consulta (403). É necessário corrigir a comunicação da rota do servidor com o Mercado Livre.";
+
+    }
+
+    if (erro.status === 401) {
+
+      mensagem =
+        "🔐 A autorização do Mercado Livre expirou ou não está disponível.";
 
     }
 
     mostrarMensagem(
       "resultadoML",
-      "❌ " + mensagem,
+      mensagem,
       "error"
     );
 
-    resultados.innerHTML =
-      "<p>❌ Não foi possível carregar os resultados.</p>";
-
   } finally {
 
-    botao.disabled = false;
+    botao.disabled =
+      false;
 
     botao.innerText =
-      "🔎 Buscar e Salvar";
+      "💾 Buscar e Salvar Ofertas";
 
   }
-
-}
-
-/* ======================================================
-   RENDERIZAR RESULTADOS MERCADO LIVRE
-====================================================== */
-
-function renderizarResultadosML(produtos) {
-
-  const resultados =
-    document.getElementById(
-      "resultadosML"
-    );
-
-  resultados.innerHTML =
-    produtos
-      .map(function(produto) {
-
-        return `
-
-<div class="ml-card">
-
-${
-  produto.imagem
-    ? `
-<img
-src="${escaparAtributo(produto.imagem)}"
-alt="${escaparAtributo(produto.nome)}"
-onerror="this.style.display='none'"
->
-`
-    : ""
-}
-
-<h3>
-${escaparHTML(produto.nome)}
-</h3>
-
-<p class="preco">
-R$ ${
-  Number(produto.preco || 0)
-    .toFixed(2)
-    .replace(".", ",")
-}
-</p>
-
-<p>
-<a
-href="${escaparAtributo(produto.link || "#")}"
-target="_blank"
-rel="noopener noreferrer"
->
-🔗 Ver no Mercado Livre
-</a>
-</p>
-
-</div>
-
-`;
-
-      })
-      .join("");
 
 }
 
@@ -2125,7 +2523,6 @@ async function carregarConfiguracoes() {
 
     const config =
       dados.configuracoes ||
-      dados ||
       {};
 
     document
@@ -2161,22 +2558,29 @@ async function carregarConfiguracoes() {
         "linkShopee"
       );
 
-    linkShopee.href =
+    const shopee =
       config.link_shopee ||
       config.linkShopee ||
+      "";
+
+    linkShopee.href =
+      shopee ||
       "#";
 
     linkShopee.innerText =
-      config.link_shopee ||
-      config.linkShopee ||
+      shopee ||
       "Link não configurado";
 
   } catch (erro) {
 
+    console.error(
+      "Erro configurações:",
+      erro
+    );
+
     mostrarMensagem(
       "resultadoConfig",
-      "❌ Erro ao carregar configurações: " +
-      erro.message,
+      "❌ Erro ao carregar configurações.",
       "error"
     );
 
@@ -2199,31 +2603,40 @@ async function salvarConfiguracoes() {
 
     nomeLoja:
       document
-        .getElementById("configNomeLoja")
+        .getElementById(
+          "configNomeLoja"
+        )
         .value
         .trim(),
 
     linkMercadoLivre:
       document
-        .getElementById("configMercadoLivre")
+        .getElementById(
+          "configMercadoLivre"
+        )
         .value
         .trim(),
 
     linkShopee:
       document
-        .getElementById("configShopee")
+        .getElementById(
+          "configShopee"
+        )
         .value
         .trim(),
 
     linkWhatsapp:
       document
-        .getElementById("configWhatsapp")
+        .getElementById(
+          "configWhatsapp"
+        )
         .value
         .trim()
 
   };
 
-  botao.disabled = true;
+  botao.disabled =
+    true;
 
   botao.innerText =
     "⏳ Salvando...";
@@ -2234,7 +2647,8 @@ async function salvarConfiguracoes() {
       "/api/configuracoes",
       {
 
-        method: "PUT",
+        method:
+          "PUT",
 
         headers: {
           "Content-Type":
@@ -2261,13 +2675,15 @@ async function salvarConfiguracoes() {
 
     mostrarMensagem(
       "resultadoConfig",
-      "❌ " + erro.message,
+      "❌ " +
+      erro.message,
       "error"
     );
 
   } finally {
 
-    botao.disabled = false;
+    botao.disabled =
+      false;
 
     botao.innerText =
       "💾 Salvar Configurações";
@@ -2327,7 +2743,8 @@ async function gerarPost() {
 
   }
 
-  botao.disabled = true;
+  botao.disabled =
+    true;
 
   botao.innerText =
     "⏳ Gerando...";
@@ -2339,7 +2756,8 @@ async function gerarPost() {
         "/api/ofertas/gerar-post",
         {
 
-          method: "POST",
+          method:
+            "POST",
 
           headers: {
             "Content-Type":
@@ -2377,13 +2795,15 @@ async function gerarPost() {
 
     mostrarMensagem(
       "resultadoPost",
-      "❌ " + erro.message,
+      "❌ " +
+      erro.message,
       "error"
     );
 
   } finally {
 
-    botao.disabled = false;
+    botao.disabled =
+      false;
 
     botao.innerText =
       "🤖 Gerar Post";
@@ -2446,25 +2866,20 @@ async function abrirWhatsApp() {
         "/api/links"
       );
 
-    const link =
-      dados.whatsapp ||
-      dados.linkWhatsapp ||
-      dados.link_whatsapp;
-
-    if (link) {
+    if (dados.whatsapp) {
 
       window.open(
-        link,
+        dados.whatsapp,
         "_blank"
       );
 
-    } else {
-
-      mostrarToast(
-        "⚠️ Link do WhatsApp não configurado."
-      );
+      return;
 
     }
+
+    mostrarToast(
+      "Link do WhatsApp não configurado."
+    );
 
   } catch (erro) {
 
@@ -2501,7 +2916,7 @@ function abrirLink(id) {
   } else {
 
     mostrarToast(
-      "⚠️ Link não configurado."
+      "Link não configurado."
     );
 
   }
@@ -2522,10 +2937,7 @@ async function preencherPostOferta(id) {
       );
 
     const oferta =
-      (
-        dados.ofertas ||
-        []
-      )
+      (dados.ofertas || [])
         .find(function(item) {
 
           return Number(item.id) ===
@@ -2620,4 +3032,5 @@ window.addEventListener(
 </script>
 
 </body>
+
 </html>
