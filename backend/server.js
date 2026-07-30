@@ -3964,7 +3964,44 @@ app.get(
 
   }
 );
+app.get(
+  "/api/mercadolivre/teste",
+  async (req, res) => {
 
+    try {
+
+      const token =
+        await obterTokenMercadoLivre();
+
+      const resposta =
+        await fetch(
+          "https://api.mercadolibre.com/users/me",
+          {
+            headers: {
+              Authorization:
+                `Bearer ${token}`
+            }
+          }
+        );
+
+      const dados =
+        await resposta.json();
+
+      res.json({
+        status: resposta.status,
+        dados: dados
+      });
+
+    } catch (erro) {
+
+      res.status(500).json({
+        erro: erro.message
+      });
+
+    }
+
+  }
+);
 
 // ==========================================
 // ROTA 404 DA API
