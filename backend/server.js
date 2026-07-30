@@ -2500,6 +2500,145 @@ async function salvarOferta(
 
 }
 // ==========================================
+// OAUTH MERCADO LIVRE - CALLBACK
+// ==========================================
+
+app.get(
+  "/oauth/callback",
+  async (req, res) => {
+
+    try {
+
+      const code =
+        req.query.code;
+
+      if (!code) {
+
+        return res.status(400).send(
+          "Código OAuth não recebido."
+        );
+
+      }
+
+
+      if (
+        !process.env.ML_CLIENT_ID ||
+        !process.env.ML_CLIENT_SECRET ||
+        !process.env.ML_REDIRECT_URI
+      ) {
+
+        return res.status(500).send(
+          "Configuração do Mercado Livre incompleta."
+        );
+
+      }
+
+
+      const resposta =
+        await fetch(
+          "https://api.mercadolibre.com/oauth/token",
+          {
+
+            method:
+              "POST",
+
+            headers: {
+
+              "Content-Type":
+                "application/x-www-form-urlencoded"
+
+            },
+
+            body:
+              new URLSearchParams({
+
+                grant_type:
+                  "authorization_code",
+
+                client_id:
+                  process.env.ML_CLIENT_ID,
+
+                client_secret:
+                  process.env.ML_CLIENT_SECRET,
+
+                code:
+                  code,
+
+                redirect_uri:
+                  process.env.ML_REDIRECT_URI
+
+              }).toString()
+
+          }
+        );
+
+
+      const dados =
+        await resposta.json();
+
+
+      if (!resposta.ok) {
+
+        console.error(
+          "ERRO OAUTH ML:",
+          dados
+        );
+
+        return res.status(400).send(
+          `
+          Erro ao conectar Mercado Livre:
+          <pre>${JSON.stringify(dados,null,2)}</pre>
+          `
+        );
+
+      }
+
+
+      await salvarTokenMercadoLivre({
+
+        userId:
+          dados.user_id,
+
+        accessToken:
+          dados.access_token,
+
+        refreshToken:
+          dados.refresh_token,
+
+        expiresAt:
+          Date.now() +
+          (
+            dados.expires_in * 1000
+          )
+
+      });
+
+
+      res.send(
+        `
+        <h2>✅ Mercado Livre conectado!</h2>
+        <p>Usuário: ${dados.user_id}</p>
+        <p>Você já pode voltar ao painel Eletromax V2.</p>
+        `
+      );
+
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO CALLBACK ML:",
+        erro
+      );
+
+      res.status(500).send(
+        "Erro interno ao conectar Mercado Livre."
+      );
+
+    }
+
+  }
+);
+// ==========================================
 // STATUS MERCADO LIVRE
 // ==========================================
 
