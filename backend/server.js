@@ -972,7 +972,7 @@ async function consultarUsuarioMercadoLivre(
 }
 
 // ==========================================
-// BUSCAR NO MERCADO LIVRE - CORRIGIDO
+// BUSCAR NO MERCADO LIVRE - VERSÃO CORRIGIDA
 // ==========================================
 
 async function buscarMercadoLivre(
@@ -1001,6 +1001,387 @@ async function buscarMercadoLivre(
       ),
       50
     );
+
+  // ========================================
+  // OBTER TOKEN VÁLIDO
+  // ========================================
+
+  const token =
+    await obterTokenMercadoLivre();
+
+  if (!token) {
+
+    const erro =
+      new Error(
+        "Token do Mercado Livre não disponível."
+      );
+
+    erro.code =
+      "ML_TOKEN_INVALID";
+
+    erro.status =
+      401;
+
+    throw erro;
+
+  }
+
+  // ========================================
+  // URL DA BUSCA
+  // ========================================
+
+  const url =
+    new URL(
+      "https://api.mercadolibre.com/sites/MLB/search"
+    );
+
+  url.searchParams.set(
+    "q",
+    termo
+  );
+
+  url.searchParams.set(
+    "limit",
+    String(quantidade)
+  );
+
+  // ========================================
+  // EXECUTAR BUSCA
+  // ========================================
+
+  console.log(
+    "================================="
+  );
+
+  console.log(
+    "BUSCANDO NO MERCADO LIVRE"
+  );
+
+  console.log(
+    "TERMO:",
+    termo
+  );
+
+  console.log(
+    "LIMITE:",
+    quantidade
+  );
+
+  console.log(
+    "URL:",
+    url.toString()
+  );
+
+  console.log(
+    "TOKEN DISPONÍVEL:",
+    Boolean(token)
+  );
+
+  console.log(
+    "================================="
+  );
+
+  const resposta =
+    await fetch(
+      url.toString(),
+      {
+
+        method:
+          "GET",
+
+        headers: {
+
+          Authorization:
+            `Bearer ${token}`,
+
+          Accept:
+            "application/json",
+
+          "User-Agent":
+            "Eletromax-V2/2.0"
+
+        }
+
+      }
+    );
+
+  // ========================================
+  // LER RESPOSTA
+  // ========================================
+
+  const textoResposta =
+    await resposta.text();
+
+  let dados = {};
+
+  try {
+
+    dados =
+      textoResposta
+        ? JSON.parse(
+            textoResposta
+          )
+        : {};
+
+  } catch (
+    erroJson
+  ) {
+
+    dados = {
+
+      raw:
+        textoResposta
+
+    };
+
+  }
+
+  console.log(
+    "STATUS MERCADO LIVRE:",
+    resposta.status
+  );
+
+  // ========================================
+  // RESPOSTA COM SUCESSO
+  // ========================================
+
+  if (
+    resposta.ok
+  ) {
+
+    console.log(
+      "✅ BUSCA MERCADO LIVRE REALIZADA COM SUCESSO"
+    );
+
+    console.log(
+      "RESULTADOS:",
+      Array.isArray(
+        dados.results
+      )
+        ? dados.results.length
+        : 0
+    );
+
+    return dados;
+
+  }
+
+  // ========================================
+  // TOKEN INVÁLIDO
+  // ========================================
+
+  if (
+    resposta.status === 401
+  ) {
+
+    console.error(
+      "❌ TOKEN MERCADO LIVRE INVÁLIDO OU EXPIRADO"
+    );
+
+    // Tentar renovar automaticamente
+    if (
+      mercadoLivreRefreshToken
+    ) {
+
+      try {
+
+        console.log(
+          "🔄 TENTANDO RENOVAR TOKEN..."
+        );
+
+        const novoToken =
+          await renovarTokenMercadoLivre();
+
+        if (
+          novoToken
+        ) {
+
+          console.log(
+            "🔄 REPETINDO BUSCA COM NOVO TOKEN..."
+          );
+
+          const segundaResposta =
+            await fetch(
+              url.toString(),
+              {
+
+                method:
+                  "GET",
+
+                headers: {
+
+                  Authorization:
+                    `Bearer ${novoToken}`,
+
+                  Accept:
+                    "application/json",
+
+                  "User-Agent":
+                    "Eletromax-V2/2.0"
+
+                }
+
+              }
+            );
+
+          const segundaTexto =
+            await segundaResposta.text();
+
+          let segundaDados = {};
+
+          try {
+
+            segundaDados =
+              segundaTexto
+                ? JSON.parse(
+                    segundaTexto
+                  )
+                : {};
+
+          } catch (
+            erroJson
+          ) {
+
+            segundaDados = {
+
+              raw:
+                segundaTexto
+
+            };
+
+          }
+
+          if (
+            segundaResposta.ok
+          ) {
+
+            console.log(
+              "✅ BUSCA FUNCIONOU APÓS RENOVAÇÃO DO TOKEN"
+            );
+
+            return segundaDados;
+
+          }
+
+          console.error(
+            "❌ BUSCA CONTINUOU FALHANDO APÓS RENOVAÇÃO:",
+            segundaResposta.status,
+            segundaDados
+          );
+
+        }
+
+      } catch (
+        erroRenovacao
+      ) {
+
+        console.error(
+          "❌ ERRO AO RENOVAR TOKEN:",
+          erroRenovacao.message
+        );
+
+      }
+
+    }
+
+    const erro =
+      new Error(
+
+        dados.message ||
+
+        dados.error_description ||
+
+        dados.error ||
+
+        "Token do Mercado Livre inválido ou expirado."
+
+      );
+
+    erro.status =
+      401;
+
+    erro.code =
+      "ML_TOKEN_INVALID";
+
+    erro.dados =
+      dados;
+
+    throw erro;
+
+  }
+
+  // ========================================
+  // ACESSO NEGADO
+  // ========================================
+
+  if (
+    resposta.status === 403
+  ) {
+
+    console.error(
+      "❌ MERCADO LIVRE RETORNOU 403 FORBIDDEN"
+    );
+
+    console.error(
+      "RESPOSTA:",
+      dados
+    );
+
+    const erro =
+      new Error(
+
+        dados.message ||
+
+        dados.error_description ||
+
+        dados.error ||
+
+        "O Mercado Livre recusou o acesso à consulta."
+
+      );
+
+    erro.status =
+      403;
+
+    erro.code =
+      "ML_FORBIDDEN";
+
+    erro.dados =
+      dados;
+
+    throw erro;
+
+  }
+
+  // ========================================
+  // OUTROS ERROS DA API
+  // ========================================
+
+  const erro =
+    new Error(
+
+      dados.message ||
+
+      dados.error_description ||
+
+      dados.error ||
+
+      `Erro na API do Mercado Livre (${resposta.status}).`
+
+    );
+
+  erro.status =
+    resposta.status;
+
+  erro.code =
+    "ML_SEARCH_ERROR";
+
+  erro.dados =
+    dados;
+
+  throw erro;
+
+}
 
   // ========================================
   // OBTER TOKEN VÁLIDO
