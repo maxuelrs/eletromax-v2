@@ -3569,7 +3569,242 @@ app.get(
     }
   }
 );
+// ==========================================
+// BUSCAR E SALVAR OFERTAS - GET
+// Compatibilidade com testes pelo navegador
+// ==========================================
 
+app.get(
+  "/api/mercadolivre/buscar-salvar",
+  async (req, res) => {
+
+    const busca = String(
+      req.query?.q || ""
+    ).trim();
+
+    const limite = Math.min(
+      Math.max(
+        Number(req.query?.limit || 20),
+        1
+      ),
+      50
+    );
+
+    if (!busca) {
+      return res.status(400).json({
+        success: false,
+        message: "Informe o termo de busca. Exemplo: ?q=camera"
+      });
+    }
+
+    try {
+
+      console.log(
+        "================================="
+      );
+
+      console.log(
+        "BUSCA GET MERCADO LIVRE:"
+      );
+
+      console.log(
+        "TERMO:",
+        busca
+      );
+
+      console.log(
+        "LIMITE:",
+        limite
+      );
+
+      console.log(
+        "================================="
+      );
+
+      const dados = await buscarMercadoLivre(
+        busca,
+        limite
+      );
+
+      const produtos = Array.isArray(
+        dados.results
+      )
+        ? dados.results
+        : [];
+
+      let salvos = 0;
+      let atualizados = 0;
+
+      for (const produto of produtos) {
+
+        if (!produto.permalink) {
+          continue;
+        }
+
+        const oferta = {
+          nome:
+            produto.title ||
+            "Produto",
+
+          preco:
+            produto.price ||
+            0,
+
+          precoAnterior:
+            null,
+
+          link:
+            produto.permalink,
+
+          plataforma:
+            "Mercado Livre",
+
+          imagem:
+            produto.thumbnail ||
+            "",
+
+          categoria:
+            "Busca manual",
+
+          avaliacao:
+            extrairAvaliacao(
+              produto
+            ),
+
+          vendas:
+            extrairVendas(
+              produto
+            ),
+
+          pontuacao:
+            calcularPontuacao(
+              produto
+            )
+        };
+
+        const antes = await pool.query(
+          `
+          SELECT id
+          FROM ofertas
+          WHERE link = $1
+          LIMIT 1
+          `,
+          [
+            oferta.link
+          ]
+        );
+
+        const existia =
+          antes.rowCount > 0;
+
+        const salvo =
+          await salvarOferta(
+            oferta
+          );
+
+        if (salvo) {
+
+          if (existia) {
+            atualizados++;
+          } else {
+            salvos++;
+          }
+
+        }
+
+      }
+
+      return res.json({
+
+        success:
+          true,
+
+        encontrados:
+          produtos.length,
+
+        salvos:
+          salvos,
+
+        atualizados:
+          atualizados,
+
+        totalProcessados:
+          salvos +
+          atualizados,
+
+        message:
+          `${salvos} novas ofertas salvas e ${atualizados} ofertas atualizadas.`,
+
+        ofertas:
+          produtos.map(
+            produto => ({
+              nome:
+                produto.title ||
+                "Produto",
+
+              preco:
+                produto.price ||
+                0,
+
+              link:
+                produto.permalink ||
+                "",
+
+              imagem:
+                produto.thumbnail ||
+                "",
+
+              plataforma:
+                "Mercado Livre",
+
+              avaliacao:
+                extrairAvaliacao(
+                  produto
+                ),
+
+              vendas:
+                extrairVendas(
+                  produto
+                ),
+
+              pontuacao:
+                calcularPontuacao(
+                  produto
+                )
+            })
+          )
+
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO BUSCA GET MERCADO LIVRE:",
+        erro
+      );
+
+      return res.status(
+        erro.status ||
+        500
+      ).json({
+
+        success:
+          false,
+
+        message:
+          erro.message ||
+          "Erro ao buscar ofertas no Mercado Livre.",
+
+        code:
+          erro.code ||
+          "ML_SEARCH_ERROR"
+
+      });
+
+    }
+
+  }
+);
 // ==========================================
 // 404 API
 // ==========================================
