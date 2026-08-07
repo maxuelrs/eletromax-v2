@@ -1,4 +1,3 @@
-
 // ==========================================
 // ELETROMAX V2 - SERVER.JS
 // VERSÃO CORRIGIDA - MERCADO LIVRE OAuth/API
@@ -450,509 +449,335 @@ async function inicializarBanco() {
       DO NOTHING
     `);
 
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS filtros_ofertas (
-        id INTEGER PRIMARY KEY,
-        preco_minimo NUMERIC DEFAULT 0,
-        preco_maximo NUMERIC DEFAULT 100000,
-        avaliacao_minima NUMERIC DEFAULT 0,
-        vendas_minimas INTEGER DEFAULT 0,
-        limite_por_categoria INTEGER DEFAULT 20,
-        pontuacao_minima NUMERIC DEFAULT 0,
-        atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    await pool.query(`
-      INSERT INTO filtros_ofertas
-      (
-        id
-      )
-      VALUES
-      (
-        1
-      )
-      ON CONFLICT (id)
-      DO NOTHING
-    `);
-
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS mercadolivre_tokens (
-        id INTEGER PRIMARY KEY,
-        user_id TEXT,
-        access_token TEXT NOT NULL,
-        refresh_token TEXT,
-        expires_at BIGINT,
-        atualizado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    await pool.query(`
-      ALTER TABLE mercadolivre_tokens
-      ADD COLUMN IF NOT EXISTS expires_at BIGINT
-    `);
-
-    await pool.query(`
-      ALTER TABLE mercadolivre_tokens
-      ADD COLUMN IF NOT EXISTS refresh_token TEXT
-    `);
-
-    await pool.query(`
-      ALTER TABLE mercadolivre_tokens
-      ADD COLUMN IF NOT EXISTS user_id TEXT
-    `);
-
-    await carregarTokenMercadoLivre();
-
-    console.log("=================================");
-    console.log("✅ BANCO DE DADOS CONECTADO");
-    console.log("✅ TABELA PRODUTOS PRONTA");
-    console.log("✅ TABELA OFERTAS MIGRADA");
-    console.log("✅ TABELA CONFIGURAÇÕES PRONTA");
-    console.log("✅ TABELA FILTROS PRONTA");
-    console.log("✅ TOKENS MERCADO LIVRE PRONTOS");
-    console.log("=================================");
+    console.log("✅ Banco de dados inicializado.");
 
     return true;
+
   } catch (erro) {
-    console.error("=================================");
-    console.error("❌ ERRO AO INICIALIZAR BANCO:");
-    console.error(erro.message);
-    console.error("=================================");
+    console.error(
+      "❌ Erro ao inicializar banco:",
+      erro.message
+    );
 
     return false;
   }
 }
 
 // ==========================================
-// SALVAR TOKEN MERCADO LIVRE
+// MERCADO LIVRE - SALVAR TOKENS
 // ==========================================
 
-async function salvarTokenMercadoLivre({
-  userId,
-  accessToken,
-  refreshToken,
-  expiresAt
-}) {
-  if (!accessToken) {
-    throw new Error(
-      "Access token do Mercado Livre não informado."
-    );
-  }
-
-  if (!process.env.DATABASE_URL) {
-    throw new Error(
-      "DATABASE_URL não configurada. Não é possível salvar o token."
-    );
-  }
-
-  await pool.query(
-    `
-    INSERT INTO mercadolivre_tokens
-    (
-      id,
-      user_id,
-      access_token,
-      refresh_token,
-      expires_at,
-      atualizado_em
-    )
-    VALUES
-    (
-      1,
-      $1,
-      $2,
-      $3,
-      $4,
-      CURRENT_TIMESTAMP
-    )
-    ON CONFLICT (id)
-    DO UPDATE SET
-      user_id =
-        COALESCE(
-          EXCLUDED.user_id,
-          mercadolivre_tokens.user_id
-        ),
-
-      access_token =
-        EXCLUDED.access_token,
-
-      refresh_token =
-        COALESCE(
-          EXCLUDED.refresh_token,
-          mercadolivre_tokens.refresh_token
-        ),
-
-      expires_at =
-        EXCLUDED.expires_at,
-
-      atualizado_em =
-        CURRENT_TIMESTAMP
-    `,
-    [
-      userId || null,
-      accessToken,
-      refreshToken || null,
-      expiresAt || null
-    ]
-  );
-
-  mercadoLivreAccessToken = accessToken;
-
-  if (refreshToken) {
-    mercadoLivreRefreshToken = refreshToken;
-  }
-
-  mercadoLivreTokenExpiresAt =
-    expiresAt || null;
-
-  if (userId) {
-    mercadoLivreUserId = String(userId);
-  }
-
-  console.log(
-    "✅ TOKEN MERCADO LIVRE SALVO NO BANCO"
-  );
-
-  console.log(
-    "USER ID:",
-    mercadoLivreUserId
-  );
-
-  console.log(
-    "ACCESS TOKEN:",
-    mascararToken(
-      mercadoLivreAccessToken
-    )
-  );
-
-  console.log(
-    "REFRESH TOKEN:",
-    mascararToken(
-      mercadoLivreRefreshToken
-    )
-  );
-
-  console.log(
-    "EXPIRA EM:",
-    mercadoLivreTokenExpiresAt
-      ? new Date(
-          mercadoLivreTokenExpiresAt
-        ).toISOString()
-      : "não informado"
-  );
-}
-
-// ==========================================
-// CARREGAR TOKEN
-// ==========================================
-
-async function carregarTokenMercadoLivre() {
-  if (!process.env.DATABASE_URL) {
+async function salvarTokensMercadoLivre(dados) {
+  if (!dados) {
     return;
   }
 
-  try {
-    const resultado =
-      await pool.query(`
-        SELECT
-          user_id,
-          access_token,
-          refresh_token,
-          expires_at
-        FROM mercadolivre_tokens
-        WHERE id = 1
-        LIMIT 1
-      `);
-
-    if (resultado.rowCount === 0) {
-      console.log(
-        "NENHUM TOKEN DO MERCADO LIVRE SALVO."
-      );
-
-      return;
-    }
-
-    const token =
-      resultado.rows[0];
-
-    mercadoLivreUserId =
-      token.user_id || null;
-
+  if (dados.access_token) {
     mercadoLivreAccessToken =
-      token.access_token || null;
-
-    mercadoLivreRefreshToken =
-      token.refresh_token || null;
-
-    mercadoLivreTokenExpiresAt =
-      token.expires_at
-        ? Number(token.expires_at)
-        : null;
-
-    console.log(
-      "✅ TOKEN MERCADO LIVRE CARREGADO DO BANCO"
-    );
-
-    console.log(
-      "USER ID:",
-      mercadoLivreUserId
-    );
-
-    console.log(
-      "ACCESS TOKEN:",
-      mascararToken(
-        mercadoLivreAccessToken
-      )
-    );
-
-    console.log(
-      "EXPIRA EM:",
-      mercadoLivreTokenExpiresAt
-        ? new Date(
-            mercadoLivreTokenExpiresAt
-          ).toISOString()
-        : "não informado"
-    );
-  } catch (erro) {
-    console.error(
-      "ERRO AO CARREGAR TOKEN ML:",
-      erro.message
-    );
+      dados.access_token;
   }
+
+  if (dados.refresh_token) {
+    mercadoLivreRefreshToken =
+      dados.refresh_token;
+  }
+
+  if (dados.user_id) {
+    mercadoLivreUserId =
+      String(dados.user_id);
+  }
+
+  if (dados.expires_in) {
+    mercadoLivreTokenExpiresAt =
+      Date.now() +
+      Number(dados.expires_in) * 1000;
+  }
+
+  console.log(
+    "🔐 Tokens Mercado Livre atualizados:",
+    {
+      accessToken:
+        mascararToken(
+          mercadoLivreAccessToken
+        ),
+      refreshToken:
+        mascararToken(
+          mercadoLivreRefreshToken
+        ),
+      userId:
+        mercadoLivreUserId,
+      expiraEm:
+        mercadoLivreTokenExpiresAt
+          ? new Date(
+              mercadoLivreTokenExpiresAt
+            ).toISOString()
+          : null
+    }
+  );
 }
 
 // ==========================================
-// RENOVAR TOKEN
+// MERCADO LIVRE - RENOVAR TOKEN
 // ==========================================
 
 async function renovarTokenMercadoLivre() {
   if (renovacaoTokenEmAndamento) {
-    console.log(
-      "♻️ Renovação de token já em andamento."
-    );
-
-    return await renovacaoTokenEmAndamento;
+    return renovacaoTokenEmAndamento;
   }
 
   renovacaoTokenEmAndamento =
     (async () => {
-      if (!mercadoLivreRefreshToken) {
-        throw new Error(
-          "Refresh token do Mercado Livre não disponível."
-        );
-      }
-
-      if (
-        !process.env.ML_CLIENT_ID ||
-        !process.env.ML_CLIENT_SECRET
-      ) {
-        throw new Error(
-          "ML_CLIENT_ID ou ML_CLIENT_SECRET não configurados."
-        );
-      }
-
-      console.log(
-        "================================="
-      );
-
-      console.log(
-        "🔄 RENOVANDO TOKEN MERCADO LIVRE..."
-      );
-
-      console.log(
-        "CLIENT ID:",
-        process.env.ML_CLIENT_ID
-      );
-
-      console.log(
-        "REFRESH TOKEN:",
-        mascararToken(
-          mercadoLivreRefreshToken
-        )
-      );
-
-      const resposta =
-        await fetch(
-          "https://api.mercadolibre.com/oauth/token",
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/x-www-form-urlencoded",
-              Accept:
-                "application/json"
-            },
-
-            body:
-              new URLSearchParams({
-                grant_type:
-                  "refresh_token",
-
-                client_id:
-                  process.env.ML_CLIENT_ID,
-
-                client_secret:
-                  process.env.ML_CLIENT_SECRET,
-
-                refresh_token:
-                  mercadoLivreRefreshToken
-              }).toString()
-          }
-        );
-
-      const texto =
-        await resposta.text();
-
-      let dados = {};
-
       try {
-        dados =
-          texto
-            ? JSON.parse(texto)
-            : {};
-      } catch {
-        dados = {
-          raw: texto
-        };
-      }
+        if (
+          !mercadoLivreRefreshToken
+        ) {
+          throw new Error(
+            "Refresh token do Mercado Livre não configurado."
+          );
+        }
 
-      if (!resposta.ok) {
-        console.error(
-          "❌ ERRO AO RENOVAR TOKEN:",
-          {
-            status:
-              resposta.status,
+        const clientId =
+          process.env.ML_CLIENT_ID;
 
-            statusText:
-              resposta.statusText,
+        const clientSecret =
+          process.env.ML_CLIENT_SECRET;
 
+        if (
+          !clientId ||
+          !clientSecret
+        ) {
+          throw new Error(
+            "ML_CLIENT_ID ou ML_CLIENT_SECRET não configurado."
+          );
+        }
+
+        console.log(
+          "🔄 Renovando token Mercado Livre..."
+        );
+
+        const resposta =
+          await fetch(
+            "https://api.mercadolibre.com/oauth/token",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/x-www-form-urlencoded",
+                "Accept":
+                  "application/json"
+              },
+
+              body:
+                new URLSearchParams({
+                  grant_type:
+                    "refresh_token",
+
+                  client_id:
+                    clientId,
+
+                  client_secret:
+                    clientSecret,
+
+                  refresh_token:
+                    mercadoLivreRefreshToken
+                }).toString()
+            }
+          );
+
+        const texto =
+          await resposta.text();
+
+        let dados = {};
+
+        try {
+          dados =
+            JSON.parse(texto);
+        } catch {
+          dados = {
+            raw: texto
+          };
+        }
+
+        if (!resposta.ok) {
+          console.error(
+            "❌ Erro ao renovar token Mercado Livre:",
+            resposta.status,
             dados
-          }
+          );
+
+          throw new Error(
+            `Erro ao renovar token Mercado Livre: HTTP ${resposta.status}`
+          );
+        }
+
+        await salvarTokensMercadoLivre(
+          dados
         );
 
-        throw new Error(
-          dados.message ||
-          dados.error_description ||
-          dados.error ||
-          `Erro ao renovar token do Mercado Livre (${resposta.status}).`
+        console.log(
+          "✅ Token Mercado Livre renovado."
         );
+
+        return {
+          success: true,
+          dados
+        };
+
+      } catch (erro) {
+        console.error(
+          "❌ Falha na renovação do token:",
+          erro.message
+        );
+
+        return {
+          success: false,
+          error: erro.message
+        };
+
+      } finally {
+        renovacaoTokenEmAndamento =
+          null;
       }
-
-      if (!dados.access_token) {
-        throw new Error(
-          "Mercado Livre não retornou um novo access_token."
-        );
-      }
-
-      const expiresAt =
-        dados.expires_in
-          ? Date.now() +
-            Number(
-              dados.expires_in
-            ) *
-            1000
-          : null;
-
-      await salvarTokenMercadoLivre({
-        userId:
-          mercadoLivreUserId,
-
-        accessToken:
-          dados.access_token,
-
-        refreshToken:
-          dados.refresh_token ||
-          mercadoLivreRefreshToken,
-
-        expiresAt
-      });
-
-      console.log(
-        "✅ TOKEN MERCADO LIVRE RENOVADO COM SUCESSO"
-      );
-
-      return dados.access_token;
     })();
 
-  try {
-    return await renovacaoTokenEmAndamento;
-  } finally {
-    renovacaoTokenEmAndamento = null;
-  }
+  return renovacaoTokenEmAndamento;
 }
 
 // ==========================================
-// OBTER TOKEN VÁLIDO
+// MERCADO LIVRE - OBTER TOKEN
 // ==========================================
 
-async function obterTokenMercadoLivre(
-  forcarRenovacao = false
-) {
+async function obterTokenMercadoLivre() {
   if (
-    !mercadoLivreAccessToken &&
-    process.env.DATABASE_URL
+    mercadoLivreAccessToken
   ) {
-    await carregarTokenMercadoLivre();
-  }
+    const agora =
+      Date.now();
 
-  if (!mercadoLivreAccessToken) {
-    throw new Error(
-      "Mercado Livre não está conectado."
-    );
-  }
+    const expiraEm =
+      mercadoLivreTokenExpiresAt;
 
-  const tokenPrestesAExpirar =
-    mercadoLivreTokenExpiresAt &&
-    Date.now() >
-      mercadoLivreTokenExpiresAt -
-        5 * 60 * 1000;
+    // Renova com antecedência de 5 minutos
+    if (
+      !expiraEm ||
+      expiraEm - agora > 5 * 60 * 1000
+    ) {
+      return mercadoLivreAccessToken;
+    }
+  }
 
   if (
-    forcarRenovacao &&
     mercadoLivreRefreshToken
   ) {
-    return await renovarTokenMercadoLivre();
+    const renovacao =
+      await renovarTokenMercadoLivre();
+
+    if (
+      renovacao.success &&
+      mercadoLivreAccessToken
+    ) {
+      return mercadoLivreAccessToken;
+    }
   }
 
   if (
-    tokenPrestesAExpirar &&
-    mercadoLivreRefreshToken
+    mercadoLivreAccessToken
   ) {
-    return await renovarTokenMercadoLivre();
+    return mercadoLivreAccessToken;
   }
 
-  return mercadoLivreAccessToken;
+  throw new Error(
+    "Token do Mercado Livre não configurado."
+  );
 }
 
 // ==========================================
-// CONSULTAR USUÁRIO DO MERCADO LIVRE
+// MERCADO LIVRE - REQUISIÇÃO AUTENTICADA
 // ==========================================
 
-async function consultarUsuarioMercadoLivre(
-  token
+async function requisicaoMercadoLivre(
+  url,
+  opcoes = {},
+  repetir403 = true
 ) {
-  const resposta =
+  let token =
+    await obterTokenMercadoLivre();
+
+  const headers = {
+    Accept:
+      "application/json",
+
+    ...(opcoes.headers || {}),
+
+    Authorization:
+      `Bearer ${token}`
+  };
+
+  let resposta =
     await fetch(
-      "https://api.mercadolibre.com/users/me",
+      url,
       {
-        method: "GET",
-
-        headers: {
-          Authorization:
-            `Bearer ${token}`,
-
-          Accept:
-            "application/json"
-        }
+        ...opcoes,
+        headers
       }
     );
 
+  // Token expirado/inválido
+  if (
+    (resposta.status === 401 ||
+      resposta.status === 403) &&
+    repetir403 &&
+    mercadoLivreRefreshToken
+  ) {
+    console.warn(
+      `⚠️ Mercado Livre respondeu ${resposta.status}. Tentando renovar token...`
+    );
+
+    const renovacao =
+      await renovarTokenMercadoLivre();
+
+    if (
+      renovacao.success &&
+      mercadoLivreAccessToken
+    ) {
+      token =
+        mercadoLivreAccessToken;
+
+      resposta =
+        await fetch(
+          url,
+          {
+            ...opcoes,
+
+            headers: {
+              Accept:
+                "application/json",
+
+              ...(opcoes.headers || {}),
+
+              Authorization:
+                `Bearer ${token}`
+            }
+          }
+        );
+    }
+  }
+
+  return resposta;
+}
+
+// ==========================================
+// MERCADO LIVRE - PARSEAR RESPOSTA
+// ==========================================
+
+async function parsearRespostaMercadoLivre(
+  resposta
+) {
   const texto =
     await resposta.text();
 
-  let dados = {};
+  let dados = null;
 
   try {
     dados =
@@ -966,354 +791,15 @@ async function consultarUsuarioMercadoLivre(
   }
 
   return {
-    resposta,
+    status:
+      resposta.status,
+
+    ok:
+      resposta.ok,
+
     dados
   };
 }
-
-// ==========================================
-// BUSCAR NO MERCADO LIVRE - VERSÃO CORRIGIDA
-// ==========================================
-
-async function buscarMercadoLivre(
-  busca,
-  limite = 20
-) {
-
-  const termo =
-    String(
-      busca || ""
-    ).trim();
-
-  if (!termo) {
-
-    throw new Error(
-      "Informe o termo de busca."
-    );
-
-  }
-
-  const quantidade =
-    Math.min(
-      Math.max(
-        Number(limite) || 20,
-        1
-      ),
-      50
-    );
-
-  // ========================================
-  // OBTER TOKEN VÁLIDO
-  // ========================================
-
-  const token =
-    await obterTokenMercadoLivre();
-
-  if (!token) {
-
-    const erro =
-      new Error(
-        "Token do Mercado Livre não disponível."
-      );
-
-    erro.code =
-      "ML_TOKEN_INVALID";
-
-    erro.status =
-      401;
-
-    throw erro;
-
-  }
-
-  // ========================================
-  // URL DA BUSCA
-  // ========================================
-
-  const url =
-    new URL(
-      "https://api.mercadolibre.com/sites/MLB/search"
-    );
-
-  url.searchParams.set(
-    "q",
-    termo
-  );
-
-  url.searchParams.set(
-    "limit",
-    String(quantidade)
-  );
-
-  // ========================================
-  // EXECUTAR BUSCA
-  // ========================================
-
-  console.log(
-    "================================="
-  );
-
-  console.log(
-    "BUSCANDO NO MERCADO LIVRE"
-  );
-
-  console.log(
-    "TERMO:",
-    termo
-  );
-
-  console.log(
-    "LIMITE:",
-    quantidade
-  );
-
-  console.log(
-    "URL:",
-    url.toString()
-  );
-
-  console.log(
-    "TOKEN DISPONÍVEL:",
-    Boolean(token)
-  );
-
-  console.log(
-    "================================="
-  );
-
-  const resposta =
-    await fetch(
-      url.toString(),
-      {
-
-        method:
-          "GET",
-
-        headers: {
-
-          Authorization:
-            `Bearer ${token}`,
-
-          Accept:
-            "application/json",
-
-          "User-Agent":
-            "Eletromax-V2/2.0"
-
-        }
-
-      }
-    );
-
-  // ========================================
-  // LER RESPOSTA
-  // ========================================
-
-  const textoResposta =
-    await resposta.text();
-
-  let dados = {};
-
-  try {
-
-    dados =
-      textoResposta
-        ? JSON.parse(
-            textoResposta
-          )
-        : {};
-
-  } catch (
-    erroJson
-  ) {
-
-    dados = {
-
-      raw:
-        textoResposta
-
-    };
-
-  }
-
-  console.log(
-    "STATUS MERCADO LIVRE:",
-    resposta.status
-  );
-
-  // ========================================
-  // RESPOSTA COM SUCESSO
-  // ========================================
-
-  if (
-    resposta.ok
-  ) {
-
-    console.log(
-      "✅ BUSCA MERCADO LIVRE REALIZADA COM SUCESSO"
-    );
-
-    console.log(
-      "RESULTADOS:",
-      Array.isArray(
-        dados.results
-      )
-        ? dados.results.length
-        : 0
-    );
-
-    return dados;
-
-  }
-
-  // ========================================
-  // TOKEN INVÁLIDO
-  // ========================================
-
-  if (
-    resposta.status === 401
-  ) {
-
-    console.error(
-      "❌ TOKEN MERCADO LIVRE INVÁLIDO OU EXPIRADO"
-    );
-
-    // Tentar renovar automaticamente
-    if (
-      mercadoLivreRefreshToken
-    ) {
-
-      try {
-
-        console.log(
-          "🔄 TENTANDO RENOVAR TOKEN..."
-        );
-
-        const novoToken =
-          await renovarTokenMercadoLivre();
-
-        if (
-          novoToken
-        ) {
-
-          console.log(
-            "🔄 REPETINDO BUSCA COM NOVO TOKEN..."
-          );
-
-          const segundaResposta =
-            await fetch(
-              url.toString(),
-              {
-
-                method:
-                  "GET",
-
-                headers: {
-
-                  Authorization:
-                    `Bearer ${novoToken}`,
-
-                  Accept:
-                    "application/json",
-
-                  "User-Agent":
-                    "Eletromax-V2/2.0"
-
-                }
-
-              }
-            );
-
-          const segundaTexto =
-            await segundaResposta.text();
-
-          let segundaDados = {};
-
-          try {
-
-            segundaDados =
-              segundaTexto
-                ? JSON.parse(
-                    segundaTexto
-                  )
-                : {};
-
-          } catch (
-            erroJson
-          ) {
-
-            segundaDados = {
-
-              raw:
-                segundaTexto
-
-            };
-
-          }
-
-          if (
-            segundaResposta.ok
-          ) {
-
-            console.log(
-              "✅ BUSCA FUNCIONOU APÓS RENOVAÇÃO DO TOKEN"
-            );
-
-            return segundaDados;
-
-          }
-
-          console.error(
-            "❌ BUSCA CONTINUOU FALHANDO APÓS RENOVAÇÃO:",
-            segundaResposta.status,
-            segundaDados
-          );
-
-        }
-
-      } catch (
-        erroRenovacao
-      ) {
-
-        console.error(
-          "❌ ERRO AO RENOVAR TOKEN:",
-          erroRenovacao.message
-        );
-
-      }
-
-    }
-
-    const erro =
-      new Error(
-
-        dados.message ||
-
-        dados.error_description ||
-
-        dados.error ||
-
-        "Token do Mercado Livre inválido ou expirado."
-
-      );
-
-    erro.status =
-      401;
-
-    erro.code =
-      "ML_TOKEN_INVALID";
-
-    erro.dados =
-      dados;
-
-    throw erro;
-
-  }
-
-  // ========================================
-  // ACESSO NEGADO
-  // ========================================
-
   if (
     resposta.status === 403
   ) {
@@ -1329,15 +815,9 @@ async function buscarMercadoLivre(
 
     const erro =
       new Error(
-
         dados.message ||
-
         dados.error_description ||
-
-        dados.error ||
-
-        "O Mercado Livre recusou o acesso à consulta."
-
+        "Mercado Livre recusou o acesso à API."
       );
 
     erro.status =
@@ -1350,7 +830,6 @@ async function buscarMercadoLivre(
       dados;
 
     throw erro;
-
   }
 
   // ========================================
@@ -1359,1086 +838,46 @@ async function buscarMercadoLivre(
 
   const erro =
     new Error(
-
       dados.message ||
-
       dados.error_description ||
-
       dados.error ||
-
-      `Erro na API do Mercado Livre (${resposta.status}).`
-
+      `Erro Mercado Livre HTTP ${resposta.status}.`
     );
 
   erro.status =
     resposta.status;
 
   erro.code =
-    "ML_SEARCH_ERROR";
+    dados.error ||
+    "ML_API_ERROR";
 
   erro.dados =
     dados;
 
   throw erro;
-
-}
-
-  // ========================================
-  // OBTER TOKEN VÁLIDO
-  // ========================================
-
-  let token =
-    await obterTokenMercadoLivre();
-
-  // ========================================
-  // FUNÇÃO INTERNA DE BUSCA
-  // ========================================
-
-  async function executarBusca(
-    accessToken
-  ) {
-
-    const url =
-      new URL(
-        "https://api.mercadolibre.com/sites/MLB/search"
-      );
-
-    url.searchParams.set(
-      "q",
-      termo
-    );
-
-    url.searchParams.set(
-      "limit",
-      String(quantidade)
-    );
-
-    const resposta =
-      await fetch(
-        url.toString(),
-        {
-
-          method:
-            "GET",
-
-          headers: {
-
-            Authorization:
-              `Bearer ${accessToken}`,
-
-            Accept:
-              "application/json",
-
-            "User-Agent":
-              "Eletromax-V2/2.0"
-
-          }
-
-        }
-      );
-
-    const texto =
-      await resposta.text();
-
-    let dados = {};
-
-    try {
-
-      dados =
-        texto
-          ? JSON.parse(texto)
-          : {};
-
-    } catch {
-
-      dados = {
-
-        raw:
-          texto
-
-      };
-
-    }
-
-    return {
-
-      resposta,
-
-      dados
-
-    };
-
-  }
-
-  // ========================================
-  // PRIMEIRA TENTATIVA
-  // ========================================
-
-  let resultado =
-    await executarBusca(
-      token
-    );
-
-  // ========================================
-  // TOKEN INVÁLIDO
-  // RENOVAR E TENTAR NOVAMENTE
-  // ========================================
-
-  if (
-    resultado.resposta.status ===
-    401
-  ) {
-
-    console.log(
-      "⚠️ TOKEN ML EXPIRADO OU INVÁLIDO."
-    );
-
-    if (
-      !mercadoLivreRefreshToken
-    ) {
-
-      const erro =
-        new Error(
-          "Token do Mercado Livre inválido e nenhum refresh token disponível."
-        );
-
-      erro.status =
-        401;
-
-      erro.code =
-        "ML_TOKEN_INVALID";
-
-      throw erro;
-
-    }
-
-    token =
-      await renovarTokenMercadoLivre();
-
-    resultado =
-      await executarBusca(
-        token
-      );
-
-  }
-
-  // ========================================
-  // ANALISAR ERRO
-  // ========================================
-
-  if (
-    !resultado.resposta.ok
-  ) {
-
-    console.error(
-      "================================="
-    );
-
-    console.error(
-      "ERRO API MERCADO LIVRE"
-    );
-
-    console.error(
-      "STATUS:",
-      resultado.resposta.status
-    );
-
-    console.error(
-      "RESPOSTA:",
-      resultado.dados
-    );
-
-    console.error(
-      "================================="
-    );
-
-    const mensagem =
-      resultado.dados?.message ||
-      resultado.dados?.error_description ||
-      resultado.dados?.error ||
-      `Erro na API do Mercado Livre (${resultado.resposta.status}).`;
-
-    const erro =
-      new Error(
-        mensagem
-      );
-
-    erro.status =
-      resultado.resposta.status;
-
-    if (
-      resultado.resposta.status ===
-      401
-    ) {
-
-      erro.code =
-        "ML_TOKEN_INVALID";
-
-    } else if (
-      resultado.resposta.status ===
-      403
-    ) {
-
-      erro.code =
-        "ML_FORBIDDEN";
-
-    } else {
-
-      erro.code =
-        "ML_SEARCH_ERROR";
-
-    }
-
-    throw erro;
-
-  }
-
-  // ========================================
-  // SUCESSO
-  // ========================================
-
-  console.log(
-    `✅ Mercado Livre retornou ${resultado.dados?.results?.length || 0} produtos para "${termo}".`
-  );
-
-  return resultado.dados;
-
-}
-
-  // ========================================
-  // TOKEN INVÁLIDO
-  // ========================================
-
-  if (
-    resposta.status === 401 &&
-    mercadoLivreRefreshToken
-  ) {
-    console.warn(
-      "⚠️ TOKEN ML RETORNOU 401. TENTANDO RENOVAR..."
-    );
-
-    token =
-      await renovarTokenMercadoLivre();
-
-    resposta =
-      await fetch(
-        url,
-        {
-          method: "GET",
-
-          headers: {
-            Authorization:
-              `Bearer ${token}`,
-
-            Accept:
-              "application/json",
-
-            "User-Agent":
-              "Eletromax-V2/2.0"
-          }
-        }
-      );
-
-    texto =
-      await resposta.text();
-
-    try {
-      dados =
-        texto
-          ? JSON.parse(texto)
-          : {};
-    } catch {
-      dados = {
-        raw: texto
-      };
-    }
-  }
-
-  // ========================================
-  // TRATAMENTO DE ERROS
-  // ========================================
-
-  if (!resposta.ok) {
-    console.error(
-      "================================="
-    );
-
-    console.error(
-      "❌ ERRO API MERCADO LIVRE"
-    );
-
-    console.error(
-      "STATUS:",
-      resposta.status
-    );
-
-    console.error(
-      "STATUS TEXT:",
-      resposta.statusText
-    );
-
-    console.error(
-      "URL:",
-      url.toString()
-    );
-
-    console.error(
-      "RESPOSTA:",
-      dados
-    );
-
-    console.error(
-      "================================="
-    );
-
-    const erro =
-      new Error(
-        dados.message ||
-        dados.error_description ||
-        dados.error ||
-        `Erro na API do Mercado Livre (${resposta.status}).`
-      );
-
-    erro.status =
-      resposta.status;
-
-    erro.mlResponse =
-      dados;
-
-    if (
-      resposta.status === 401
-    ) {
-      erro.code =
-        "ML_TOKEN_INVALID";
-    } else if (
-      resposta.status === 403
-    ) {
-      erro.code =
-        "ML_FORBIDDEN";
-    } else {
-      erro.code =
-        "ML_SEARCH_ERROR";
-    }
-
-    throw erro;
-  }
-
-  return dados;
 }
 
 // ==========================================
-// STATUS DO SISTEMA
+// TRANSFORMAR PRODUTO MERCADO LIVRE
 // ==========================================
 
-app.get(
-  "/api/status",
-  async (req, res) => {
-    try {
-      let banco =
-        "disconnected";
-
-      if (
-        process.env.DATABASE_URL
-      ) {
-        await pool.query(
-          "SELECT NOW()"
-        );
-
-        banco =
-          "connected";
-      }
-
-      res.json({
-        success:
-          true,
-
-        status:
-          "online",
-
-        database:
-          banco,
-
-        mercadolivre:
-          mercadoLivreAccessToken
-            ? "connected"
-            : "not_connected",
-
-        motorOfertas:
-          "active",
-
-        geradorPosts:
-          "active"
-      });
-    } catch (erro) {
-      res.status(500).json({
-        success:
-          false,
-
-        status:
-          "offline",
-
-        database:
-          "disconnected",
-
-        message:
-          erro.message
-      });
-    }
-  }
-);
-
-// ==========================================
-// DASHBOARD
-// ==========================================
-
-app.get(
-  "/api/dashboard",
-  async (req, res) => {
-    if (!process.env.DATABASE_URL) {
-      return res.status(503).json({
-        success:
-          false,
-
-        message:
-          "Banco de dados não configurado."
-      });
-    }
-
-    try {
-      const produtos =
-        await pool.query(`
-          SELECT COUNT(*)::int AS total
-          FROM produtos
-        `);
-
-      const ofertas =
-        await pool.query(`
-          SELECT COUNT(*)::int AS total
-          FROM ofertas
-        `);
-
-      const mercadoLivre =
-        await pool.query(`
-          SELECT COUNT(*)::int AS total
-          FROM produtos
-          WHERE plataforma = 'Mercado Livre'
-        `);
-
-      const shopee =
-        await pool.query(`
-          SELECT COUNT(*)::int AS total
-          FROM produtos
-          WHERE plataforma = 'Shopee'
-        `);
-
-      res.json({
-        success:
-          true,
-
-        totalProdutos:
-          produtos.rows[0].total,
-
-        totalOfertas:
-          ofertas.rows[0].total,
-
-        totalMercadoLivre:
-          mercadoLivre.rows[0].total,
-
-        totalShopee:
-          shopee.rows[0].total
-      });
-    } catch (erro) {
-      res.status(500).json({
-        success:
-          false,
-
-        message:
-          "Erro ao carregar dashboard.",
-
-        error:
-          erro.message
-      });
-    }
-  }
-);
-
-// ==========================================
-// PRODUTOS - LISTAR
-// ==========================================
-
-app.get(
-  "/api/produtos",
-  async (req, res) => {
-    try {
-      const resultado =
-        await pool.query(`
-          SELECT
-            id,
-            nome,
-            preco,
-            link,
-            plataforma,
-            criado_em
-          FROM produtos
-          ORDER BY id DESC
-        `);
-
-      res.json({
-        success:
-          true,
-
-        produtos:
-          resultado.rows
-      });
-    } catch (erro) {
-      res.status(500).json({
-        success:
-          false,
-
-        message:
-          "Erro ao buscar produtos.",
-
-        error:
-          erro.message
-      });
-    }
-  }
-);
-
-// ==========================================
-// PRODUTOS - CADASTRAR
-// ==========================================
-
-app.post(
-  "/api/produtos",
-  async (req, res) => {
-    try {
-      const {
-        nome,
-        preco,
-        link,
-        plataforma
-      } = req.body;
-
-      if (
-        !nome ||
-        !link ||
-        !plataforma
-      ) {
-        return res.status(400).json({
-          success:
-            false,
-
-          message:
-            "Nome, link e plataforma são obrigatórios."
-        });
-      }
-
-      const nomeFinal =
-        String(nome).trim();
-
-      const linkFinal =
-        String(link).trim();
-
-      const plataformaFinal =
-        String(plataforma).trim();
-
-      if (
-        !nomeFinal ||
-        !linkFinal ||
-        !plataformaFinal
-      ) {
-        return res.status(400).json({
-          success:
-            false,
-
-          message:
-            "Os campos obrigatórios não podem estar vazios."
-        });
-      }
-
-      const resultado =
-        await pool.query(
-          `
-          INSERT INTO produtos
-          (
-            nome,
-            preco,
-            link,
-            plataforma
-          )
-          VALUES
-          (
-            $1,
-            $2,
-            $3,
-            $4
-          )
-          RETURNING *
-          `,
-          [
-            nomeFinal,
-
-            normalizarPreco(
-              preco
-            ),
-
-            linkFinal,
-
-            plataformaFinal
-          ]
-        );
-
-      res.status(201).json({
-        success:
-          true,
-
-        message:
-          "Produto salvo com sucesso!",
-
-        produto:
-          resultado.rows[0]
-      });
-    } catch (erro) {
-      console.error(
-        "ERRO AO SALVAR PRODUTO:",
-        erro.message
-      );
-
-      res.status(500).json({
-        success:
-          false,
-
-        message:
-          "Erro ao salvar produto.",
-
-        error:
-          erro.message
-      });
-    }
-  }
-);
-
-// ==========================================
-// PRODUTOS - EXCLUIR
-// ==========================================
-
-app.delete(
-  "/api/produtos/:id",
-  async (req, res) => {
-    try {
-      const id =
-        Number(req.params.id);
-
-      if (
-        !Number.isInteger(id)
-      ) {
-        return res.status(400).json({
-          success:
-            false,
-
-          message:
-            "ID inválido."
-        });
-      }
-
-      const resultado =
-        await pool.query(
-          `
-          DELETE FROM produtos
-          WHERE id = $1
-          RETURNING id
-          `,
-          [id]
-        );
-
-      if (
-        resultado.rowCount === 0
-      ) {
-        return res.status(404).json({
-          success:
-            false,
-
-          message:
-            "Produto não encontrado."
-        });
-      }
-
-      res.json({
-        success:
-          true,
-
-        message:
-          "Produto excluído com sucesso."
-      });
-    } catch (erro) {
-      res.status(500).json({
-        success:
-          false,
-
-        message:
-          "Erro ao excluir produto.",
-
-        error:
-          erro.message
-      });
-    }
-  }
-);
-
-// ==========================================
-// OFERTAS - LISTAR
-// ==========================================
-
-app.get(
-  "/api/ofertas",
-  async (req, res) => {
-    try {
-      const resultado =
-        await pool.query(`
-          SELECT
-            id,
-            nome,
-            preco,
-            preco_anterior AS "precoAnterior",
-            link,
-            plataforma,
-            imagem,
-            categoria,
-            avaliacao,
-            vendas,
-            pontuacao,
-            criado_em
-          FROM ofertas
-          ORDER BY
-            pontuacao DESC,
-            id DESC
-        `);
-
-      res.json({
-        success:
-          true,
-
-        ofertas:
-          resultado.rows
-      });
-    } catch (erro) {
-      res.status(500).json({
-        success:
-          false,
-
-        message:
-          "Erro ao buscar ofertas.",
-
-        error:
-          erro.message
-      });
-    }
-  }
-);
-
-// ==========================================
-// FILTROS - BUSCAR
-// ==========================================
-
-app.get(
-  "/api/ofertas/filtros",
-  async (req, res) => {
-    try {
-      const resultado =
-        await pool.query(`
-          SELECT
-            preco_minimo AS "precoMinimo",
-            preco_maximo AS "precoMaximo",
-            avaliacao_minima AS "avaliacaoMinima",
-            vendas_minimas AS "vendasMinimas",
-            limite_por_categoria AS "limitePorCategoria",
-            pontuacao_minima AS "pontuacaoMinima"
-          FROM filtros_ofertas
-          WHERE id = 1
-          LIMIT 1
-        `);
-
-      res.json({
-        success:
-          true,
-
-        filtros:
-          resultado.rows[0] ||
-          FILTROS_PADRAO
-      });
-    } catch (erro) {
-      res.status(500).json({
-        success:
-          false,
-
-        message:
-          "Erro ao buscar filtros.",
-
-        error:
-          erro.message
-      });
-    }
-  }
-);
-
-// ==========================================
-// FILTROS - SALVAR
-// ==========================================
-
-app.put(
-  "/api/ofertas/filtros",
-  async (req, res) => {
-    try {
-      const {
-        precoMinimo,
-        precoMaximo,
-        avaliacaoMinima,
-        vendasMinimas,
-        limitePorCategoria,
-        pontuacaoMinima
-      } = req.body;
-
-      const minimo =
-        numeroSeguro(
-          precoMinimo,
-          0
-        );
-
-      const maximo =
-        numeroSeguro(
-          precoMaximo,
-          100000
-        );
-
-      const avaliacao =
-        numeroSeguro(
-          avaliacaoMinima,
-          0
-        );
-
-      const vendas =
-        numeroSeguro(
-          vendasMinimas,
-          0
-        );
-
-      const limite =
-        Math.min(
-          Math.max(
-            Math.trunc(
-              numeroSeguro(
-                limitePorCategoria,
-                20
-              )
-            ),
-            1
-          ),
-          50
-        );
-
-      const pontuacao =
-        numeroSeguro(
-          pontuacaoMinima,
-          0
-        );
-
-      await pool.query(
-        `
-        INSERT INTO filtros_ofertas
-        (
-          id,
-          preco_minimo,
-          preco_maximo,
-          avaliacao_minima,
-          vendas_minimas,
-          limite_por_categoria,
-          pontuacao_minima,
-          atualizado_em
-        )
-        VALUES
-        (
-          1,
-          $1,
-          $2,
-          $3,
-          $4,
-          $5,
-          $6,
-          CURRENT_TIMESTAMP
-        )
-        ON CONFLICT (id)
-        DO UPDATE SET
-          preco_minimo =
-            EXCLUDED.preco_minimo,
-
-          preco_maximo =
-            EXCLUDED.preco_maximo,
-
-          avaliacao_minima =
-            EXCLUDED.avaliacao_minima,
-
-          vendas_minimas =
-            EXCLUDED.vendas_minimas,
-
-          limite_por_categoria =
-            EXCLUDED.limite_por_categoria,
-
-          pontuacao_minima =
-            EXCLUDED.pontuacao_minima,
-
-          atualizado_em =
-            CURRENT_TIMESTAMP
-        `,
-        [
-          minimo,
-          maximo,
-          avaliacao,
-          vendas,
-          limite,
-          pontuacao
-        ]
-      );
-
-      res.json({
-        success:
-          true,
-
-        message:
-          "Filtros salvos com sucesso.",
-
-        filtros: {
-          precoMinimo:
-            minimo,
-
-          precoMaximo:
-            maximo,
-
-          avaliacaoMinima:
-            avaliacao,
-
-          vendasMinimas:
-            vendas,
-
-          limitePorCategoria:
-            limite,
-
-          pontuacaoMinima:
-            pontuacao
-        }
-      });
-    } catch (erro) {
-      console.error(
-        "ERRO AO SALVAR FILTROS:",
-        erro.message
-      );
-
-      res.status(500).json({
-        success:
-          false,
-
-        message:
-          "Erro ao salvar filtros.",
-
-        error:
-          erro.message
-      });
-    }
-  }
-);
-
-// ==========================================
-// OBTER FILTROS
-// ==========================================
-
-async function obterFiltros() {
-  const resultado =
-    await pool.query(`
-      SELECT
-        preco_minimo,
-        preco_maximo,
-        avaliacao_minima,
-        vendas_minimas,
-        limite_por_categoria,
-        pontuacao_minima
-      FROM filtros_ofertas
-      WHERE id = 1
-      LIMIT 1
-    `);
-
-  if (
-    resultado.rowCount === 0
-  ) {
-    return {
-      ...FILTROS_PADRAO
-    };
-  }
-
-  const f =
-    resultado.rows[0];
-
-  return {
-    precoMinimo:
-      numeroSeguro(
-        f.preco_minimo,
-        0
-      ),
-
-    precoMaximo:
-      numeroSeguro(
-        f.preco_maximo,
-        100000
-      ),
-
-    avaliacaoMinima:
-      numeroSeguro(
-        f.avaliacao_minima,
-        0
-      ),
-
-    vendasMinimas:
-      numeroSeguro(
-        f.vendas_minimas,
-        0
-      ),
-
-    limitePorCategoria:
-      numeroSeguro(
-        f.limite_por_categoria,
-        20
-      ),
-
-    pontuacaoMinima:
-      numeroSeguro(
-        f.pontuacao_minima,
-        0
-      )
-  };
-}
-
-// ==========================================
-// ANALISAR PRODUTO
-// ==========================================
-
-function analisarProduto(
-  produto,
-  categoria,
-  filtros
+function transformarProdutoMercadoLivre(
+  produto
 ) {
-  const preco =
+
+  const avaliacao =
     numeroSeguro(
-      produto.price,
+      produto?.seller?.seller_reputation
+        ?.transactions
+        ?.ratings
+        ?.positive,
       0
     );
 
   const vendas =
-    extrairVendas(
-      produto
-    );
-
-  const avaliacao =
-    extrairAvaliacao(
-      produto
+    numeroSeguro(
+      produto?.sold_quantity,
+      0
     );
 
   const pontuacao =
@@ -2446,122 +885,165 @@ function analisarProduto(
       produto
     );
 
-  if (
-    preco <
-    filtros.precoMinimo
-  ) {
-    return {
-      aprovado:
-        false,
-
-      motivo:
-        "Preço abaixo do mínimo."
-    };
-  }
+  let imagem =
+    "";
 
   if (
-    preco >
-    filtros.precoMaximo
+    Array.isArray(
+      produto?.thumbnail
+    )
   ) {
-    return {
-      aprovado:
-        false,
-
-      motivo:
-        "Preço acima do máximo."
-    };
-  }
-
-  if (
-    avaliacao <
-    filtros.avaliacaoMinima
-  ) {
-    return {
-      aprovado:
-        false,
-
-      motivo:
-        "Avaliação abaixo do mínimo."
-    };
-  }
-
-  if (
-    vendas <
-    filtros.vendasMinimas
-  ) {
-    return {
-      aprovado:
-        false,
-
-      motivo:
-        "Vendas abaixo do mínimo."
-    };
-  }
-
-  if (
-    pontuacao <
-    filtros.pontuacaoMinima
-  ) {
-    return {
-      aprovado:
-        false,
-
-      motivo:
-        "Pontuação abaixo do mínimo."
-    };
+    imagem =
+      produto.thumbnail[0] ||
+      "";
+  } else {
+    imagem =
+      produto?.thumbnail ||
+      produto?.pictures?.[0]?.url ||
+      "";
   }
 
   return {
-    aprovado:
-      true,
+    id:
+      produto?.id ||
+      null,
 
-    produto: {
-      nome:
-        produto.title ||
-        "Produto",
+    nome:
+      produto?.title ||
+      "Produto sem nome",
 
-      preco:
-        preco,
+    preco:
+      normalizarPreco(
+        produto?.price
+      ),
 
-      precoAnterior:
-        null,
+    precoAnterior:
+      normalizarPreco(
+        produto?.original_price
+      ),
 
-      link:
-        produto.permalink ||
-        "",
+    link:
+      produto?.permalink ||
+      produto?.url ||
+      "",
 
-      imagem:
-        produto.thumbnail ||
-        "",
+    plataforma:
+      "Mercado Livre",
 
-      plataforma:
-        "Mercado Livre",
+    imagem,
 
-      categoria:
-        categoria.nome,
+    categoria:
+      produto?.category_id ||
+      "",
 
-      avaliacao:
-        avaliacao,
+    avaliacao,
 
-      vendas:
-        vendas,
+    vendas,
 
-      pontuacao:
-        pontuacao
-    }
+    pontuacao,
+
+    freteGratis:
+      Boolean(
+        produto?.shipping
+          ?.free_shipping
+      ),
+
+    lojaOficial:
+      Boolean(
+        produto?.official_store_id
+      ),
+
+    produtoOriginal:
+      produto
   };
+}
+
+// ==========================================
+// SALVAR PRODUTO
+// ==========================================
+
+async function salvarProduto(
+  produto
+) {
+
+  if (
+    !process.env.DATABASE_URL
+  ) {
+    throw new Error(
+      "DATABASE_URL não configurada."
+    );
+  }
+
+  if (
+    !produto?.link
+  ) {
+    throw new Error(
+      "Produto sem link válido."
+    );
+  }
+
+  const resultado =
+    await pool.query(
+      `
+      INSERT INTO produtos
+      (
+        nome,
+        preco,
+        link,
+        plataforma
+      )
+      VALUES
+      (
+        $1,
+        $2,
+        $3,
+        $4
+      )
+      ON CONFLICT DO NOTHING
+      RETURNING *
+      `,
+      [
+        produto.nome ||
+          "Produto",
+
+        produto.preco ||
+          "",
+
+        produto.link,
+
+        produto.plataforma ||
+          "Mercado Livre"
+      ]
+    );
+
+  return (
+    resultado.rows[0] ||
+    null
+  );
 }
 
 // ==========================================
 // SALVAR OFERTA
 // ==========================================
 
-async function salvarOferta(oferta) {
+async function salvarOferta(
+  produto
+) {
+
   if (
-    !oferta ||
-    !oferta.link
+    !process.env.DATABASE_URL
   ) {
-    return false;
+    throw new Error(
+      "DATABASE_URL não configurada."
+    );
+  }
+
+  if (
+    !produto?.link
+  ) {
+    throw new Error(
+      "Oferta sem link válido."
+    );
   }
 
   const resultado =
@@ -2602,10 +1084,10 @@ async function salvarOferta(oferta) {
           EXCLUDED.preco,
 
         preco_anterior =
-          COALESCE(
-            EXCLUDED.preco_anterior,
-            ofertas.preco_anterior
-          ),
+          EXCLUDED.preco_anterior,
+
+        plataforma =
+          EXCLUDED.plataforma,
 
         imagem =
           EXCLUDED.imagem,
@@ -2621,1539 +1103,409 @@ async function salvarOferta(oferta) {
 
         pontuacao =
           EXCLUDED.pontuacao
-
-      RETURNING id
+      RETURNING *
       `,
       [
-        oferta.nome ||
+        produto.nome ||
           "Produto",
 
-        normalizarPreco(
-          oferta.preco
-        ),
-
-        oferta.precoAnterior ||
-          null,
-
-        oferta.link,
-
-        oferta.plataforma ||
-          "Mercado Livre",
-
-        oferta.imagem ||
+        produto.preco ||
           "",
 
-        oferta.categoria ||
+        produto.precoAnterior ||
+          "",
+
+        produto.link,
+
+        produto.plataforma ||
+          "Mercado Livre",
+
+        produto.imagem ||
+          "",
+
+        produto.categoria ||
           "",
 
         numeroSeguro(
-          oferta.avaliacao,
+          produto.avaliacao,
           0
         ),
 
-        Math.trunc(
-          numeroSeguro(
-            oferta.vendas,
-            0
-          )
+        numeroSeguro(
+          produto.vendas,
+          0
         ),
 
         numeroSeguro(
-          oferta.pontuacao,
+          produto.pontuacao,
           0
         )
       ]
     );
 
   return (
-    resultado.rowCount >
-    0
+    resultado.rows[0] ||
+    null
   );
 }
 
 // ==========================================
-// OAUTH MERCADO LIVRE - CALLBACK
+// FILTROS DE OFERTAS
 // ==========================================
 
-app.get(
-  "/oauth/callback",
-  async (req, res) => {
-    try {
-      const code =
-        req.query.code;
+async function obterFiltrosOfertas() {
 
-      const error =
-        req.query.error;
+  const padrao = {
+    ...FILTROS_PADRAO
+  };
 
-      if (error) {
-        return res.status(400).send(`
-          <h2>❌ Erro na autorização do Mercado Livre</h2>
-          <p>Erro: ${String(error)}</p>
-          <p>Descrição: ${
-            String(
-              req.query.error_description ||
-              "Não informado"
-            )
-          }</p>
-        `);
-      }
+  if (
+    !process.env.DATABASE_URL
+  ) {
+    return padrao;
+  }
 
-      if (!code) {
-        return res.status(400).send(
-          "Código OAuth não recebido."
-        );
-      }
+  try {
 
-      if (
-        !process.env.ML_CLIENT_ID ||
-        !process.env.ML_CLIENT_SECRET
-      ) {
-        return res.status(500).send(
-          "ML_CLIENT_ID ou ML_CLIENT_SECRET não configurados."
-        );
-      }
-
-      const redirectUri =
-        obterRedirectUri();
-
-      console.log(
-        "================================="
-      );
-
-      console.log(
-        "🔐 CALLBACK OAUTH MERCADO LIVRE"
-      );
-
-      console.log(
-        "CLIENT ID:",
-        process.env.ML_CLIENT_ID
-      );
-
-      console.log(
-        "REDIRECT URI:",
-        redirectUri
-      );
-
-      console.log(
-        "CODE RECEBIDO:",
-        code
-          ? "SIM"
-          : "NÃO"
-      );
-
-      console.log(
-        "================================="
-      );
-
-      const resposta =
-        await fetch(
-          "https://api.mercadolibre.com/oauth/token",
-          {
-            method:
-              "POST",
-
-            headers: {
-              "Content-Type":
-                "application/x-www-form-urlencoded",
-
-              Accept:
-                "application/json"
-            },
-
-            body:
-              new URLSearchParams({
-                grant_type:
-                  "authorization_code",
-
-                client_id:
-                  process.env.ML_CLIENT_ID,
-
-                client_secret:
-                  process.env.ML_CLIENT_SECRET,
-
-                code:
-                  code,
-
-                redirect_uri:
-                  redirectUri
-              }).toString()
-          }
-        );
-
-      const texto =
-        await resposta.text();
-
-      let dados = {};
-
-      try {
-        dados =
-          texto
-            ? JSON.parse(texto)
-            : {};
-      } catch {
-        dados = {
-          raw:
-            texto
-        };
-      }
-
-      if (!resposta.ok) {
-        console.error(
-          "❌ ERRO OAUTH ML:",
-          {
-            status:
-              resposta.status,
-
-            statusText:
-              resposta.statusText,
-
-            dados
-          }
-        );
-
-        return res.status(
-          resposta.status
-        ).send(`
-          <h2>❌ Erro ao conectar Mercado Livre</h2>
-
-          <p>Status: ${
-            resposta.status
-          }</p>
-
-          <pre>${
-            JSON.stringify(
-              dados,
-              null,
-              2
-            )
-          }</pre>
-
-          <p>
-            Confira ML_CLIENT_ID,
-            ML_CLIENT_SECRET e ML_REDIRECT_URI.
-          </p>
-        `);
-      }
-
-      if (
-        !dados.access_token
-      ) {
-        return res.status(500).send(
-          "Mercado Livre não retornou access_token."
-        );
-      }
-
-      await salvarTokenMercadoLivre({
-        userId:
-          dados.user_id,
-
-        accessToken:
-          dados.access_token,
-
-        refreshToken:
-          dados.refresh_token,
-
-        expiresAt:
-          dados.expires_in
-            ? Date.now() +
-              Number(
-                dados.expires_in
-              ) *
-              1000
-            : null
-      });
-
-      // Validação imediata do token
-      let validacao = null;
-
-      try {
-        validacao =
-          await consultarUsuarioMercadoLivre(
-            dados.access_token
-          );
-
-        console.log(
-          "VALIDAÇÃO TOKEN ML:",
-          validacao.resposta.status
-        );
-      } catch (erroValidacao) {
-        console.error(
-          "ERRO AO VALIDAR TOKEN:",
-          erroValidacao.message
-        );
-      }
-
-      res.send(`
-        <!DOCTYPE html>
-        <html lang="pt-BR">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Mercado Livre conectado</title>
-        </head>
-        <body>
-          <h2>✅ Mercado Livre conectado!</h2>
-
-          <p>
-            Usuário:
-            ${dados.user_id || "não informado"}
-          </p>
-
-          <p>
-            Token salvo com sucesso.
-          </p>
-
-          <p>
-            Validação da API:
-            ${
-              validacao
-                ? validacao.resposta.status
-                : "não realizada"
-            }
-          </p>
-
-          <p>
-            Você já pode voltar ao painel Eletromax V2.
-          </p>
-        </body>
-        </html>
+    const resultado =
+      await pool.query(`
+        SELECT
+          preco_minimo,
+          preco_maximo,
+          avaliacao_minima,
+          vendas_minimas,
+          limite_por_categoria,
+          pontuacao_minima
+        FROM filtros_ofertas
+        WHERE id = 1
+        LIMIT 1
       `);
-    } catch (erro) {
-      console.error(
-        "ERRO CALLBACK ML:",
-        erro
-      );
-
-      res.status(500).send(
-        "Erro interno ao conectar Mercado Livre: " +
-        erro.message
-      );
-    }
-  }
-);
-
-// ==========================================
-// STATUS MERCADO LIVRE
-// ==========================================
-
-app.get(
-  "/api/mercadolivre/status",
-  async (req, res) => {
-    try {
-      if (
-        !mercadoLivreAccessToken &&
-        process.env.DATABASE_URL
-      ) {
-        await carregarTokenMercadoLivre();
-      }
-
-      res.json({
-        success:
-          true,
-
-        conectado:
-          Boolean(
-            mercadoLivreAccessToken
-          ),
-
-        configurado:
-          Boolean(
-            process.env.ML_CLIENT_ID &&
-            process.env.ML_CLIENT_SECRET
-          ),
-
-        redirectUri:
-          obterRedirectUri(),
-
-        userId:
-          mercadoLivreUserId ||
-          null,
-
-        tokenExpiraEm:
-          mercadoLivreTokenExpiresAt
-            ? new Date(
-                mercadoLivreTokenExpiresAt
-              ).toISOString()
-            : null,
-
-        temRefreshToken:
-          Boolean(
-            mercadoLivreRefreshToken
-          )
-      });
-    } catch (erro) {
-      console.error(
-        "ERRO STATUS MERCADO LIVRE:",
-        erro.message
-      );
-
-      res.status(500).json({
-        success:
-          false,
-
-        conectado:
-          false,
-
-        message:
-          erro.message
-      });
-    }
-  }
-);
-
-// ==========================================
-// TESTAR TOKEN MERCADO LIVRE
-// ==========================================
-
-app.get(
-  "/api/mercadolivre/teste",
-  async (req, res) => {
-    try {
-      let token =
-        await obterTokenMercadoLivre();
-
-      let resultado =
-        await consultarUsuarioMercadoLivre(
-          token
-        );
-
-      // Se o token foi rejeitado,
-      // tenta renovar uma única vez.
-      if (
-        resultado.resposta.status === 401 &&
-        mercadoLivreRefreshToken
-      ) {
-        console.warn(
-          "⚠️ TESTE ML: TOKEN 401. RENOVANDO..."
-        );
-
-        token =
-          await renovarTokenMercadoLivre();
-
-        resultado =
-          await consultarUsuarioMercadoLivre(
-            token
-          );
-      }
-
-      const resposta =
-        resultado.resposta;
-
-      const dados =
-        resultado.dados;
-
-      if (!resposta.ok) {
-        return res.status(
-          resposta.status
-        ).json({
-          success:
-            false,
-
-          status:
-            resposta.status,
-
-          code:
-            resposta.status === 401
-              ? "ML_TOKEN_INVALID"
-              : resposta.status === 403
-                ? "ML_FORBIDDEN"
-                : "ML_API_ERROR",
-
-          message:
-            dados.message ||
-            dados.error ||
-            "Mercado Livre recusou a requisição.",
-
-          dados:
-            dados
-        });
-      }
-
-      if (
-        dados.id &&
-        !mercadoLivreUserId
-      ) {
-        mercadoLivreUserId =
-          String(
-            dados.id
-          );
-      }
-
-      res.json({
-        success:
-          true,
-
-        status:
-          resposta.status,
-
-        conectado:
-          true,
-
-        userId:
-          dados.id ||
-          mercadoLivreUserId ||
-          null,
-
-        nickname:
-          dados.nickname ||
-          null,
-
-        dados:
-          dados
-      });
-    } catch (erro) {
-      console.error(
-        "ERRO TESTE ML:",
-        erro
-      );
-
-      res.status(
-        erro.status ||
-        500
-      ).json({
-        success:
-          false,
-
-        code:
-          erro.code ||
-          "ML_TEST_ERROR",
-
-        erro:
-          erro.message,
-
-        detalhes:
-          erro.mlResponse ||
-          null
-      });
-    }
-  }
-);
-
-// ==========================================
-// BUSCAR E SALVAR OFERTAS ML
-// ==========================================
-
-app.post(
-  "/api/mercadolivre/buscar-salvar",
-  async (req, res) => {
-    const busca =
-      String(
-        req.body?.q ||
-        ""
-      ).trim();
-
-    const limite =
-      Math.min(
-        Math.max(
-          Number(
-            req.body?.limit ||
-            20
-          ),
-          1
-        ),
-        50
-      );
-
-    if (!busca) {
-      return res.status(400).json({
-        success:
-          false,
-
-        message:
-          "Informe o termo de busca."
-      });
-    }
-
-    try {
-      console.log(
-        "================================="
-      );
-
-      console.log(
-        "BUSCAR E SALVAR MERCADO LIVRE:"
-      );
-
-      console.log(
-        busca
-      );
-
-      console.log(
-        "================================="
-      );
-
-      const dados =
-        await buscarMercadoLivre(
-          busca,
-          limite
-        );
-
-      const produtos =
-        Array.isArray(
-          dados.results
-        )
-          ? dados.results
-          : [];
-
-      let salvos =
-        0;
-
-      let atualizados =
-        0;
-
-      for (
-        const produto
-        of produtos
-      ) {
-        if (
-          !produto.permalink
-        ) {
-          continue;
-        }
-
-        const oferta = {
-          nome:
-            produto.title ||
-            "Produto",
-
-          preco:
-            produto.price ||
-            0,
-
-          precoAnterior:
-            null,
-
-          link:
-            produto.permalink,
-
-          plataforma:
-            "Mercado Livre",
-
-          imagem:
-            produto.thumbnail ||
-            "",
-
-// ==========================================
-// BUSCAR E SALVAR OFERTAS DO MERCADO LIVRE
-// ==========================================
-
-app.get(
-  "/api/mercadolivre/buscar-salvar",
-  async (req, res) => {
-
-    const busca =
-      String(
-        req.query?.q ||
-        ""
-      ).trim();
-
-    const limite =
-      Math.min(
-        Math.max(
-          Number(
-            req.query?.limit ||
-            20
-          ),
-          1
-        ),
-        50
-      );
 
     if (
-      !busca
+      resultado.rowCount === 0
+    ) {
+      return padrao;
+    }
+
+    const dados =
+      resultado.rows[0];
+
+    return {
+      precoMinimo:
+        numeroSeguro(
+          dados.preco_minimo,
+          padrao.precoMinimo
+        ),
+
+      precoMaximo:
+        numeroSeguro(
+          dados.preco_maximo,
+          padrao.precoMaximo
+        ),
+
+      avaliacaoMinima:
+        numeroSeguro(
+          dados.avaliacao_minima,
+          padrao.avaliacaoMinima
+        ),
+
+      vendasMinimas:
+        numeroSeguro(
+          dados.vendas_minimas,
+          padrao.vendasMinimas
+        ),
+
+      limitePorCategoria:
+        numeroSeguro(
+          dados.limite_por_categoria,
+          padrao.limitePorCategoria
+        ),
+
+      pontuacaoMinima:
+        numeroSeguro(
+          dados.pontuacao_minima,
+          padrao.pontuacaoMinima
+        )
+    };
+
+  } catch (erro) {
+
+    console.error(
+      "ERRO AO OBTER FILTROS:",
+      erro.message
+    );
+
+    return padrao;
+  }
+}
+
+// ==========================================
+// APLICAR FILTROS
+// ==========================================
+
+function produtoPassaFiltros(
+  produto,
+  filtros
+) {
+
+  const preco =
+    Number(
+      produto?.preco
+    );
+
+  if (
+    Number.isFinite(preco)
+  ) {
+
+    if (
+      preco <
+      filtros.precoMinimo
+    ) {
+      return false;
+    }
+
+    if (
+      preco >
+      filtros.precoMaximo
+    ) {
+      return false;
+    }
+  }
+
+  const avaliacao =
+    numeroSeguro(
+      produto?.avaliacao,
+      0
+    );
+
+  if (
+    avaliacao <
+    filtros.avaliacaoMinima
+  ) {
+    return false;
+  }
+
+  const vendas =
+    numeroSeguro(
+      produto?.vendas,
+      0
+    );
+
+  if (
+    vendas <
+    filtros.vendasMinimas
+  ) {
+    return false;
+  }
+
+  const pontuacao =
+    numeroSeguro(
+      produto?.pontuacao,
+      0
+    );
+
+  if (
+    pontuacao <
+    filtros.pontuacaoMinima
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+// ==========================================
+// GERAR TEXTO DO POST
+// ==========================================
+
+function gerarTextoOferta(
+  oferta
+) {
+
+  const nome =
+    oferta?.nome ||
+    "Oferta especial";
+
+  const preco =
+    oferta?.preco ||
+    "";
+
+  const precoAnterior =
+    oferta?.preco_anterior ||
+    "";
+
+  const link =
+    oferta?.link ||
+    "";
+
+  let texto =
+    `🔥 OFERTA ELETROMAX 🔥\n\n`;
+
+  texto +=
+    `${nome}\n\n`;
+
+  if (
+    precoAnterior
+  ) {
+
+    texto +=
+      `💰 De: R$ ${precoAnterior}\n`;
+  }
+
+  if (
+    preco
+  ) {
+
+    texto +=
+      `🔥 Por: R$ ${preco}\n`;
+  }
+
+  if (
+    oferta?.avaliacao
+  ) {
+
+    texto +=
+      `⭐ Avaliação: ${oferta.avaliacao}\n`;
+  }
+
+  if (
+    oferta?.vendas
+  ) {
+
+    texto +=
+      `🛒 Vendas: ${oferta.vendas}\n`;
+  }
+
+  texto +=
+    `\n👉 Compre aqui:\n${link}\n\n`;
+
+  texto +=
+    `⚡ Eletromax — ofertas e produtos selecionados.`;
+
+  return texto;
+}
+
+// ==========================================
+// STATUS GERAL
+// ==========================================
+
+app.get(
+  "/api/status",
+  async (req, res) => {
+
+    let database =
+      "disconnected";
+
+    if (
+      process.env.DATABASE_URL
     ) {
 
-      return res.status(
-        400
-      ).json({
+      try {
 
-        success:
-          false,
-
-        message:
-          "Informe o termo de busca."
-
-      });
-
-    }
-
-    try {
-
-      console.log(
-        "================================="
-      );
-
-      console.log(
-        "BUSCAR E SALVAR MERCADO LIVRE"
-      );
-
-      console.log(
-        "TERMO:",
-        busca
-      );
-
-      console.log(
-        "LIMITE:",
-        limite
-      );
-
-      console.log(
-        "USUÁRIO ML:",
-        mercadoLivreUserId
-      );
-
-      console.log(
-        "================================="
-      );
-
-      const dados =
-        await buscarMercadoLivre(
-          busca,
-          limite
+        await pool.query(
+          "SELECT 1"
         );
 
-      const produtos =
-        Array.isArray(
-          dados?.results
-        )
-          ? dados.results
-          : [];
+        database =
+          "connected";
 
-      let salvos =
-        0;
-
-      let atualizados =
-        0;
-
-      for (
-        const produto
-        of produtos
-      ) {
-
-        if (
-          !produto?.permalink
-        ) {
-
-          continue;
-
-        }
-
-        const oferta = {
-
-          nome:
-            produto.title ||
-            "Produto",
-
-          preco:
-            produto.price ||
-            0,
-
-          precoAnterior:
-            null,
-
-          link:
-            produto.permalink,
-
-          plataforma:
-            "Mercado Livre",
-
-          imagem:
-            produto.thumbnail ||
-            "",
-
-          categoria:
-            "Busca manual",
-
-          avaliacao:
-            extrairAvaliacao(
-              produto
-            ),
-
-          vendas:
-            extrairVendas(
-              produto
-            ),
-
-          pontuacao:
-            calcularPontuacao(
-              produto
-            )
-
-        };
-
-        const antes =
-          await pool.query(
-            `
-            SELECT id
-            FROM ofertas
-            WHERE link = $1
-            LIMIT 1
-            `,
-            [
-              oferta.link
-            ]
-          );
-
-        const existia =
-          antes.rowCount >
-          0;
-
-        const salvo =
-          await salvarOferta(
-            oferta
-          );
-
-        if (
-          salvo
-        ) {
-
-          if (
-            existia
-          ) {
-
-            atualizados++;
-
-          } else {
-
-            salvos++;
-
-          }
-
-        }
-
+      } catch {
+        database =
+          "error";
       }
+    }
 
-      return res.json({
+    res.json({
+      success: true,
 
-        success:
-          true,
+      status:
+        "online",
 
-        encontrados:
-          produtos.length,
+      database,
 
-        salvos:
-          salvos,
+      mercadoLivre:
+        Boolean(
+          mercadoLivreAccessToken
+        ),
 
-        atualizados:
-          atualizados,
+      motorOfertas:
+        "active",
 
-        totalProcessados:
-          salvos +
-          atualizados,
+      filtroAutomatico:
+        "active",
 
-        message:
-          `${salvos} novas ofertas salvas e ${atualizados} ofertas atualizadas.`
+      geradorPosts:
+        "active",
 
-      });
+      timestamp:
+        new Date().toISOString()
+    });
+  }
+);
 
-    } catch (
-      erro
+// ==========================================
+// HEALTH CHECK
+// ==========================================
+
+app.get(
+  "/health",
+  async (req, res) => {
+
+    let database =
+      "disconnected";
+
+    if (
+      process.env.DATABASE_URL
     ) {
 
-      console.error(
-        "================================="
-      );
+      try {
 
-      console.error(
-        "ERRO BUSCAR E SALVAR ML"
-      );
-
-      console.error(
-        "STATUS:",
-        erro.status
-      );
-
-      console.error(
-        "CÓDIGO:",
-        erro.code
-      );
-
-      console.error(
-        "MENSAGEM:",
-        erro.message
-      );
-
-      console.error(
-        "================================="
-      );
-
-      return res.status(
-        erro.status ||
-        500
-      ).json({
-
-        success:
-          false,
-
-        message:
-          erro.message ||
-          "Erro ao buscar e salvar ofertas.",
-
-        code:
-          erro.code ||
-          "ML_SEARCH_ERROR"
-
-      });
-
-    }
-
-  }
-);
-
-// ==========================================
-// MOTOR AUTOMÁTICO
-// ==========================================
-
-app.post(
-  "/api/ofertas/buscar-automaticamente",
-  async (req, res) => {
-    try {
-      const filtros =
-        await obterFiltros();
-
-      let encontrados =
-        0;
-
-      let aprovados =
-        0;
-
-      let salvos =
-        0;
-
-      let atualizados =
-        0;
-
-      const ofertas = [];
-
-      for (
-        const categoria
-        of CATEGORIAS_PADRAO
-      ) {
-        console.log(
-          "================================="
-        );
-
-        console.log(
-          "BUSCA AUTOMÁTICA:",
-          categoria.nome
-        );
-
-        try {
-          const dados =
-            await buscarMercadoLivre(
-              categoria.busca,
-              Math.min(
-                filtros.limitePorCategoria,
-                50
-              )
-            );
-
-          const produtos =
-            Array.isArray(
-              dados.results
-            )
-              ? dados.results
-              : [];
-
-          encontrados +=
-            produtos.length;
-
-          for (
-            const produto
-            of produtos
-          ) {
-            const analise =
-              analisarProduto(
-                produto,
-                categoria,
-                filtros
-              );
-
-            if (
-              !analise.aprovado
-            ) {
-              continue;
-            }
-
-            aprovados++;
-
-            const oferta =
-              analise.produto;
-
-            const antes =
-              await pool.query(
-                `
-                SELECT id
-                FROM ofertas
-                WHERE link = $1
-                LIMIT 1
-                `,
-                [
-                  oferta.link
-                ]
-              );
-
-            const existia =
-              antes.rowCount >
-              0;
-
-            const salvo =
-              await salvarOferta(
-                oferta
-              );
-
-            if (salvo) {
-              if (existia) {
-                atualizados++;
-              } else {
-                salvos++;
-              }
-
-              ofertas.push(
-                oferta
-              );
-            }
-          }
-        } catch (
-          erroCategoria
-        ) {
-          console.error(
-            "ERRO NA CATEGORIA:",
-            categoria.nome,
-            erroCategoria.message
-          );
-
-          // Se for erro de autenticação,
-          // interrompe para não repetir o erro
-          if (
-            erroCategoria.code ===
-              "ML_TOKEN_INVALID" ||
-            erroCategoria.code ===
-              "ML_FORBIDDEN"
-          ) {
-            throw erroCategoria;
-          }
-        }
-      }
-
-      ofertas.sort(
-        (a, b) =>
-          Number(
-            b.pontuacao
-          ) -
-          Number(
-            a.pontuacao
-          )
-      );
-
-      res.json({
-        success:
-          true,
-
-        message:
-          "Busca automática concluída.",
-
-        encontrados:
-          encontrados,
-
-        aprovados:
-          aprovados,
-
-        salvos:
-          salvos,
-
-        atualizados:
-          atualizados,
-
-        totalProcessados:
-          salvos +
-          atualizados,
-
-        ofertas:
-          ofertas
-      });
-    } catch (erro) {
-      console.error(
-        "ERRO MOTOR AUTOMÁTICO:",
-        erro
-      );
-
-      res.status(
-        erro.status ||
-        500
-      ).json({
-        success:
-          false,
-
-        message:
-          erro.message ||
-          "Erro ao executar busca automática.",
-
-        code:
-          erro.code ||
-          "ML_AUTOMATIC_SEARCH_ERROR",
-
-        detalhes:
-          erro.mlResponse ||
-          null
-      });
-    }
-  }
-);
-
-// ==========================================
-// GERAR POST INDIVIDUAL
-// ==========================================
-
-app.post(
-  "/api/ofertas/gerar-post",
-  async (req, res) => {
-    try {
-      const {
-        nome,
-        preco,
-        precoAnterior,
-        plataforma,
-        link,
-        categoria
-      } = req.body;
-
-      if (!nome) {
-        return res.status(400).json({
-          success:
-            false,
-
-          message:
-            "Nome do produto é obrigatório."
-        });
-      }
-
-      const texto =
-`🔥 OFERTA IMPERDÍVEL!
-
-📦 ${nome}
-
-${
-  categoria
-    ? `🏷️ Categoria: ${categoria}\n`
-    : ""
-}${
-  precoAnterior
-    ? `💸 De: ${precoAnterior}\n`
-    : ""
-}💰 Por apenas: ${
-  preco ||
-  "Consulte o preço"
-}
-
-🛒 Compre aqui:
-${
-  link ||
-  "Link não informado"
-}
-
-${
-  plataforma
-    ? `🛍️ Plataforma: ${plataforma}\n`
-    : ""
-}
-⚡ Eletromax
-🔥 Ofertas selecionadas para você!`;
-
-      res.json({
-        success:
-          true,
-
-        texto:
-          texto
-      });
-    } catch (erro) {
-      console.error(
-        "ERRO GERAR POST:",
-        erro
-      );
-
-      res.status(500).json({
-        success:
-          false,
-
-        message:
-          "Erro ao gerar post.",
-
-        error:
-          erro.message
-      });
-    }
-  }
-);
-
-// ==========================================
-// MELHORES OFERTAS
-// ==========================================
-
-app.get(
-  "/api/ofertas/gerar-post-melhores",
-  async (req, res) => {
-    try {
-      const limite =
-        Math.min(
-          Math.max(
-            Number(
-              req.query.limit ||
-              10
-            ),
-            1
-          ),
-          20
-        );
-
-      const resultado =
         await pool.query(
-          `
-          SELECT
-            nome,
-            preco,
-            preco_anterior AS "precoAnterior",
-            link,
-            plataforma,
-            imagem,
-            categoria,
-            avaliacao,
-            vendas,
-            pontuacao
-          FROM ofertas
-          ORDER BY
-            pontuacao DESC,
-            vendas DESC,
-            id DESC
-          LIMIT $1
-          `,
-          [
-            limite
-          ]
+          "SELECT 1"
         );
 
-      const ofertas =
-        resultado.rows;
+        database =
+          "connected";
 
-      if (
-        ofertas.length === 0
-      ) {
-        return res.json({
-          success:
-            true,
+      } catch {
 
-          quantidade:
-            0,
-
-          texto:
-            "Nenhuma oferta disponível para gerar o post.",
-
-          ofertas:
-            []
-        });
+        database =
+          "error";
       }
-
-      let texto =
-`🔥🔥 MELHORES OFERTAS ELETROMAX 🔥🔥
-
-Selecionamos ofertas especiais para você! 👇
-
-`;
-
-      ofertas.forEach(
-        (
-          oferta,
-          index
-        ) => {
-          texto +=
-`${index + 1}️⃣ ${oferta.nome}
-
-💰 Por: R$ ${oferta.preco}
-
-${
-  oferta.precoAnterior
-    ? `💸 De: R$ ${oferta.precoAnterior}\n`
-    : ""
-}🛒 Comprar:
-${oferta.link}
-
-`;
-        }
-      );
-
-      texto +=
-`⚡ Eletromax
-🔥 Ofertas e produtos selecionados!
-
-📲 Aproveite enquanto durar o estoque e o preço!`;
-
-      res.json({
-        success:
-          true,
-
-        quantidade:
-          ofertas.length,
-
-        texto:
-          texto,
-
-        ofertas:
-          ofertas
-      });
-    } catch (erro) {
-      console.error(
-        "ERRO GERAR MELHORES OFERTAS:",
-        erro
-      );
-
-      res.status(500).json({
-        success:
-          false,
-
-        message:
-          "Erro ao gerar post das melhores ofertas.",
-
-        error:
-          erro.message
-      });
     }
+
+    res.json({
+      success: true,
+
+      status:
+        "online",
+
+      database,
+
+      mercadoLivre:
+        mercadoLivreAccessToken
+          ? "connected"
+          : "disconnected",
+
+      motorOfertas:
+        "active",
+
+      geradorPosts:
+        "active"
+    });
   }
 );
 
 // ==========================================
-// CONFIGURAÇÕES - BUSCAR
-// ==========================================
-
-app.get(
-  "/api/configuracoes",
-  async (req, res) => {
-    try {
-      const resultado =
-        await pool.query(
-          `
-          SELECT
-            id,
-            nome_loja,
-            link_mercadolivre,
-            link_shopee,
-            link_whatsapp
-          FROM configuracoes
-          WHERE id = 1
-          LIMIT 1
-          `
-        );
-
-      const config =
-        resultado.rows[0] ||
-        {
-          id:
-            1,
-
-          nome_loja:
-            "Eletromax",
-
-          link_mercadolivre:
-            "",
-
-          link_shopee:
-            "",
-
-          link_whatsapp:
-            ""
-        };
-
-      res.json({
-        success:
-          true,
-
-        configuracoes:
-          config
-      });
-    } catch (erro) {
-      console.error(
-        "ERRO CONFIGURAÇÕES:",
-        erro
-      );
-
-      res.status(500).json({
-        success:
-          false,
-
-        message:
-          "Erro ao carregar configurações.",
-
-        error:
-          erro.message
-      });
-    }
-  }
-);
-
-// ==========================================
-// CONFIGURAÇÕES - SALVAR
-// ==========================================
-
-app.put(
-  "/api/configuracoes",
-  async (req, res) => {
-    try {
-      const {
-        nomeLoja,
-        linkMercadoLivre,
-        linkShopee,
-        linkWhatsapp
-      } = req.body;
-
-      await pool.query(
-        `
-        INSERT INTO configuracoes
-        (
-          id,
-          nome_loja,
-          link_mercadolivre,
-          link_shopee,
-          link_whatsapp,
-          atualizado_em
-        )
-        VALUES
-        (
-          1,
-          $1,
-          $2,
-          $3,
-          $4,
-          CURRENT_TIMESTAMP
-        )
-        ON CONFLICT (id)
-        DO UPDATE SET
-          nome_loja =
-            EXCLUDED.nome_loja,
-
-          link_mercadolivre =
-            EXCLUDED.link_mercadolivre,
-
-          link_shopee =
-            EXCLUDED.link_shopee,
-
-          link_whatsapp =
-            EXCLUDED.link_whatsapp,
-
-          atualizado_em =
-            CURRENT_TIMESTAMP
-        `,
-        [
-          nomeLoja ||
-            "Eletromax",
-
-          linkMercadoLivre ||
-            "",
-
-          linkShopee ||
-            "",
-
-          linkWhatsapp ||
-            ""
-        ]
-      );
-
-      res.json({
-        success:
-          true,
-
-        message:
-          "Configurações salvas com sucesso."
-      });
-    } catch (erro) {
-      console.error(
-        "ERRO SALVAR CONFIGURAÇÕES:",
-        erro
-      );
-
-      res.status(500).json({
-        success:
-          false,
-
-        message:
-          "Erro ao salvar configurações.",
-
-        error:
-          erro.message
-      });
-    }
-  }
-);
-
-// ==========================================
-// LINKS
-// ==========================================
-
-app.get(
-  "/api/links",
-  async (req, res) => {
-    try {
-      const resultado =
-        await pool.query(
-          `
-          SELECT
-            link_mercadolivre,
-            link_shopee,
-            link_whatsapp
-          FROM configuracoes
-          WHERE id = 1
-          LIMIT 1
-          `
-        );
-
-      const config =
-        resultado.rows[0] ||
-        {};
-
-      res.json({
-        success:
-          true,
-
-        whatsapp:
-          config.link_whatsapp ||
-          "",
-
-        shopee:
-          config.link_shopee ||
-          "",
-
-        mercadolivre:
-          config.link_mercadolivre ||
-          ""
-      });
-    } catch (erro) {
-      console.error(
-        "ERRO AO BUSCAR LINKS:",
-        erro.message
-      );
-
-      res.status(500).json({
-        success:
-          false,
-
-        message:
-          "Erro ao buscar links.",
-
-        error:
-          erro.message
-      });
-    }
-  }
-);
-
-// ==========================================
-// API PRINCIPAL
+// API ROOT
 // ==========================================
 
 app.get(
   "/api",
   (req, res) => {
+
     res.json({
-      success:
-        true,
+      success: true,
 
       message:
         "Eletromax V2 API funcionando!",
@@ -4164,7 +1516,7 @@ app.get(
       mercadoLivre:
         mercadoLivreAccessToken
           ? "conectado"
-          : "não conectado",
+          : "desconectado",
 
       banco:
         process.env.DATABASE_URL
@@ -4200,46 +1552,66 @@ app.get(
 );
 
 // ==========================================
-// HEALTH
+// DASHBOARD
 // ==========================================
 
 app.get(
-  "/health",
+  "/api/dashboard",
   async (req, res) => {
+
     try {
+
       if (
         !process.env.DATABASE_URL
       ) {
-        return res.status(503).json({
-          success:
-            false,
 
-          status:
-            "offline",
+        return res.json({
+          success: true,
+
+          produtos: 0,
+
+          ofertas: 0,
+
+          ofertasHoje: 0,
 
           database:
-            "not_configured",
-
-          mercadoLivre:
-            mercadoLivreAccessToken
-              ? "connected"
-              : "not_connected",
-
-          timestamp:
-            new Date().toISOString()
+            "not_configured"
         });
       }
 
-      await pool.query(
-        "SELECT 1"
-      );
+      const produtos =
+        await pool.query(
+          "SELECT COUNT(*)::int AS total FROM produtos"
+        );
 
-      res.status(200).json({
-        success:
-          true,
+      const ofertas =
+        await pool.query(
+          "SELECT COUNT(*)::int AS total FROM ofertas"
+        );
 
-        status:
-          "online",
+      const ofertasHoje =
+        await pool.query(
+          `
+          SELECT COUNT(*)::int AS total
+          FROM ofertas
+          WHERE criado_em >= CURRENT_DATE
+          `
+        );
+
+      res.json({
+        success: true,
+
+        produtos:
+          produtos.rows[0]?.total ||
+          0,
+
+        ofertas:
+          ofertas.rows[0]?.total ||
+          0,
+
+        ofertasHoje:
+          ofertasHoje.rows[0]?.total ||
+          0,
 
         database:
           "connected",
@@ -4247,82 +1619,2041 @@ app.get(
         mercadoLivre:
           mercadoLivreAccessToken
             ? "connected"
-            : "not_connected",
-
-        timestamp:
-          new Date().toISOString()
+            : "disconnected"
       });
+
     } catch (erro) {
+
       console.error(
-        "ERRO HEALTH CHECK:",
+        "ERRO DASHBOARD:",
         erro.message
       );
 
-      res.status(503).json({
-        success:
-          false,
+      res.status(500).json({
+        success: false,
 
-        status:
-          "offline",
-
-        database:
-          "disconnected",
-
-        mercadoLivre:
-          mercadoLivreAccessToken
-            ? "connected"
-            : "not_connected",
+        message:
+          "Erro ao carregar dashboard.",
 
         error:
-          erro.message,
-
-        timestamp:
-          new Date().toISOString()
+          erro.message
       });
     }
   }
 );
+       avaliacao:
+         avaliacao,
+
+       vendas:
+         vendas,
+
+       pontuacao:
+         pontuacao
+     }
+   };
+}
+
 // ==========================================
-// BUSCAR E SALVAR OFERTAS - GET
-// Compatibilidade com testes pelo navegador
+// MERCADO LIVRE - CONSULTAR USUÁRIO
+// ==========================================
+
+async function consultarUsuarioMercadoLivre(
+  token
+) {
+
+  const resposta =
+    await fetch(
+      "https://api.mercadolibre.com/users/me",
+      {
+        method:
+          "GET",
+
+        headers: {
+          Authorization:
+            `Bearer ${token}`,
+
+          Accept:
+            "application/json",
+
+          "User-Agent":
+            "Eletromax-V2/2.0"
+        }
+      }
+    );
+
+  const texto =
+    await resposta.text();
+
+  let dados = {};
+
+  try {
+    dados =
+      texto
+        ? JSON.parse(texto)
+        : {};
+  } catch {
+    dados = {
+      raw:
+        texto
+    };
+  }
+
+  return {
+    resposta,
+    dados
+  };
+}
+
+// ==========================================
+// BUSCAR PRODUTOS NO MERCADO LIVRE
+// ==========================================
+
+async function buscarMercadoLivre(
+  termo,
+  limite = 20
+) {
+
+  const busca =
+    String(
+      termo || ""
+    ).trim();
+
+  if (!busca) {
+    throw new Error(
+      "Informe um termo para busca."
+    );
+  }
+
+  let token =
+    await obterTokenMercadoLivre();
+
+  const url =
+    new URL(
+      "https://api.mercadolibre.com/sites/MLB/search"
+    );
+
+  url.searchParams.set(
+    "q",
+    busca
+  );
+
+  url.searchParams.set(
+    "limit",
+    String(
+      Math.min(
+        Math.max(
+          Number(limite) || 20,
+          1
+        ),
+        50
+      )
+    )
+  );
+
+  const resposta =
+    await fetch(
+      url.toString(),
+      {
+        method:
+          "GET",
+
+        headers: {
+          Authorization:
+            `Bearer ${token}`,
+
+          Accept:
+            "application/json",
+
+          "User-Agent":
+            "Eletromax-V2/2.0"
+        }
+      }
+    );
+
+  const texto =
+    await resposta.text();
+
+  let dados = {};
+
+  try {
+    dados =
+      texto
+        ? JSON.parse(texto)
+        : {};
+  } catch {
+    dados = {
+      raw:
+        texto
+    };
+  }
+
+  // ========================================
+  // TOKEN INVÁLIDO
+  // ========================================
+
+  if (
+    resposta.status === 401
+  ) {
+
+    console.warn(
+      "⚠️ TOKEN ML RETORNOU 401."
+    );
+
+    if (
+      mercadoLivreRefreshToken
+    ) {
+
+      try {
+
+        console.log(
+          "🔄 TENTANDO RENOVAR TOKEN..."
+        );
+
+        const renovacao =
+          await renovarTokenMercadoLivre();
+
+        if (
+          renovacao.success &&
+          mercadoLivreAccessToken
+        ) {
+
+          const novoToken =
+            mercadoLivreAccessToken;
+
+          console.log(
+            "🔄 REPETINDO BUSCA COM NOVO TOKEN..."
+          );
+
+          const segundaResposta =
+            await fetch(
+              url.toString(),
+              {
+                method:
+                  "GET",
+
+                headers: {
+                  Authorization:
+                    `Bearer ${novoToken}`,
+
+                  Accept:
+                    "application/json",
+
+                  "User-Agent":
+                    "Eletromax-V2/2.0"
+                }
+              }
+            );
+
+          const segundaTexto =
+            await segundaResposta.text();
+
+          let segundaDados =
+            {};
+
+          try {
+
+            segundaDados =
+              segundaTexto
+                ? JSON.parse(
+                    segundaTexto
+                  )
+                : {};
+
+          } catch {
+
+            segundaDados = {
+              raw:
+                segundaTexto
+            };
+          }
+
+          if (
+            segundaResposta.ok
+          ) {
+
+            console.log(
+              "✅ BUSCA FUNCIONOU APÓS RENOVAÇÃO DO TOKEN"
+            );
+
+            return segundaDados;
+          }
+
+          console.error(
+            "❌ BUSCA CONTINUOU FALHANDO APÓS RENOVAÇÃO:",
+            segundaResposta.status,
+            segundaDados
+          );
+        }
+
+      } catch (
+        erroRenovacao
+      ) {
+
+        console.error(
+          "❌ ERRO AO RENOVAR TOKEN:",
+          erroRenovacao.message
+        );
+      }
+    }
+
+    const erro =
+      new Error(
+        dados.message ||
+        dados.error_description ||
+        dados.error ||
+        "Token do Mercado Livre inválido ou expirado."
+      );
+
+    erro.status =
+      401;
+
+    erro.code =
+      "ML_TOKEN_INVALID";
+
+    erro.dados =
+      dados;
+
+    throw erro;
+  }
+
+  // ========================================
+  // ACESSO NEGADO
+  // ========================================
+
+  if (
+    resposta.status === 403
+  ) {
+
+    console.error(
+      "❌ MERCADO LIVRE RETORNOU 403 FORBIDDEN"
+    );
+
+    console.error(
+      "RESPOSTA:",
+      dados
+    );
+
+    const erro =
+      new Error(
+        dados.message ||
+        dados.error_description ||
+        dados.error ||
+        "O Mercado Livre recusou o acesso à consulta."
+      );
+
+    erro.status =
+      403;
+
+    erro.code =
+      "ML_FORBIDDEN";
+
+    erro.dados =
+      dados;
+
+    throw erro;
+  }
+
+  // ========================================
+  // OUTROS ERROS
+  // ========================================
+
+  if (
+    !resposta.ok
+  ) {
+
+    const erro =
+      new Error(
+        dados.message ||
+        dados.error_description ||
+        dados.error ||
+        `Erro na API do Mercado Livre (${resposta.status}).`
+      );
+
+    erro.status =
+      resposta.status;
+
+    erro.code =
+      "ML_SEARCH_ERROR";
+
+    erro.dados =
+      dados;
+
+    throw erro;
+  }
+
+  return dados;
+}
+
+// ==========================================
+// MERCADO LIVRE - BUSCA PÚBLICA
+// ==========================================
+
+async function buscarMercadoLivrePublico(
+  termo,
+  limite = 20
+) {
+
+  const busca =
+    String(
+      termo || ""
+    ).trim();
+
+  if (!busca) {
+    throw new Error(
+      "Informe um termo para busca."
+    );
+  }
+
+  const url =
+    new URL(
+      "https://api.mercadolibre.com/sites/MLB/search"
+    );
+
+  url.searchParams.set(
+    "q",
+    busca
+  );
+
+  url.searchParams.set(
+    "limit",
+    String(
+      Math.min(
+        Math.max(
+          Number(limite) || 20,
+          1
+        ),
+        50
+      )
+    )
+  );
+
+  const resposta =
+    await fetch(
+      url.toString(),
+      {
+        method:
+          "GET",
+
+        headers: {
+          Accept:
+            "application/json",
+
+          "User-Agent":
+            "Eletromax-V2/2.0"
+        }
+      }
+    );
+
+  const texto =
+    await resposta.text();
+
+  let dados = {};
+
+  try {
+
+    dados =
+      texto
+        ? JSON.parse(texto)
+        : {};
+
+  } catch {
+
+    dados = {
+      raw:
+        texto
+    };
+  }
+
+  if (
+    !resposta.ok
+  ) {
+
+    const erro =
+      new Error(
+        dados.message ||
+        dados.error ||
+        `Erro na busca pública (${resposta.status}).`
+      );
+
+    erro.status =
+      resposta.status;
+
+    erro.code =
+      "ML_PUBLIC_SEARCH_ERROR";
+
+    erro.dados =
+      dados;
+
+    throw erro;
+  }
+
+  return dados;
+}
+
+// ==========================================
+// ROTA - STATUS MERCADO LIVRE
+// ==========================================
+
+app.get(
+  "/api/mercadolivre/status",
+  async (req, res) => {
+
+    try {
+
+      res.json({
+        success:
+          true,
+
+        conectado:
+          Boolean(
+            mercadoLivreAccessToken
+          ),
+
+        configurado:
+          Boolean(
+            process.env.ML_CLIENT_ID &&
+            process.env.ML_CLIENT_SECRET
+          ),
+
+        redirectUri:
+          obterRedirectUri(),
+
+        userId:
+          mercadoLivreUserId ||
+          null,
+
+        tokenExpiraEm:
+          mercadoLivreTokenExpiresAt
+            ? new Date(
+                mercadoLivreTokenExpiresAt
+              ).toISOString()
+            : null,
+
+        temRefreshToken:
+          Boolean(
+            mercadoLivreRefreshToken
+          )
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO STATUS MERCADO LIVRE:",
+        erro.message
+      );
+
+      res.status(
+        500
+      ).json({
+
+        success:
+          false,
+
+        conectado:
+          false,
+
+        message:
+          erro.message
+      });
+    }
+  }
+);
+
+// ==========================================
+// ROTA - TESTAR MERCADO LIVRE
+// ==========================================
+
+app.get(
+  "/api/mercadolivre/teste",
+  async (req, res) => {
+
+    try {
+
+      let token =
+        await obterTokenMercadoLivre();
+
+      let resultado =
+        await consultarUsuarioMercadoLivre(
+          token
+        );
+
+      // Se o token foi rejeitado,
+      // tenta renovar uma única vez.
+      if (
+        resultado.resposta.status ===
+          401 &&
+        mercadoLivreRefreshToken
+      ) {
+
+        console.warn(
+          "⚠️ TESTE ML: TOKEN 401. RENOVANDO..."
+        );
+
+        const renovacao =
+          await renovarTokenMercadoLivre();
+
+        if (
+          renovacao.success
+        ) {
+
+          token =
+            mercadoLivreAccessToken;
+
+          resultado =
+            await consultarUsuarioMercadoLivre(
+              token
+            );
+        }
+      }
+
+      const resposta =
+        resultado.resposta;
+
+      const dados =
+        resultado.dados;
+
+      if (
+        !resposta.ok
+      ) {
+
+        return res.status(
+          resposta.status
+        ).json({
+
+          success:
+            false,
+
+          status:
+            resposta.status,
+
+          code:
+            resposta.status === 401
+              ? "ML_TOKEN_INVALID"
+              : resposta.status === 403
+                ? "ML_FORBIDDEN"
+                : "ML_API_ERROR",
+
+          message:
+            dados.message ||
+            dados.error ||
+            "Mercado Livre recusou a requisição.",
+
+          dados:
+            dados
+        });
+      }
+
+      if (
+        dados.id
+      ) {
+
+        mercadoLivreUserId =
+          String(
+            dados.id
+          );
+      }
+
+      res.json({
+
+        success:
+          true,
+
+        status:
+          resposta.status,
+
+        conectado:
+          true,
+
+        userId:
+          dados.id ||
+          mercadoLivreUserId ||
+          null,
+
+        nickname:
+          dados.nickname ||
+          null,
+
+        dados:
+          dados
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO TESTE ML:",
+        erro
+      );
+
+      res.status(
+        erro.status ||
+        500
+      ).json({
+
+        success:
+          false,
+
+        code:
+          erro.code ||
+          "ML_TEST_ERROR",
+
+        message:
+          erro.message,
+
+        detalhes:
+          erro.dados ||
+          null
+      });
+    }
+  }
+);
+
+// ==========================================
+// BUSCAR E SALVAR OFERTAS ML
+// ==========================================
+
+app.post(
+  "/api/mercadolivre/buscar-salvar",
+  async (req, res) => {
+
+    try {
+
+      const busca =
+        String(
+          req.body?.q ||
+          req.body?.query ||
+          ""
+        ).trim();
+
+      if (!busca) {
+
+        return res.status(
+          400
+        ).json({
+
+          success:
+            false,
+
+          message:
+            "Informe o termo de busca em q."
+        });
+      }
+
+      const limite =
+        Math.min(
+          Math.max(
+            Number(
+              req.body?.limit ||
+              req.body?.limite ||
+              20
+            ),
+            1
+          ),
+          50
+        );
+
+      console.log(
+        `🔎 Buscando Mercado Livre: "${busca}" (${limite})`
+      );
+
+      const dados =
+        await buscarMercadoLivre(
+          busca,
+          limite
+        );
+
+      const resultados =
+        Array.isArray(
+          dados.results
+        )
+          ? dados.results
+          : [];
+
+      const filtros =
+        await obterFiltros();
+
+      const salvos = [];
+
+      for (
+        const produto of resultados
+      ) {
+
+        const analise =
+          analisarProduto(
+            produto,
+            {
+              nome:
+                busca
+            },
+            filtros
+          );
+
+        if (
+          !analise.aprovado
+        ) {
+          continue;
+        }
+
+        const item =
+          analise.produto;
+
+        try {
+
+          const salvo =
+            await salvarOferta(
+              {
+                nome:
+                  item.nome,
+
+                preco:
+                  item.preco,
+
+                precoAnterior:
+                  item.precoAnterior,
+
+                link:
+                  item.link,
+
+                plataforma:
+                  item.plataforma,
+
+                imagem:
+                  item.imagem,
+
+                categoria:
+                  item.categoria,
+
+                avaliacao:
+                  item.avaliacao,
+
+                vendas:
+                  item.vendas,
+
+                pontuacao:
+                  item.pontuacao
+              }
+            );
+
+          if (
+            salvo
+          ) {
+            salvos.push(
+              salvo
+            );
+          }
+
+        } catch (
+          erroSalvar
+        ) {
+
+          console.error(
+            "⚠️ ERRO AO SALVAR OFERTA:",
+            erroSalvar.message
+          );
+        }
+      }
+
+      res.json({
+
+        success:
+          true,
+
+        message:
+          "Busca realizada com sucesso.",
+
+        busca,
+
+        encontrados:
+          resultados.length,
+
+        salvos:
+          salvos.length,
+
+        produtos:
+          salvos
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "❌ ERRO BUSCAR-SALVAR ML:",
+        erro
+      );
+
+      res.status(
+        erro.status ||
+        500
+      ).json({
+
+        success:
+          false,
+
+        message:
+          erro.code ===
+            "ML_FORBIDDEN"
+            ? "Mercado Livre recusou o acesso à busca."
+            : erro.message,
+
+        code:
+          erro.code ||
+          "ML_SEARCH_ERROR",
+
+        status:
+          erro.status ||
+          500,
+
+        detalhes:
+          erro.dados ||
+          null
+      });
+    }
+  }
+);
+
+// ==========================================
+// GET - BUSCAR E SALVAR
+// Compatibilidade com teste pelo navegador
 // ==========================================
 
 app.get(
   "/api/mercadolivre/buscar-salvar",
   async (req, res) => {
 
-    const busca = String(
-      req.query?.q || ""
-    ).trim();
+    try {
 
-    const limite = Math.min(
-      Math.max(
-        Number(req.query?.limit || 20),
-        1
-      ),
-      50
-    );
+      const busca =
+        String(
+          req.query?.q ||
+          ""
+        ).trim();
 
-    if (!busca) {
-      return res.status(400).json({
-        success: false,
-        message: "Informe o termo de busca. Exemplo: ?q=camera"
+      if (!busca) {
+
+        return res.status(
+          400
+        ).json({
+
+          success:
+            false,
+
+          message:
+            "Informe ?q=termo na URL."
+        });
+      }
+
+      const limite =
+        Math.min(
+          Math.max(
+            Number(
+              req.query?.limit ||
+              20
+            ),
+            1
+          ),
+          50
+        );
+
+      console.log(
+        `🔎 GET busca Mercado Livre: "${busca}"`
+      );
+
+      const dados =
+        await buscarMercadoLivre(
+          busca,
+          limite
+        );
+
+      const resultados =
+        Array.isArray(
+          dados.results
+        )
+          ? dados.results
+          : [];
+
+      res.json({
+
+        success:
+          true,
+
+        busca,
+
+        encontrados:
+          resultados.length,
+
+        resultados
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "❌ ERRO GET BUSCAR-SALVAR:",
+        erro
+      );
+
+      res.status(
+        erro.status ||
+        500
+      ).json({
+
+        success:
+          false,
+
+        message:
+          erro.message,
+
+        code:
+          erro.code ||
+          "ML_SEARCH_ERROR",
+
+        status:
+          erro.status ||
+          500,
+
+        detalhes:
+          erro.dados ||
+          null
       });
     }
+  }
+);
+    const tokenData = {
+      userId:
+        userId ||
+        mercadoLivreUserId ||
+        null,
+
+      accessToken:
+        accessToken,
+
+      refreshToken:
+        refreshToken ||
+        mercadoLivreRefreshToken ||
+        null,
+
+      expiresAt:
+        expiresAt ||
+        mercadoLivreTokenExpiresAt ||
+        null
+    };
+
+    mercadoLivreUserId =
+      tokenData.userId
+        ? String(tokenData.userId)
+        : mercadoLivreUserId;
+
+    mercadoLivreAccessToken =
+      tokenData.accessToken;
+
+    mercadoLivreRefreshToken =
+      tokenData.refreshToken;
+
+    mercadoLivreTokenExpiresAt =
+      tokenData.expiresAt;
+
+    await pool.query(
+      `
+      INSERT INTO mercadolivre_tokens
+      (
+        id,
+        user_id,
+        access_token,
+        refresh_token,
+        expires_at,
+        atualizado_em
+      )
+      VALUES
+      (
+        1,
+        $1,
+        $2,
+        $3,
+        $4,
+        CURRENT_TIMESTAMP
+      )
+      ON CONFLICT (id)
+      DO UPDATE SET
+        user_id =
+          EXCLUDED.user_id,
+
+        access_token =
+          EXCLUDED.access_token,
+
+        refresh_token =
+          EXCLUDED.refresh_token,
+
+        expires_at =
+          EXCLUDED.expires_at,
+
+        atualizado_em =
+          CURRENT_TIMESTAMP
+      `,
+      [
+        tokenData.userId,
+        tokenData.accessToken,
+        tokenData.refreshToken,
+        tokenData.expiresAt
+      ]
+    );
+
+    console.log(
+      "✅ TOKEN MERCADO LIVRE SALVO NO BANCO."
+    );
+
+    return true;
+  }
+
+// ==========================================
+// CARREGAR TOKEN DO BANCO
+// ==========================================
+
+async function carregarTokenMercadoLivre() {
+
+  if (
+    !process.env.DATABASE_URL
+  ) {
+    return false;
+  }
+
+  try {
+
+    const resultado =
+      await pool.query(
+        `
+        SELECT
+          user_id,
+          access_token,
+          refresh_token,
+          expires_at
+        FROM mercadolivre_tokens
+        WHERE id = 1
+        LIMIT 1
+        `
+      );
+
+    if (
+      resultado.rowCount === 0
+    ) {
+      console.log(
+        "ℹ️ Nenhum token ML salvo no banco."
+      );
+
+      return false;
+    }
+
+    const token =
+      resultado.rows[0];
+
+    if (
+      token.access_token
+    ) {
+      mercadoLivreAccessToken =
+        token.access_token;
+    }
+
+    if (
+      token.refresh_token
+    ) {
+      mercadoLivreRefreshToken =
+        token.refresh_token;
+    }
+
+    if (
+      token.user_id
+    ) {
+      mercadoLivreUserId =
+        String(
+          token.user_id
+        );
+    }
+
+    if (
+      token.expires_at
+    ) {
+      mercadoLivreTokenExpiresAt =
+        Number(
+          token.expires_at
+        );
+    }
+
+    console.log(
+      "✅ TOKEN MERCADO LIVRE CARREGADO DO BANCO."
+    );
+
+    return true;
+
+  } catch (erro) {
+
+    console.error(
+      "❌ ERRO AO CARREGAR TOKEN ML:",
+      erro.message
+    );
+
+    return false;
+  }
+}
+
+// ==========================================
+// ATUALIZAR TOKEN EM MEMÓRIA E BANCO
+// ==========================================
+
+async function atualizarTokensMercadoLivre(
+  dados
+) {
+
+  if (
+    !dados ||
+    !dados.access_token
+  ) {
+    return false;
+  }
+
+  const accessToken =
+    dados.access_token;
+
+  const refreshToken =
+    dados.refresh_token ||
+    mercadoLivreRefreshToken ||
+    null;
+
+  const expiresAt =
+    dados.expires_in
+      ? Date.now() +
+        Number(
+          dados.expires_in
+        ) *
+          1000
+      : mercadoLivreTokenExpiresAt;
+
+  const userId =
+    dados.user_id ||
+    mercadoLivreUserId ||
+    null;
+
+  await salvarTokenMercadoLivre({
+    userId,
+    accessToken,
+    refreshToken,
+    expiresAt
+  });
+
+  return true;
+}
+
+// ==========================================
+// RENOVAÇÃO DE TOKEN
+// ==========================================
+
+async function renovarTokenMercadoLivre() {
+
+  if (
+    renovacaoTokenEmAndamento
+  ) {
+    return renovacaoTokenEmAndamento;
+  }
+
+  renovacaoTokenEmAndamento =
+    (async () => {
+
+      try {
+
+        if (
+          !mercadoLivreRefreshToken
+        ) {
+
+          return {
+            success:
+              false,
+
+            message:
+              "Refresh token do Mercado Livre não configurado."
+          };
+        }
+
+        const clientId =
+          process.env.ML_CLIENT_ID;
+
+        const clientSecret =
+          process.env.ML_CLIENT_SECRET;
+
+        if (
+          !clientId ||
+          !clientSecret
+        ) {
+
+          return {
+            success:
+              false,
+
+            message:
+              "ML_CLIENT_ID ou ML_CLIENT_SECRET não configurado."
+          };
+        }
+
+        console.log(
+          "🔄 RENOVANDO TOKEN MERCADO LIVRE..."
+        );
+
+        const resposta =
+          await fetch(
+            "https://api.mercadolibre.com/oauth/token",
+            {
+              method:
+                "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/x-www-form-urlencoded",
+
+                Accept:
+                  "application/json"
+              },
+
+              body:
+                new URLSearchParams({
+                  grant_type:
+                    "refresh_token",
+
+                  client_id:
+                    clientId,
+
+                  client_secret:
+                    clientSecret,
+
+                  refresh_token:
+                    mercadoLivreRefreshToken
+                }).toString()
+            }
+          );
+
+        const texto =
+          await resposta.text();
+
+        let dados = {};
+
+        try {
+
+          dados =
+            texto
+              ? JSON.parse(texto)
+              : {};
+
+        } catch {
+
+          dados = {
+            raw:
+              texto
+          };
+        }
+
+        if (
+          !resposta.ok
+        ) {
+
+          console.error(
+            "❌ MERCADO LIVRE RECUSOU RENOVAÇÃO:",
+            resposta.status,
+            dados
+          );
+
+          return {
+            success:
+              false,
+
+            status:
+              resposta.status,
+
+            message:
+              dados.message ||
+              dados.error_description ||
+              dados.error ||
+              "Erro ao renovar token.",
+
+            dados
+          };
+        }
+
+        await atualizarTokensMercadoLivre(
+          dados
+        );
+
+        console.log(
+          "✅ TOKEN MERCADO LIVRE RENOVADO COM SUCESSO."
+        );
+
+        return {
+          success:
+            true,
+
+          status:
+            resposta.status,
+
+          dados
+        };
+
+      } catch (erro) {
+
+        console.error(
+          "❌ ERRO NA RENOVAÇÃO ML:",
+          erro.message
+        );
+
+        return {
+          success:
+            false,
+
+          message:
+            erro.message
+        };
+
+      } finally {
+
+        renovacaoTokenEmAndamento =
+          null;
+      }
+
+    })();
+
+  return renovacaoTokenEmAndamento;
+}
+
+// ==========================================
+// OBTER TOKEN VÁLIDO
+// ==========================================
+
+async function obterTokenMercadoLivre() {
+
+  if (
+    mercadoLivreAccessToken
+  ) {
+
+    const agora =
+      Date.now();
+
+    const expiraEm =
+      mercadoLivreTokenExpiresAt;
+
+    if (
+      !expiraEm ||
+      expiraEm -
+        agora >
+        5 * 60 * 1000
+    ) {
+
+      return mercadoLivreAccessToken;
+    }
+  }
+
+  if (
+    mercadoLivreRefreshToken
+  ) {
+
+    const renovacao =
+      await renovarTokenMercadoLivre();
+
+    if (
+      renovacao.success &&
+      mercadoLivreAccessToken
+    ) {
+
+      return mercadoLivreAccessToken;
+    }
+  }
+
+  if (
+    mercadoLivreAccessToken
+  ) {
+
+    return mercadoLivreAccessToken;
+  }
+
+  throw new Error(
+    "Token do Mercado Livre não configurado."
+  );
+}
+
+// ==========================================
+// REQUEST AUTENTICADO ML
+// ==========================================
+
+async function requisicaoMercadoLivre(
+  url,
+  opcoes = {},
+  tentarRenovar = true
+) {
+
+  let token =
+    await obterTokenMercadoLivre();
+
+  const headers = {
+    ...(opcoes.headers || {}),
+
+    Authorization:
+      `Bearer ${token}`,
+
+    Accept:
+      "application/json",
+
+    "User-Agent":
+      "Eletromax-V2/2.0"
+  };
+
+  let resposta =
+    await fetch(
+      url,
+      {
+        ...opcoes,
+
+        headers
+      }
+    );
+
+  if (
+    (resposta.status === 401 ||
+      resposta.status === 403) &&
+    tentarRenovar &&
+    mercadoLivreRefreshToken
+  ) {
+
+    console.warn(
+      `⚠️ Mercado Livre retornou ${resposta.status}. Tentando renovar token...`
+    );
+
+    const renovacao =
+      await renovarTokenMercadoLivre();
+
+    if (
+      renovacao.success &&
+      mercadoLivreAccessToken
+    ) {
+
+      token =
+        mercadoLivreAccessToken;
+
+      resposta =
+        await fetch(
+          url,
+          {
+            ...opcoes,
+
+            headers: {
+              ...(opcoes.headers || {}),
+
+              Authorization:
+                `Bearer ${token}`,
+
+              Accept:
+                "application/json",
+
+              "User-Agent":
+                "Eletromax-V2/2.0"
+            }
+          }
+        );
+    }
+  }
+
+  return resposta;
+}
+
+// ==========================================
+// PARSEAR RESPOSTA ML
+// ==========================================
+
+async function parsearRespostaMercadoLivre(
+  resposta
+) {
+
+  const texto =
+    await resposta.text();
+
+  let dados = {};
+
+  try {
+
+    dados =
+      texto
+        ? JSON.parse(texto)
+        : {};
+
+  } catch {
+
+    dados = {
+      raw:
+        texto
+    };
+  }
+
+  return {
+    status:
+      resposta.status,
+
+    ok:
+      resposta.ok,
+
+    dados
+  };
+}
+
+// ==========================================
+// OBTER FILTROS
+// ==========================================
+
+async function obterFiltros() {
+
+  const padrao =
+    {
+      ...FILTROS_PADRAO
+    };
+
+  if (
+    !process.env.DATABASE_URL
+  ) {
+
+    return padrao;
+  }
+
+  try {
+
+    const resultado =
+      await pool.query(
+        `
+        SELECT
+          preco_minimo,
+          preco_maximo,
+          avaliacao_minima,
+          vendas_minimas,
+          limite_por_categoria,
+          pontuacao_minima
+        FROM filtros_ofertas
+        WHERE id = 1
+        LIMIT 1
+        `
+      );
+
+    if (
+      resultado.rowCount === 0
+    ) {
+
+      return padrao;
+    }
+
+    const dados =
+      resultado.rows[0];
+
+    return {
+
+      precoMinimo:
+        numeroSeguro(
+          dados.preco_minimo,
+          padrao.precoMinimo
+        ),
+
+      precoMaximo:
+        numeroSeguro(
+          dados.preco_maximo,
+          padrao.precoMaximo
+        ),
+
+      avaliacaoMinima:
+        numeroSeguro(
+          dados.avaliacao_minima,
+          padrao.avaliacaoMinima
+        ),
+
+      vendasMinimas:
+        numeroSeguro(
+          dados.vendas_minimas,
+          padrao.vendasMinimas
+        ),
+
+      limitePorCategoria:
+        numeroSeguro(
+          dados.limite_por_categoria,
+          padrao.limitePorCategoria
+        ),
+
+      pontuacaoMinima:
+        numeroSeguro(
+          dados.pontuacao_minima,
+          padrao.pontuacaoMinima
+        )
+    };
+
+  } catch (erro) {
+
+    console.error(
+      "❌ ERRO AO OBTER FILTROS:",
+      erro.message
+    );
+
+    return padrao;
+  }
+}
+
+// ==========================================
+// ANALISAR PRODUTO
+// ==========================================
+
+function analisarProduto(
+  produto,
+  categoria,
+  filtros
+) {
+
+  const item =
+    transformarProdutoMercadoLivre(
+      produto
+    );
+
+  const preco =
+    Number(
+      item.preco
+    );
+
+  let aprovado =
+    true;
+
+  if (
+    Number.isFinite(preco)
+  ) {
+
+    if (
+      preco <
+      filtros.precoMinimo
+    ) {
+
+      aprovado =
+        false;
+    }
+
+    if (
+      preco >
+      filtros.precoMaximo
+    ) {
+
+      aprovado =
+        false;
+    }
+  }
+
+  if (
+    item.avaliacao <
+    filtros.avaliacaoMinima
+  ) {
+
+    aprovado =
+      false;
+  }
+
+  if (
+    item.vendas <
+    filtros.vendasMinimas
+  ) {
+
+    aprovado =
+      false;
+  }
+
+  if (
+    item.pontuacao <
+    filtros.pontuacaoMinima
+  ) {
+
+    aprovado =
+      false;
+  }
+
+  if (
+    categoria &&
+    categoria.nome
+  ) {
+
+    item.categoria =
+      categoria.nome;
+  }
+
+  return {
+    aprovado,
+
+    produto:
+      item
+  };
+}
+// ==========================================
+// FILTROS - SALVAR
+// ==========================================
+
+app.put(
+  "/api/ofertas/filtros",
+  async (req, res) => {
+    try {
+
+      const {
+        precoMinimo,
+        precoMaximo,
+        avaliacaoMinima,
+        vendasMinimas,
+        limitePorCategoria,
+        pontuacaoMinima
+      } = req.body;
+
+      const minimo =
+        numeroSeguro(
+          precoMinimo,
+          0
+        );
+
+      const maximo =
+        numeroSeguro(
+          precoMaximo,
+          999999
+        );
+
+      const avaliacao =
+        numeroSeguro(
+          avaliacaoMinima,
+          0
+        );
+
+      const vendas =
+        numeroSeguro(
+          vendasMinimas,
+          0
+        );
+
+      const limite =
+        numeroSeguro(
+          limitePorCategoria,
+          10
+        );
+
+      const pontuacao =
+        numeroSeguro(
+          pontuacaoMinima,
+          0
+        );
+
+      const resultado =
+        await pool.query(
+          `
+          INSERT INTO filtros_ofertas
+          (
+            id,
+            preco_minimo,
+            preco_maximo,
+            avaliacao_minima,
+            vendas_minimas,
+            limite_por_categoria,
+            pontuacao_minima
+          )
+          VALUES
+          (
+            1,
+            $1,
+            $2,
+            $3,
+            $4,
+            $5,
+            $6
+          )
+          ON CONFLICT (id)
+          DO UPDATE SET
+
+            preco_minimo =
+              EXCLUDED.preco_minimo,
+
+            preco_maximo =
+              EXCLUDED.preco_maximo,
+
+            avaliacao_minima =
+              EXCLUDED.avaliacao_minima,
+
+            vendas_minimas =
+              EXCLUDED.vendas_minimas,
+
+            limite_por_categoria =
+              EXCLUDED.limite_por_categoria,
+
+            pontuacao_minima =
+              EXCLUDED.pontuacao_minima
+
+          RETURNING
+            preco_minimo AS "precoMinimo",
+            preco_maximo AS "precoMaximo",
+            avaliacao_minima AS "avaliacaoMinima",
+            vendas_minimas AS "vendasMinimas",
+            limite_por_categoria AS "limitePorCategoria",
+            pontuacao_minima AS "pontuacaoMinima"
+          `,
+          [
+            minimo,
+            maximo,
+            avaliacao,
+            vendas,
+            limite,
+            pontuacao
+          ]
+        );
+
+      res.json({
+        success:
+          true,
+
+        message:
+          "Filtros salvos com sucesso.",
+
+        filtros:
+          resultado.rows[0]
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO AO SALVAR FILTROS:",
+        erro.message
+      );
+
+      res.status(500).json({
+        success:
+          false,
+
+        message:
+          "Erro ao salvar filtros.",
+
+        error:
+          erro.message
+      });
+    }
+  }
+);
+
+// ==========================================
+// OFERTAS - EXCLUIR
+// ==========================================
+
+app.delete(
+  "/api/ofertas/:id",
+  async (req, res) => {
 
     try {
+
+      const id =
+        Number(
+          req.params.id
+        );
+
+      if (
+        !Number.isInteger(id)
+      ) {
+
+        return res.status(
+          400
+        ).json({
+
+          success:
+            false,
+
+          message:
+            "ID da oferta inválido."
+        });
+      }
+
+      const resultado =
+        await pool.query(
+          `
+          DELETE FROM ofertas
+          WHERE id = $1
+          RETURNING id
+          `,
+          [id]
+        );
+
+      if (
+        resultado.rowCount === 0
+      ) {
+
+        return res.status(
+          404
+        ).json({
+
+          success:
+            false,
+
+          message:
+            "Oferta não encontrada."
+        });
+      }
+
+      res.json({
+
+        success:
+          true,
+
+        message:
+          "Oferta excluída com sucesso."
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO AO EXCLUIR OFERTA:",
+        erro.message
+      );
+
+      res.status(500).json({
+
+        success:
+          false,
+
+        message:
+          "Erro ao excluir oferta.",
+
+        error:
+          erro.message
+      });
+    }
+  }
+);
+
+// ==========================================
+// BUSCAR OFERTAS AUTOMATICAMENTE
+// ==========================================
+
+app.get(
+  "/api/ofertas/buscar-automaticamente",
+  async (req, res) => {
+
+    try {
+
+      const termo =
+        String(
+          req.query.q ||
+          req.query.busca ||
+          "ofertas"
+        ).trim();
+
+      const limite =
+        Math.min(
+          Math.max(
+            Number(
+              req.query.limit ||
+              20
+            ),
+            1
+          ),
+          50
+        );
 
       console.log(
         "================================="
       );
 
       console.log(
-        "BUSCA GET MERCADO LIVRE:"
+        "🤖 BUSCA AUTOMÁTICA DE OFERTAS"
       );
 
       console.log(
         "TERMO:",
-        busca
+        termo
       );
 
       console.log(
@@ -4334,27 +3665,2276 @@ app.get(
         "================================="
       );
 
-      const dados = await buscarMercadoLivre(
-        busca,
-        limite
+      const dados =
+        await buscarMercadoLivre(
+          termo,
+          limite
+        );
+
+      const resultados =
+        Array.isArray(
+          dados.results
+        )
+          ? dados.results
+          : [];
+
+      const filtros =
+        await obterFiltros();
+
+      const analisados = [];
+
+      const aprovados = [];
+
+      for (
+        const produto
+        of resultados
+      ) {
+
+        const analise =
+          analisarProduto(
+            produto,
+            {
+              nome:
+                termo
+            },
+            filtros
+          );
+
+        analisados.push(
+          analise
+        );
+
+        if (
+          analise.aprovado
+        ) {
+
+          aprovados.push(
+            analise.produto
+          );
+        }
+      }
+
+      const salvos = [];
+
+      for (
+        const produto
+        of aprovados
+      ) {
+
+        try {
+
+          const salvo =
+            await salvarOferta(
+              produto
+            );
+
+          if (
+            salvo
+          ) {
+
+            salvos.push(
+              salvo
+            );
+          }
+
+        } catch (
+          erroSalvar
+        ) {
+
+          console.error(
+            "⚠️ ERRO AO SALVAR OFERTA:",
+            erroSalvar.message
+          );
+        }
+      }
+
+      res.json({
+
+        success:
+          true,
+
+        message:
+          "Busca automática concluída.",
+
+        termo,
+
+        encontrados:
+          resultados.length,
+
+        aprovados:
+          aprovados.length,
+
+        salvos:
+          salvos.length,
+
+        filtros,
+
+        ofertas:
+          salvos
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "❌ ERRO NA BUSCA AUTOMÁTICA:",
+        erro
       );
 
-      const produtos = Array.isArray(
-        dados.results
+      res.status(
+        erro.status ||
+        500
+      ).json({
+
+        success:
+          false,
+
+        message:
+          erro.message,
+
+        code:
+          erro.code ||
+          "AUTO_SEARCH_ERROR",
+
+        status:
+          erro.status ||
+          500,
+
+        detalhes:
+          erro.dados ||
+          null
+      });
+    }
+  }
+);
+
+// ==========================================
+// GERAR POST DE UMA OFERTA
+// ==========================================
+
+app.post(
+  "/api/ofertas/gerar-post",
+  async (req, res) => {
+
+    try {
+
+      const id =
+        Number(
+          req.body?.id ||
+          req.body?.ofertaId
+        );
+
+      if (
+        !Number.isInteger(id)
+      ) {
+
+        return res.status(
+          400
+        ).json({
+
+          success:
+            false,
+
+          message:
+            "Informe um ID de oferta válido."
+        });
+      }
+
+      const resultado =
+        await pool.query(
+          `
+          SELECT
+            id,
+            nome,
+            preco,
+            preco_anterior AS "precoAnterior",
+            link,
+            plataforma,
+            imagem,
+            categoria,
+            avaliacao,
+            vendas,
+            pontuacao
+          FROM ofertas
+          WHERE id = $1
+          LIMIT 1
+          `,
+          [id]
+        );
+
+      if (
+        resultado.rowCount === 0
+      ) {
+
+        return res.status(
+          404
+        ).json({
+
+          success:
+            false,
+
+          message:
+            "Oferta não encontrada."
+        });
+      }
+
+      const oferta =
+        resultado.rows[0];
+
+      const texto =
+        gerarTextoOferta(
+          oferta
+        );
+
+      res.json({
+
+        success:
+          true,
+
+        oferta,
+
+        post: {
+          texto
+        }
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO AO GERAR POST:",
+        erro.message
+      );
+
+      res.status(500).json({
+
+        success:
+          false,
+
+        message:
+          "Erro ao gerar post.",
+
+        error:
+          erro.message
+      });
+    }
+  }
+);
+
+// ==========================================
+// GERAR POST DAS MELHORES OFERTAS
+// ==========================================
+
+app.get(
+  "/api/ofertas/gerar-post-melhores",
+  async (req, res) => {
+
+    try {
+
+      const limite =
+        Math.min(
+          Math.max(
+            Number(
+              req.query.limit ||
+              5
+            ),
+            1
+          ),
+          20
+        );
+
+      const resultado =
+        await pool.query(
+          `
+          SELECT
+            id,
+            nome,
+            preco,
+            preco_anterior AS "precoAnterior",
+            link,
+            plataforma,
+            imagem,
+            categoria,
+            avaliacao,
+            vendas,
+            pontuacao
+          FROM ofertas
+          ORDER BY
+            pontuacao DESC,
+            avaliacao DESC,
+            vendas DESC,
+            id DESC
+          LIMIT $1
+          `,
+          [limite]
+        );
+
+      const ofertas =
+        resultado.rows;
+
+      const posts =
+        ofertas.map(
+          (
+            oferta,
+            indice
+          ) => ({
+
+            posicao:
+              indice + 1,
+
+            oferta,
+
+            texto:
+              gerarTextoOferta(
+                oferta
+              )
+          })
+        );
+
+      res.json({
+
+        success:
+          true,
+
+        quantidade:
+          posts.length,
+
+        posts
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO AO GERAR MELHORES POSTS:",
+        erro.message
+      );
+
+      res.status(500).json({
+
+        success:
+          false,
+
+        message:
+          "Erro ao gerar posts das melhores ofertas.",
+
+        error:
+          erro.message
+      });
+    }
+  }
+);
+
+// ==========================================
+// CONFIGURAÇÕES - CONSULTAR
+// ==========================================
+
+app.get(
+  "/api/configuracoes",
+  async (req, res) => {
+
+    try {
+
+      res.json({
+
+        success:
+          true,
+
+        configuracoes: {
+
+          mercadoLivre: {
+            configurado:
+              Boolean(
+                process.env.ML_CLIENT_ID &&
+                process.env.ML_CLIENT_SECRET
+              ),
+
+            conectado:
+              Boolean(
+                mercadoLivreAccessToken
+              ),
+
+            userId:
+              mercadoLivreUserId ||
+              null,
+
+            redirectUri:
+              obterRedirectUri()
+          },
+
+          banco: {
+            configurado:
+              Boolean(
+                process.env.DATABASE_URL
+              )
+          },
+
+          sistema: {
+            motorOfertas:
+              true,
+
+            filtroAutomatico:
+              true,
+
+            geradorPosts:
+              true
+          }
+        }
+      });
+
+    } catch (erro) {
+
+      res.status(500).json({
+
+        success:
+          false,
+
+        message:
+          "Erro ao carregar configurações.",
+
+        error:
+          erro.message
+      });
+    }
+  }
+);
+// ==========================================
+// PRODUTOS - LISTAR
+// ==========================================
+
+app.get(
+  "/api/produtos",
+  async (req, res) => {
+
+    try {
+
+      const resultado =
+        await pool.query(`
+          SELECT
+            id,
+            nome,
+            preco,
+            link,
+            plataforma,
+            criado_em
+          FROM produtos
+          ORDER BY id DESC
+        `);
+
+      res.json({
+
+        success:
+          true,
+
+        produtos:
+          resultado.rows
+      });
+
+    } catch (erro) {
+
+      res.status(500).json({
+
+        success:
+          false,
+
+        message:
+          "Erro ao buscar produtos.",
+
+        error:
+          erro.message
+      });
+    }
+  }
+);
+
+// ==========================================
+// PRODUTOS - CADASTRAR
+// ==========================================
+
+app.post(
+  "/api/produtos",
+  async (req, res) => {
+
+    try {
+
+      const {
+        nome,
+        preco,
+        link,
+        plataforma
+      } = req.body;
+
+      if (
+        !nome ||
+        !link ||
+        !plataforma
+      ) {
+
+        return res.status(
+          400
+        ).json({
+
+          success:
+            false,
+
+          message:
+            "Nome, link e plataforma são obrigatórios."
+        });
+      }
+
+      const nomeFinal =
+        String(
+          nome
+        ).trim();
+
+      const linkFinal =
+        String(
+          link
+        ).trim();
+
+      const plataformaFinal =
+        String(
+          plataforma
+        ).trim();
+
+      if (
+        !nomeFinal ||
+        !linkFinal ||
+        !plataformaFinal
+      ) {
+
+        return res.status(
+          400
+        ).json({
+
+          success:
+            false,
+
+          message:
+            "Os campos obrigatórios não podem estar vazios."
+        });
+      }
+
+      const resultado =
+        await pool.query(
+          `
+          INSERT INTO produtos
+          (
+            nome,
+            preco,
+            link,
+            plataforma
+          )
+          VALUES
+          (
+            $1,
+            $2,
+            $3,
+            $4
+          )
+          RETURNING *
+          `,
+          [
+            nomeFinal,
+
+            normalizarPreco(
+              preco
+            ),
+
+            linkFinal,
+
+            plataformaFinal
+          ]
+        );
+
+      res.status(
+        201
+      ).json({
+
+        success:
+          true,
+
+        message:
+          "Produto salvo com sucesso!",
+
+        produto:
+          resultado.rows[0]
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO AO SALVAR PRODUTO:",
+        erro.message
+      );
+
+      res.status(500).json({
+
+        success:
+          false,
+
+        message:
+          "Erro ao salvar produto.",
+
+        error:
+          erro.message
+      });
+    }
+  }
+);
+
+// ==========================================
+// PRODUTOS - EXCLUIR
+// ==========================================
+
+app.delete(
+  "/api/produtos/:id",
+  async (req, res) => {
+
+    try {
+
+      const id =
+        Number(
+          req.params.id
+        );
+
+      if (
+        !Number.isInteger(id)
+      ) {
+
+        return res.status(
+          400
+        ).json({
+
+          success:
+            false,
+
+          message:
+            "ID inválido."
+        });
+      }
+
+      const resultado =
+        await pool.query(
+          `
+          DELETE FROM produtos
+          WHERE id = $1
+          RETURNING id
+          `,
+          [id]
+        );
+
+      if (
+        resultado.rowCount === 0
+      ) {
+
+        return res.status(
+          404
+        ).json({
+
+          success:
+            false,
+
+          message:
+            "Produto não encontrado."
+        });
+      }
+
+      res.json({
+
+        success:
+          true,
+
+        message:
+          "Produto excluído com sucesso."
+      });
+
+    } catch (erro) {
+
+      res.status(500).json({
+
+        success:
+          false,
+
+        message:
+          "Erro ao excluir produto.",
+
+        error:
+          erro.message
+      });
+    }
+  }
+);
+
+// ==========================================
+// OFERTAS - LISTAR
+// ==========================================
+
+app.get(
+  "/api/ofertas",
+  async (req, res) => {
+
+    try {
+
+      const resultado =
+        await pool.query(`
+          SELECT
+            id,
+            nome,
+            preco,
+            preco_anterior AS "precoAnterior",
+            link,
+            plataforma,
+            imagem,
+            categoria,
+            avaliacao,
+            vendas,
+            pontuacao,
+            criado_em
+          FROM ofertas
+          ORDER BY
+            pontuacao DESC,
+            id DESC
+        `);
+
+      res.json({
+
+        success:
+          true,
+
+        ofertas:
+          resultado.rows
+      });
+
+    } catch (erro) {
+
+      res.status(500).json({
+
+        success:
+          false,
+
+        message:
+          "Erro ao buscar ofertas.",
+
+        error:
+          erro.message
+      });
+    }
+  }
+);
+
+// ==========================================
+// FILTROS - BUSCAR
+// ==========================================
+
+app.get(
+  "/api/ofertas/filtros",
+  async (req, res) => {
+
+    try {
+
+      const resultado =
+        await pool.query(`
+          SELECT
+            preco_minimo AS "precoMinimo",
+            preco_maximo AS "precoMaximo",
+            avaliacao_minima AS "avaliacaoMinima",
+            vendas_minimas AS "vendasMinimas",
+            limite_por_categoria AS "limitePorCategoria",
+            pontuacao_minima AS "pontuacaoMinima"
+          FROM filtros_ofertas
+          WHERE id = 1
+          LIMIT 1
+        `);
+
+      res.json({
+
+        success:
+          true,
+
+        filtros:
+          resultado.rows[0] ||
+          FILTROS_PADRAO
+      });
+
+    } catch (erro) {
+
+      res.status(500).json({
+
+        success:
+          false,
+
+        message:
+          "Erro ao buscar filtros.",
+
+        error:
+          erro.message
+      });
+    }
+  }
+);
+
+// ==========================================
+// FILTROS - SALVAR
+// ==========================================
+
+app.put(
+  "/api/ofertas/filtros",
+  async (req, res) => {
+
+    try {
+
+      const {
+        precoMinimo,
+        precoMaximo,
+        avaliacaoMinima,
+        vendasMinimas,
+        limitePorCategoria,
+        pontuacaoMinima
+      } = req.body;
+
+      const minimo =
+        numeroSeguro(
+          precoMinimo,
+          0
+        );
+
+      const maximo =
+        numeroSeguro(
+          precoMaximo,
+          999999
+        );
+
+      const avaliacao =
+        numeroSeguro(
+          avaliacaoMinima,
+          0
+        );
+
+      const vendas =
+        numeroSeguro(
+          vendasMinimas,
+          0
+        );
+
+      const limite =
+        numeroSeguro(
+          limitePorCategoria,
+          10
+        );
+
+      const pontuacao =
+        numeroSeguro(
+          pontuacaoMinima,
+          0
+        );
+
+      const resultado =
+        await pool.query(
+          `
+          INSERT INTO filtros_ofertas
+          (
+            id,
+            preco_minimo,
+            preco_maximo,
+            avaliacao_minima,
+            vendas_minimas,
+            limite_por_categoria,
+            pontuacao_minima
+          )
+          VALUES
+          (
+            1,
+            $1,
+            $2,
+            $3,
+            $4,
+            $5,
+            $6
+          )
+          ON CONFLICT (id)
+          DO UPDATE SET
+
+            preco_minimo =
+              EXCLUDED.preco_minimo,
+
+            preco_maximo =
+              EXCLUDED.preco_maximo,
+
+            avaliacao_minima =
+              EXCLUDED.avaliacao_minima,
+
+            vendas_minimas =
+              EXCLUDED.vendas_minimas,
+
+            limite_por_categoria =
+              EXCLUDED.limite_por_categoria,
+
+            pontuacao_minima =
+              EXCLUDED.pontuacao_minima
+
+          RETURNING
+            preco_minimo AS "precoMinimo",
+            preco_maximo AS "precoMaximo",
+            avaliacao_minima AS "avaliacaoMinima",
+            vendas_minimas AS "vendasMinimas",
+            limite_por_categoria AS "limitePorCategoria",
+            pontuacao_minima AS "pontuacaoMinima"
+          `,
+          [
+            minimo,
+            maximo,
+            avaliacao,
+            vendas,
+            limite,
+            pontuacao
+          ]
+        );
+
+      res.json({
+
+        success:
+          true,
+
+        message:
+          "Filtros salvos com sucesso.",
+
+        filtros:
+          resultado.rows[0]
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO AO SALVAR FILTROS:",
+        erro.message
+      );
+
+      res.status(500).json({
+
+        success:
+          false,
+
+        message:
+          "Erro ao salvar filtros.",
+
+        error:
+          erro.message
+      });
+    }
+  }
+);
+// ==========================================
+// SALVAR OFERTA
+// ==========================================
+
+async function salvarOferta(
+  produto
+) {
+
+  const resultado =
+    await pool.query(
+      `
+      INSERT INTO ofertas
+      (
+        nome,
+        preco,
+        preco_anterior,
+        link,
+        plataforma,
+        imagem,
+        categoria,
+        avaliacao,
+        vendas,
+        pontuacao
       )
-        ? dados.results
-        : [];
+      VALUES
+      (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7,
+        $8,
+        $9,
+        $10
+      )
+      RETURNING *
+      `,
+      [
+        produto.nome,
+        produto.preco,
+        produto.precoAnterior,
+        produto.link,
+        produto.plataforma,
+        produto.imagem,
+        produto.categoria,
+        produto.avaliacao,
+        produto.vendas,
+        produto.pontuacao
+      ]
+    );
+
+  return resultado.rows[0];
+}
+
+// ==========================================
+// GERAR TEXTO DA OFERTA
+// ==========================================
+
+function gerarTextoOferta(
+  oferta
+) {
+
+  const nome =
+    oferta.nome ||
+    "Produto";
+
+  const preco =
+    numeroSeguro(
+      oferta.preco,
+      0
+    );
+
+  const link =
+    oferta.link ||
+    "";
+
+  const plataforma =
+    oferta.plataforma ||
+    "Mercado Livre";
+
+  const avaliacao =
+    numeroSeguro(
+      oferta.avaliacao,
+      0
+    );
+
+  const vendas =
+    numeroSeguro(
+      oferta.vendas,
+      0
+    );
+
+  const precoFormatado =
+    preco.toLocaleString(
+      "pt-BR",
+      {
+        style:
+          "currency",
+
+        currency:
+          "BRL"
+      }
+    );
+
+  return [
+    "🔥 OFERTA ENCONTRADA!",
+    "",
+    `📦 ${nome}`,
+    "",
+    `💰 Por apenas ${precoFormatado}`,
+    "",
+    `⭐ Avaliação: ${avaliacao.toFixed(1)}`,
+    `🛒 Vendas: ${vendas}`,
+    `🏪 ${plataforma}`,
+    "",
+    "👉 Confira aqui:",
+    link,
+    "",
+    "⚡ Eletromax | Ofertas e novidades"
+  ].join("\n");
+}
+
+// ==========================================
+// ROTA - GERAR POST
+// ==========================================
+
+app.post(
+  "/api/posts/gerar",
+  async (req, res) => {
+
+    try {
+
+      const id =
+        Number(
+          req.body?.id ||
+          req.body?.ofertaId
+        );
+
+      if (
+        !Number.isInteger(id)
+      ) {
+
+        return res.status(
+          400
+        ).json({
+
+          success:
+            false,
+
+          message:
+            "Informe um ID de oferta válido."
+        });
+      }
+
+      const resultado =
+        await pool.query(
+          `
+          SELECT
+            id,
+            nome,
+            preco,
+            preco_anterior AS "precoAnterior",
+            link,
+            plataforma,
+            imagem,
+            categoria,
+            avaliacao,
+            vendas,
+            pontuacao
+          FROM ofertas
+          WHERE id = $1
+          LIMIT 1
+          `,
+          [id]
+        );
+
+      if (
+        resultado.rowCount === 0
+      ) {
+
+        return res.status(
+          404
+        ).json({
+
+          success:
+            false,
+
+          message:
+            "Oferta não encontrada."
+        });
+      }
+
+      const oferta =
+        resultado.rows[0];
+
+      const texto =
+        gerarTextoOferta(
+          oferta
+        );
+
+      res.json({
+
+        success:
+          true,
+
+        post: {
+          texto,
+
+          oferta
+        }
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO AO GERAR POST:",
+        erro.message
+      );
+
+      res.status(
+        500
+      ).json({
+
+        success:
+          false,
+
+        message:
+          "Erro ao gerar post.",
+
+        error:
+          erro.message
+      });
+    }
+  }
+);
+
+// ==========================================
+// POSTS - LISTAR
+// ==========================================
+
+app.get(
+  "/api/posts",
+  async (req, res) => {
+
+    try {
+
+      const resultado =
+        await pool.query(
+          `
+          SELECT
+            id,
+            titulo,
+            texto,
+            imagem,
+            plataforma,
+            status,
+            criado_em
+          FROM posts
+          ORDER BY
+            id DESC
+          `
+        );
+
+      res.json({
+
+        success:
+          true,
+
+        posts:
+          resultado.rows
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO AO LISTAR POSTS:",
+        erro.message
+      );
+
+      res.status(
+        500
+      ).json({
+
+        success:
+          false,
+
+        message:
+          "Erro ao listar posts.",
+
+        error:
+          erro.message
+      });
+    }
+  }
+);
+
+// ==========================================
+// POSTS - SALVAR
+// ==========================================
+
+app.post(
+  "/api/posts",
+  async (req, res) => {
+
+    try {
+
+      const {
+        titulo,
+        texto,
+        imagem,
+        plataforma,
+        status
+      } = req.body;
+
+      if (
+        !texto
+      ) {
+
+        return res.status(
+          400
+        ).json({
+
+          success:
+            false,
+
+          message:
+            "O texto do post é obrigatório."
+        });
+      }
+
+      const resultado =
+        await pool.query(
+          `
+          INSERT INTO posts
+          (
+            titulo,
+            texto,
+            imagem,
+            plataforma,
+            status
+          )
+          VALUES
+          (
+            $1,
+            $2,
+            $3,
+            $4,
+            $5
+          )
+          RETURNING *
+          `,
+          [
+            titulo ||
+              "Oferta Eletromax",
+
+            String(
+              texto
+            ).trim(),
+
+            imagem ||
+              null,
+
+            plataforma ||
+              "Instagram",
+
+            status ||
+              "rascunho"
+          ]
+        );
+
+      res.status(
+        201
+      ).json({
+
+        success:
+          true,
+
+        message:
+          "Post salvo com sucesso.",
+
+        post:
+          resultado.rows[0]
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO AO SALVAR POST:",
+        erro.message
+      );
+
+      res.status(
+        500
+      ).json({
+
+        success:
+          false,
+
+        message:
+          "Erro ao salvar post.",
+
+        error:
+          erro.message
+      });
+    }
+  }
+);
+
+// ==========================================
+// POSTS - EXCLUIR
+// ==========================================
+
+app.delete(
+  "/api/posts/:id",
+  async (req, res) => {
+
+    try {
+
+      const id =
+        Number(
+          req.params.id
+        );
+
+      if (
+        !Number.isInteger(id)
+      ) {
+
+        return res.status(
+          400
+        ).json({
+
+          success:
+            false,
+
+          message:
+            "ID do post inválido."
+        });
+      }
+
+      const resultado =
+        await pool.query(
+          `
+          DELETE FROM posts
+          WHERE id = $1
+          RETURNING id
+          `,
+          [id]
+        );
+
+      if (
+        resultado.rowCount === 0
+      ) {
+
+        return res.status(
+          404
+        ).json({
+
+          success:
+            false,
+
+          message:
+            "Post não encontrado."
+        });
+      }
+
+      res.json({
+
+        success:
+          true,
+
+        message:
+          "Post excluído com sucesso."
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO AO EXCLUIR POST:",
+        erro.message
+      );
+
+      res.status(
+        500
+      ).json({
+
+        success:
+          false,
+
+        message:
+          "Erro ao excluir post.",
+
+        error:
+          erro.message
+      });
+    }
+  }
+);
+
+// ==========================================
+// MOTOR DE OFERTAS - STATUS
+// ==========================================
+
+app.get(
+  "/api/motor-ofertas/status",
+  async (req, res) => {
+
+    try {
+
+      const filtros =
+        await obterFiltros();
+
+      res.json({
+
+        success:
+          true,
+
+        ativo:
+          true,
+
+        status:
+          "active",
+
+        filtros,
+
+        mercadoLivre:
+          Boolean(
+            mercadoLivreAccessToken
+          )
+      });
+
+    } catch (erro) {
+
+      res.status(
+        500
+      ).json({
+
+        success:
+          false,
+
+        ativo:
+          false,
+
+        message:
+          erro.message
+      });
+    }
+  }
+);
+
+// ==========================================
+// GERADOR DE POSTS - STATUS
+// ==========================================
+
+app.get(
+  "/api/gerador-posts/status",
+  async (req, res) => {
+
+    res.json({
+
+      success:
+        true,
+
+      ativo:
+        true,
+
+      status:
+        "active",
+
+      plataforma:
+        "Eletromax"
+    });
+  }
+);
+// ==========================================
+// SALVAR OFERTA
+// ==========================================
+
+async function salvarOferta(
+  produto
+) {
+
+  const resultado =
+    await pool.query(
+      `
+      INSERT INTO ofertas
+      (
+        nome,
+        preco,
+        preco_anterior,
+        link,
+        plataforma,
+        imagem,
+        categoria,
+        avaliacao,
+        vendas,
+        pontuacao
+      )
+      VALUES
+      (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7,
+        $8,
+        $9,
+        $10
+      )
+      RETURNING *
+      `,
+      [
+        produto.nome,
+        produto.preco,
+        produto.precoAnterior,
+        produto.link,
+        produto.plataforma,
+        produto.imagem,
+        produto.categoria,
+        produto.avaliacao,
+        produto.vendas,
+        produto.pontuacao
+      ]
+    );
+
+  return resultado.rows[0];
+}
+
+// ==========================================
+// GERAR TEXTO DA OFERTA
+// ==========================================
+
+function gerarTextoOferta(
+  oferta
+) {
+
+  const nome =
+    oferta.nome ||
+    "Produto";
+
+  const preco =
+    numeroSeguro(
+      oferta.preco,
+      0
+    );
+
+  const link =
+    oferta.link ||
+    "";
+
+  const plataforma =
+    oferta.plataforma ||
+    "Mercado Livre";
+
+  const avaliacao =
+    numeroSeguro(
+      oferta.avaliacao,
+      0
+    );
+
+  const vendas =
+    numeroSeguro(
+      oferta.vendas,
+      0
+    );
+
+  const precoFormatado =
+    preco.toLocaleString(
+      "pt-BR",
+      {
+        style:
+          "currency",
+
+        currency:
+          "BRL"
+      }
+    );
+
+  return [
+    "🔥 OFERTA ENCONTRADA!",
+    "",
+    `📦 ${nome}`,
+    "",
+    `💰 Por apenas ${precoFormatado}`,
+    "",
+    `⭐ Avaliação: ${avaliacao.toFixed(1)}`,
+    `🛒 Vendas: ${vendas}`,
+    `🏪 ${plataforma}`,
+    "",
+    "👉 Confira aqui:",
+    link,
+    "",
+    "⚡ Eletromax | Ofertas e novidades"
+  ].join("\n");
+}
+
+// ==========================================
+// ROTA - GERAR POST
+// ==========================================
+
+app.post(
+  "/api/posts/gerar",
+  async (req, res) => {
+
+    try {
+
+      const id =
+        Number(
+          req.body?.id ||
+          req.body?.ofertaId
+        );
+
+      if (
+        !Number.isInteger(id)
+      ) {
+
+        return res.status(
+          400
+        ).json({
+
+          success:
+            false,
+
+          message:
+            "Informe um ID de oferta válido."
+        });
+      }
+
+      const resultado =
+        await pool.query(
+          `
+          SELECT
+            id,
+            nome,
+            preco,
+            preco_anterior AS "precoAnterior",
+            link,
+            plataforma,
+            imagem,
+            categoria,
+            avaliacao,
+            vendas,
+            pontuacao
+          FROM ofertas
+          WHERE id = $1
+          LIMIT 1
+          `,
+          [id]
+        );
+
+      if (
+        resultado.rowCount === 0
+      ) {
+
+        return res.status(
+          404
+        ).json({
+
+          success:
+            false,
+
+          message:
+            "Oferta não encontrada."
+        });
+      }
+
+      const oferta =
+        resultado.rows[0];
+
+      const texto =
+        gerarTextoOferta(
+          oferta
+        );
+
+      res.json({
+
+        success:
+          true,
+
+        post: {
+          texto,
+
+          oferta
+        }
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO AO GERAR POST:",
+        erro.message
+      );
+
+      res.status(
+        500
+      ).json({
+
+        success:
+          false,
+
+        message:
+          "Erro ao gerar post.",
+
+        error:
+          erro.message
+      });
+    }
+  }
+);
+
+// ==========================================
+// POSTS - LISTAR
+// ==========================================
+
+app.get(
+  "/api/posts",
+  async (req, res) => {
+
+    try {
+
+      const resultado =
+        await pool.query(
+          `
+          SELECT
+            id,
+            titulo,
+            texto,
+            imagem,
+            plataforma,
+            status,
+            criado_em
+          FROM posts
+          ORDER BY
+            id DESC
+          `
+        );
+
+      res.json({
+
+        success:
+          true,
+
+        posts:
+          resultado.rows
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO AO LISTAR POSTS:",
+        erro.message
+      );
+
+      res.status(
+        500
+      ).json({
+
+        success:
+          false,
+
+        message:
+          "Erro ao listar posts.",
+
+        error:
+          erro.message
+      });
+    }
+  }
+);
+
+// ==========================================
+// POSTS - SALVAR
+// ==========================================
+
+app.post(
+  "/api/posts",
+  async (req, res) => {
+
+    try {
+
+      const {
+        titulo,
+        texto,
+        imagem,
+        plataforma,
+        status
+      } = req.body;
+
+      if (
+        !texto
+      ) {
+
+        return res.status(
+          400
+        ).json({
+
+          success:
+            false,
+
+          message:
+            "O texto do post é obrigatório."
+        });
+      }
+
+      const resultado =
+        await pool.query(
+          `
+          INSERT INTO posts
+          (
+            titulo,
+            texto,
+            imagem,
+            plataforma,
+            status
+          )
+          VALUES
+          (
+            $1,
+            $2,
+            $3,
+            $4,
+            $5
+          )
+          RETURNING *
+          `,
+          [
+            titulo ||
+              "Oferta Eletromax",
+
+            String(
+              texto
+            ).trim(),
+
+            imagem ||
+              null,
+
+            plataforma ||
+              "Instagram",
+
+            status ||
+              "rascunho"
+          ]
+        );
+
+      res.status(
+        201
+      ).json({
+
+        success:
+          true,
+
+        message:
+          "Post salvo com sucesso.",
+
+        post:
+          resultado.rows[0]
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO AO SALVAR POST:",
+        erro.message
+      );
+
+      res.status(
+        500
+      ).json({
+
+        success:
+          false,
+
+        message:
+          "Erro ao salvar post.",
+
+        error:
+          erro.message
+      });
+    }
+  }
+);
+
+// ==========================================
+// POSTS - EXCLUIR
+// ==========================================
+
+app.delete(
+  "/api/posts/:id",
+  async (req, res) => {
+
+    try {
+
+      const id =
+        Number(
+          req.params.id
+        );
+
+      if (
+        !Number.isInteger(id)
+      ) {
+
+        return res.status(
+          400
+        ).json({
+
+          success:
+            false,
+
+          message:
+            "ID do post inválido."
+        });
+      }
+
+      const resultado =
+        await pool.query(
+          `
+          DELETE FROM posts
+          WHERE id = $1
+          RETURNING id
+          `,
+          [id]
+        );
+
+      if (
+        resultado.rowCount === 0
+      ) {
+
+        return res.status(
+          404
+        ).json({
+
+          success:
+            false,
+
+          message:
+            "Post não encontrado."
+        });
+      }
+
+      res.json({
+
+        success:
+          true,
+
+        message:
+          "Post excluído com sucesso."
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO AO EXCLUIR POST:",
+        erro.message
+      );
+
+      res.status(
+        500
+      ).json({
+
+        success:
+          false,
+
+        message:
+          "Erro ao excluir post.",
+
+        error:
+          erro.message
+      });
+    }
+  }
+);
+
+// ==========================================
+// MOTOR DE OFERTAS - STATUS
+// ==========================================
+
+app.get(
+  "/api/motor-ofertas/status",
+  async (req, res) => {
+
+    try {
+
+      const filtros =
+        await obterFiltros();
+
+      res.json({
+
+        success:
+          true,
+
+        ativo:
+          true,
+
+        status:
+          "active",
+
+        filtros,
+
+        mercadoLivre:
+          Boolean(
+            mercadoLivreAccessToken
+          )
+      });
+
+    } catch (erro) {
+
+      res.status(
+        500
+      ).json({
+
+        success:
+          false,
+
+        ativo:
+          false,
+
+        message:
+          erro.message
+      });
+    }
+  }
+);
+
+// ==========================================
+// GERADOR DE POSTS - STATUS
+// ==========================================
+
+app.get(
+  "/api/gerador-posts/status",
+  async (req, res) => {
+
+    res.json({
+
+      success:
+        true,
+
+      ativo:
+        true,
+
+      status:
+        "active",
+
+      plataforma:
+        "Eletromax"
+    });
+  }
+);
+// ==========================================
+// CONTINUAÇÃO - TESTE MERCADO LIVRE
+// ==========================================
+
+      const resposta =
+        resultado.resposta;
+
+      const dados =
+        resultado.dados;
+
+      if (!resposta.ok) {
+
+        return res.status(
+          resposta.status
+        ).json({
+
+          success:
+            false,
+
+          status:
+            resposta.status,
+
+          code:
+            resposta.status === 401
+              ? "ML_TOKEN_INVALID"
+              : resposta.status === 403
+                ? "ML_FORBIDDEN"
+                : "ML_API_ERROR",
+
+          message:
+            dados.message ||
+            dados.error ||
+            "Mercado Livre recusou a requisição.",
+
+          dados:
+            dados
+        });
+      }
+
+      res.json({
+
+        success:
+          true,
+
+        status:
+          resposta.status,
+
+        conectado:
+          true,
+
+        userId:
+          dados.id ||
+          mercadoLivreUserId ||
+          null,
+
+        nickname:
+          dados.nickname ||
+          null,
+
+        dados:
+          dados
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO TESTE ML:",
+        erro
+      );
+
+      res.status(
+        erro.status ||
+        500
+      ).json({
+
+        success:
+          false,
+
+        code:
+          erro.code ||
+          "ML_TEST_ERROR",
+
+        erro:
+          erro.message,
+
+        detalhes:
+          erro.mlResponse ||
+          null
+      });
+    }
+  }
+);
+
+// ==========================================
+// MERCADO LIVRE - BUSCAR E SALVAR (POST)
+// ==========================================
+
+app.post(
+  "/api/mercadolivre/buscar-salvar",
+  async (req, res) => {
+
+    const busca =
+      String(
+        req.body?.q ||
+        ""
+      ).trim();
+
+    const limite =
+      Math.min(
+        Math.max(
+          Number(
+            req.body?.limit ||
+            20
+          ),
+          1
+        ),
+        50
+      );
+
+    if (!busca) {
+
+      return res.status(
+        400
+      ).json({
+
+        success:
+          false,
+
+        message:
+          "Informe o termo de busca."
+      });
+    }
+
+    try {
+
+      const dados =
+        await buscarMercadoLivre(
+          busca,
+          limite
+        );
+
+      const produtos =
+        Array.isArray(
+          dados?.results
+        )
+          ? dados.results
+          : [];
 
       let salvos = 0;
       let atualizados = 0;
 
-      for (const produto of produtos) {
+      for (
+        const produto
+        of produtos
+      ) {
 
-        if (!produto.permalink) {
+        if (
+          !produto?.permalink
+        ) {
           continue;
         }
 
         const oferta = {
+
           nome:
             produto.title ||
             "Produto",
@@ -4395,20 +5975,22 @@ app.get(
             )
         };
 
-        const antes = await pool.query(
-          `
-          SELECT id
-          FROM ofertas
-          WHERE link = $1
-          LIMIT 1
-          `,
-          [
-            oferta.link
-          ]
-        );
+        const antes =
+          await pool.query(
+            `
+            SELECT id
+            FROM ofertas
+            WHERE link = $1
+            LIMIT 1
+            `,
+            [
+              oferta.link
+            ]
+          );
 
         const existia =
-          antes.rowCount > 0;
+          antes.rowCount >
+          0;
 
         const salvo =
           await salvarOferta(
@@ -4418,13 +6000,14 @@ app.get(
         if (salvo) {
 
           if (existia) {
+
             atualizados++;
+
           } else {
+
             salvos++;
           }
-
         }
-
       }
 
       return res.json({
@@ -4435,11 +6018,213 @@ app.get(
         encontrados:
           produtos.length,
 
-        salvos:
-          salvos,
+        salvos,
 
-        atualizados:
+        atualizados,
+
+        totalProcessados:
+          salvos +
           atualizados,
+
+        message:
+          `${salvos} novas ofertas salvas e ${atualizados} ofertas atualizadas.`
+      });
+
+    } catch (erro) {
+
+      console.error(
+        "ERRO BUSCAR E SALVAR ML:",
+        erro
+      );
+
+      return res.status(
+        erro.status ||
+        500
+      ).json({
+
+        success:
+          false,
+
+        message:
+          erro.message ||
+          "Erro ao buscar e salvar ofertas.",
+
+        code:
+          erro.code ||
+          "ML_SEARCH_ERROR",
+
+        detalhes:
+          erro.dados ||
+          erro.mlResponse ||
+          null
+      });
+    }
+  }
+);
+
+// ==========================================
+// MERCADO LIVRE - BUSCAR E SALVAR (GET)
+// Compatibilidade com testes pelo navegador
+// ==========================================
+
+app.get(
+  "/api/mercadolivre/buscar-salvar",
+  async (req, res) => {
+
+    const busca =
+      String(
+        req.query?.q ||
+        ""
+      ).trim();
+
+    const limite =
+      Math.min(
+        Math.max(
+          Number(
+            req.query?.limit ||
+            20
+          ),
+          1
+        ),
+        50
+      );
+
+    if (!busca) {
+
+      return res.status(
+        400
+      ).json({
+
+        success:
+          false,
+
+        message:
+          "Informe o termo de busca. Exemplo: ?q=camera"
+      });
+    }
+
+    try {
+
+      console.log(
+        "🔎 BUSCA ML:",
+        busca
+      );
+
+      const dados =
+        await buscarMercadoLivre(
+          busca,
+          limite
+        );
+
+      const produtos =
+        Array.isArray(
+          dados?.results
+        )
+          ? dados.results
+          : [];
+
+      let salvos = 0;
+      let atualizados = 0;
+
+      for (
+        const produto
+        of produtos
+      ) {
+
+        if (
+          !produto?.permalink
+        ) {
+          continue;
+        }
+
+        const oferta = {
+
+          nome:
+            produto.title ||
+            "Produto",
+
+          preco:
+            produto.price ||
+            0,
+
+          precoAnterior:
+            null,
+
+          link:
+            produto.permalink,
+
+          plataforma:
+            "Mercado Livre",
+
+          imagem:
+            produto.thumbnail ||
+            "",
+
+          categoria:
+            "Busca manual",
+
+          avaliacao:
+            extrairAvaliacao(
+              produto
+            ),
+
+          vendas:
+            extrairVendas(
+              produto
+            ),
+
+          pontuacao:
+            calcularPontuacao(
+              produto
+            )
+        };
+
+        const antes =
+          await pool.query(
+            `
+            SELECT id
+            FROM ofertas
+            WHERE link = $1
+            LIMIT 1
+            `,
+            [
+              oferta.link
+            ]
+          );
+
+        const existia =
+          antes.rowCount >
+          0;
+
+        const salvo =
+          await salvarOferta(
+            oferta
+          );
+
+        if (salvo) {
+
+          if (existia) {
+
+            atualizados++;
+
+          } else {
+
+            salvos++;
+          }
+        }
+      }
+
+      return res.json({
+
+        success:
+          true,
+
+        encontrados:
+          produtos.length,
+
+        salvos,
+
+        atualizados,
 
         totalProcessados:
           salvos +
@@ -4450,7 +6235,14 @@ app.get(
 
         ofertas:
           produtos.map(
-            produto => ({
+            (
+              produto
+            ) => ({
+
+              id:
+                produto.id ||
+                null,
+
               nome:
                 produto.title ||
                 "Produto",
@@ -4486,7 +6278,6 @@ app.get(
                 )
             })
           )
-
       });
 
     } catch (erro) {
@@ -4510,308 +6301,214 @@ app.get(
 
         code:
           erro.code ||
-          "ML_SEARCH_ERROR"
+          "ML_SEARCH_ERROR",
 
+        detalhes:
+          erro.dados ||
+          erro.mlResponse ||
+          null
       });
-
     }
-
-  }
-);
-// ==========================================
-// 404 API
-// ==========================================
-
-app.use(
-  "/api",
-  (req, res) => {
-    res.status(404).json({
-      success:
-        false,
-
-      message:
-        "Rota da API não encontrada.",
-
-      rota:
-        req.originalUrl
-    });
   }
 );
 
 // ==========================================
-// 404 GERAL
+// MOTOR AUTOMÁTICO
 // ==========================================
 
-app.use(
-  (req, res) => {
-    res.status(404).send(`
-      <!DOCTYPE html>
-      <html lang="pt-BR">
-      <head>
-        <meta charset="UTF-8">
-        <meta
-          name="viewport"
-          content="width=device-width, initial-scale=1.0"
-        >
-        <title>Eletromax V2</title>
-      </head>
+app.post(
+  "/api/ofertas/buscar-automaticamente",
+  async (req, res) => {
 
-      <body>
-        <h1>⚡ Eletromax V2</h1>
+    try {
 
-        <p>
-          Página não encontrada.
-        </p>
+      const filtros =
+        await obterFiltros();
 
-        <a href="/">
-          Voltar para o painel
-        </a>
-      </body>
-      </html>
-    `);
-  }
-);
+      let encontrados =
+        0;
 
-// ==========================================
-// TRATAMENTO GLOBAL DE ERROS
-// ==========================================
+      let aprovados =
+        0;
 
-app.use(
-  (
-    erro,
-    req,
-    res,
-    next
-  ) => {
-    console.error(
-      "================================="
-    );
+      let salvos =
+        0;
 
-    console.error(
-      "ERRO GLOBAL DO SERVIDOR:"
-    );
+      let atualizados =
+        0;
 
-    console.error(
-      erro
-    );
+      const ofertas =
+        [];
 
-    console.error(
-      "================================="
-    );
+      for (
+        const categoria
+        of CATEGORIAS_PADRAO
+      ) {
 
-    if (
-      res.headersSent
-    ) {
-      return next(
-        erro
-      );
-    }
+        console.log(
+          "================================="
+        );
 
-    res.status(
-      erro.status ||
-      500
-    ).json({
-      success:
-        false,
+        console.log(
+          "BUSCA AUTOMÁTICA:",
+          categoria.nome
+        );
 
-      message:
-        "Erro interno no servidor.",
+        try {
 
-      error:
-        process.env.NODE_ENV ===
-        "production"
-          ? undefined
-          : erro.message
-    });
-  }
-);
+          const dados =
+            await buscarMercadoLivre(
+              categoria.busca,
+              Math.min(
+                filtros.limitePorCategoria,
+                50
+              )
+            );
 
-// ==========================================
-// SERVIDOR
-// ==========================================
+          const produtos =
+            Array.isArray(
+              dados.results
+            )
+              ? dados.results
+              : [];
 
-let servidor =
-  null;
+          encontrados +=
+            produtos.length;
 
-// ==========================================
-// ENCERRAMENTO SEGURO
-// ==========================================
+          for (
+            const produto
+            of produtos
+          ) {
 
-async function desligarServidor(
-  sinal
-) {
-  console.log(
-    `Recebido ${sinal}. Encerrando Eletromax V2...`
-  );
-
-  try {
-    if (
-      servidor
-    ) {
-      await new Promise(
-        (
-          resolve
-        ) => {
-          servidor.close(
-            () => {
-              console.log(
-                "Servidor HTTP encerrado."
+            const analise =
+              analisarProduto(
+                produto,
+                categoria,
+                filtros
               );
 
-              resolve();
+            if (
+              !analise.aprovado
+            ) {
+
+              continue;
             }
+
+            aprovados++;
+
+            const oferta =
+              analise.produto;
+
+            const antes =
+              await pool.query(
+                `
+                SELECT id
+                FROM ofertas
+                WHERE link = $1
+                LIMIT 1
+                `,
+                [
+                  oferta.link
+                ]
+              );
+
+            const existia =
+              antes.rowCount >
+              0;
+
+            const salvo =
+              await salvarOferta(
+                oferta
+              );
+
+            if (
+              salvo
+            ) {
+
+              ofertas.push(
+                salvo
+              );
+
+              if (
+                existia
+              ) {
+
+                atualizados++;
+
+              } else {
+
+                salvos++;
+              }
+            }
+          }
+
+        } catch (
+          erroCategoria
+        ) {
+
+          console.error(
+            "❌ ERRO NA CATEGORIA:",
+            categoria.nome,
+
+            erroCategoria.message
           );
         }
-      );
-    }
+      }
 
-    if (
-      process.env.DATABASE_URL
-    ) {
-      await pool.end();
+      return res.json({
 
-      console.log(
-        "Banco de dados desconectado."
-      );
-    }
+        success:
+          true,
 
-    console.log(
-      "Eletromax V2 encerrado com sucesso."
-    );
+        encontrados,
 
-    process.exit(
-      0
-    );
-  } catch (erro) {
-    console.error(
-      "ERRO AO ENCERRAR SERVIDOR:",
-      erro.message
-    );
+        aprovados,
 
-    process.exit(
-      1
-    );
-  }
-}
+        salvos,
 
-process.on(
-  "SIGTERM",
-  () => {
-    desligarServidor(
-      "SIGTERM"
-    );
-  }
-);
+        atualizados,
 
-process.on(
-  "SIGINT",
-  () => {
-    desligarServidor(
-      "SIGINT"
-    );
-  }
-);
+        totalProcessados:
+          salvos +
+          atualizados,
 
-// ==========================================
-// INICIALIZAÇÃO
-// ==========================================
+        ofertas
+      });
 
-async function iniciarServidor() {
-  console.log(
-    "================================="
-  );
+    } catch (erro) {
 
-  console.log(
-    "INICIANDO ELETROMAX V2..."
-  );
-
-  console.log(
-    "================================="
-  );
-
-  console.log(
-    "NODE VERSION:",
-    process.version
-  );
-
-  console.log(
-    "PORTA:",
-    PORT
-  );
-
-  console.log(
-    "DATABASE_URL:",
-    process.env.DATABASE_URL
-      ? "CONFIGURADA"
-      : "NÃO CONFIGURADA"
-  );
-
-  console.log(
-    "ML_CLIENT_ID:",
-    process.env.ML_CLIENT_ID
-      ? "CONFIGURADO"
-      : "NÃO CONFIGURADO"
-  );
-
-  console.log(
-    "ML_CLIENT_SECRET:",
-    process.env.ML_CLIENT_SECRET
-      ? "CONFIGURADO"
-      : "NÃO CONFIGURADO"
-  );
-
-  console.log(
-    "ML_REDIRECT_URI:",
-    obterRedirectUri()
-  );
-
-  try {
-    const bancoOK =
-      await inicializarBanco();
-
-    if (
-      !bancoOK
-    ) {
       console.error(
-        "⚠️ ATENÇÃO: O banco apresentou erro."
+        "❌ ERRO MOTOR AUTOMÁTICO:",
+        erro
       );
+
+      return res.status(
+        erro.status ||
+        500
+      ).json({
+
+        success:
+          false,
+
+        message:
+          erro.message ||
+          "Erro no motor automático.",
+
+        code:
+          erro.code ||
+          "AUTO_SEARCH_ERROR",
+
+        detalhes:
+          erro.dados ||
+          erro.mlResponse ||
+          null
+      });
     }
-
-    servidor =
-      app.listen(
-        PORT,
-        "0.0.0.0",
-        () => {
-          console.log(
-            "================================="
-          );
-
-          console.log(
-            "⚡ ELETROMAX V2 ONLINE"
-          );
-
-          console.log(
-            "================================="
-          );
-
-          console.log(
-            "PORTA:",
-            PORT
-          );
-
-          console.log(
-            "BANCO:",
-            bancoOK
-              ? "CONECTADO"
-              : "COM ERRO"
-          );
-
-          console.log(
-            "MERCADO LIVRE:",
-            mercadoLivreAccessToken
-              ? "CONECTADO"
-              : "NÃO CONECTADO"
-          );
+  }
+);
+// ==========================================
+// CONTINUAÇÃO DA INICIALIZAÇÃO
+// ==========================================
 
           console.log(
             "REFRESH TOKEN:",
@@ -4877,7 +6574,9 @@ async function iniciarServidor() {
           );
         }
       );
+
   } catch (erro) {
+
     console.error(
       "================================="
     );
@@ -4905,4 +6604,3 @@ async function iniciarServidor() {
 // ==========================================
 
 iniciarServidor();
-
