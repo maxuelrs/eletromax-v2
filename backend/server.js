@@ -813,18 +813,198 @@ async function consultarUsuarioMercadoLivre(token) {
   };
 }
 
+```js
 // ==========================================
-// BUSCAR NO MERCADO LIVRE - VERSÃO CORRIGIDA
+// BUSCAR NO MERCADO LIVRE
+// VERSÃO CORRIGIDA - BUSCA PÚBLICA
 // ==========================================
 
 async function buscarMercadoLivre(busca, limite = 20) {
   const termo = String(busca || "").trim();
 
   if (!termo) {
-    throw new Error("Informe o termo de busca.");
+    const erro = new Error("Informe o termo de busca.");
+    erro.status = 400;
+    erro.code = "ML_SEARCH_INVALID";
+    throw erro;
   }
 
-  const quantidade = Math.min(Math.max(Number(limite) || 20, 1), 50);
+  const quantidade = Math.min(
+    Math.max(Number(limite) || 20, 1),
+    50
+  );
+
+  // ========================================
+  // URL DA BUSCA PÚBLICA
+  // ========================================
+
+  const url = new URL(
+    "https://api.mercadolibre.com/sites/MLB/search"
+  );
+
+  url.searchParams.set("q", termo);
+  url.searchParams.set("limit", String(quantidade));
+
+  console.log("=================================");
+  console.log("🔎 BUSCA PÚBLICA MERCADO LIVRE");
+  console.log("TERMO:", termo);
+  console.log("LIMITE:", quantidade);
+  console.log("URL:", url.toString());
+  console.log("=================================");
+
+  // ========================================
+  // IMPORTANTE:
+  // A busca geral de produtos não depende
+  // do OAuth do usuário.
+  //
+  // NÃO enviar Authorization aqui.
+  // Isso evita que um token do seller seja
+  // usado indevidamente em uma busca pública.
+  // ========================================
+
+  let resposta;
+
+  try {
+    resposta = await fetch(url.toString(), {
+      method: "GET",
+
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "Eletromax-V2/2.0",
+      },
+    });
+  } catch (erroFetch) {
+    console.error(
+      "❌ ERRO DE CONEXÃO COM MERCADO LIVRE:",
+      erroFetch.message
+    );
+
+    const erro = new Error(
+      "Não foi possível conectar à API do Mercado Livre."
+    );
+
+    erro.status = 502;
+    erro.code = "ML_CONNECTION_ERROR";
+    erro.dados = {
+      message: erroFetch.message,
+    };
+
+    throw erro;
+  }
+
+  // ========================================
+  // LER RESPOSTA
+  // ========================================
+
+  const textoResposta = await resposta.text();
+
+  let dados = {};
+
+  try {
+    dados = textoResposta
+      ? JSON.parse(textoResposta)
+      : {};
+  } catch {
+    dados = {
+      raw: textoResposta,
+    };
+  }
+
+  console.log(
+    "STATUS MERCADO LIVRE:",
+    resposta.status
+  );
+
+  // ========================================
+  // SUCESSO
+  // ========================================
+
+  if (resposta.ok) {
+    const totalResultados = Array.isArray(dados.results)
+      ? dados.results.length
+      : 0;
+
+    console.log(
+      "✅ BUSCA MERCADO LIVRE REALIZADA COM SUCESSO"
+    );
+
+    console.log(
+      "RESULTADOS RECEBIDOS:",
+      totalResultados
+    );
+
+    return dados;
+  }
+
+  // ========================================
+  // 403
+  // ========================================
+
+  if (resposta.status === 403) {
+    console.error(
+      "❌ MERCADO LIVRE RETORNOU 403 NA BUSCA PÚBLICA"
+    );
+
+    console.error(
+      "RESPOSTA:",
+      JSON.stringify(dados, null, 2)
+    );
+
+    const erro = new Error(
+      dados.message ||
+      dados.error_description ||
+      dados.error ||
+      "O Mercado Livre bloqueou a busca pública."
+    );
+
+    erro.status = 403;
+    erro.code = "ML_FORBIDDEN";
+    erro.dados = dados;
+
+    throw erro;
+  }
+
+  // ========================================
+  // 429 - RATE LIMIT
+  // ========================================
+
+  if (resposta.status === 429) {
+    console.error(
+      "⚠️ MERCADO LIVRE LIMITOU AS REQUISIÇÕES"
+    );
+
+    const erro = new Error(
+      dados.message ||
+      dados.error ||
+      "Limite de requisições do Mercado Livre atingido."
+    );
+
+    erro.status = 429;
+    erro.code = "ML_RATE_LIMIT";
+    erro.dados = dados;
+
+    throw erro;
+  }
+
+  // ========================================
+  // OUTROS ERROS
+  // ========================================
+
+  const erro = new Error(
+    dados.message ||
+    dados.error_description ||
+    dados.error ||
+    `Erro na API do Mercado Livre (${resposta.status}).`
+  );
+
+  erro.status = resposta.status;
+  erro.code = "ML_SEARCH_ERROR";
+  erro.dados = dados;
+
+  throw erro;
+}
+```
+
 
   // ========================================
   // OBTER TOKEN VÁLIDO
