@@ -813,7 +813,6 @@ async function consultarUsuarioMercadoLivre(token) {
   };
 }
 
-```js
 // ==========================================
 // BUSCAR NO MERCADO LIVRE
 // VERSÃO CORRIGIDA - BUSCA PÚBLICA
